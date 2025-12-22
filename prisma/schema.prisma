@@ -1,0 +1,100 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- USUÁRIO (Dono da Loja) ---
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Um usuário pode ter várias lojas
+  stores    Store[]
+}
+
+// --- A LOJA (O Tenant do SaaS) ---
+model Store {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique // Ex: "loja-do-bruno"
+
+  // --- CONFIGURAÇÃO DE NICHO ---
+  // Ex: "clothing", "food", "service", "generic"
+  nicheType   String   @default("clothing") 
+
+  // --- FEATURE FLAGS (JSON) ---
+  // Controla o que aparece no app (ex: { "tryOn": false, "delivery": true })
+  features    Json     @default("{}")
+
+  // Configuração Visual ("Lego")
+  layoutConfig Json?   @default("[]")
+
+  // Tema Global (Cores, fontes)
+  themeConfig  Json?   @default("{}")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id])
+
+  products    Product[]
+  orders      Order[]
+}
+
+// --- PRODUTOS ---
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  imageColor  String?  
+  imageUrl    String?
+  tags        String[] 
+
+  isVisible   Boolean  @default(true)
+  stock       Int      @default(0)
+
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems  OrderItem[]
+}
+
+// --- PEDIDOS ---
+model Order {
+  id        String      @id @default(cuid())
+  status    String      @default("PENDING") 
+  total     Decimal
+
+  storeId   String
+  store     Store       @relation(fields: [storeId], references: [id])
+
+  items     OrderItem[]
+
+  createdAt DateTime    @default(now())
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  quantity  Int
+  price     Decimal 
+
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+}

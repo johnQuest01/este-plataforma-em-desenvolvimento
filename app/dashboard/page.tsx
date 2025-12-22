@@ -1,0 +1,146 @@
+// app/dashboard/page.tsx
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { Wand2 } from 'lucide-react';
+import { LocalDB } from '@/lib/local-db';
+
+// Imports e Templates
+import { BlockConfig, CategoryItem } from '@/types/builder';
+import { INITIAL_BLOCKS as CLOTHING } from '@/data/initial-state';
+import { BARBER_TEMPLATE as BARBER } from '@/data/templates/barber';
+import { FUTURISTIC_TEMPLATE as TECH } from '@/data/templates/futuristic';
+import { CHRISTMAS_TEMPLATE as XMAS } from '@/data/templates/christmas';
+import { FooterBlock } from '@/components/builder/blocks/Footer';
+import { BlockRenderer } from '@/components/builder/BlockRender';
+import { ReelsModal } from '@/components/builder/ui/ReelsModal';
+// REMOVIDO: import { GlobalAdmin } from '@/components/admin/GlobalAdmin'; <-- CAUSA DA DUPLICAÇÃO
+
+export default function DashboardPage() {
+  const router = useRouter();
+
+  const [blocks, setBlocks] = useState<BlockConfig[]>(CLOTHING);
+  const [currentTheme, setCurrentTheme] = useState('clothing');
+  const [showAdmin, setShowAdmin] = useState(false); // Mantém o botão da varinha, mas ele vai disparar evento global
+  const [activeReelsItem, setActiveReelsItem] = useState<CategoryItem | null>(null);
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const user = LocalDB.getUser();
+      if (!user) {
+        router.replace('/');
+      } else {
+        setIsReady(true);
+      }
+    };
+    checkAuth();
+  }, [router]);
+
+  const switchTheme = (theme: string) => {
+    setCurrentTheme(theme);
+    if (theme === 'clothing') setBlocks(CLOTHING);
+    if (theme === 'barber') setBlocks(BARBER);
+    if (theme === 'tech') setBlocks(TECH);
+    if (theme === 'xmas') setBlocks(XMAS);
+    setShowAdmin(false);
+  };
+
+  const getAppBg = () => {
+    if (currentTheme === 'tech') return 'bg-[#050505]';
+    if (currentTheme === 'barber') return 'bg-[#F5F5DC]';
+    if (currentTheme === 'xmas') return 'bg-[#F0FDF4]';
+    return 'bg-gray-50';
+  };
+
+  const footerBlock = blocks.find(b => b.type === 'footer');
+  const scrollableBlocks = blocks.filter(b => b.type !== 'footer');
+
+  const handleBlockAction = (action: string, payload?: unknown) => {
+    console.log("Ação:", action, payload);
+    if (action === 'openReels' && payload) {
+      setActiveReelsItem(payload as CategoryItem);
+    }
+  };
+
+  // Dispara o evento para o GlobalAdmin (que está no layout) abrir
+  const handleOpenGlobalAdmin = () => {
+     window.dispatchEvent(new Event('toggle_admin_menu'));
+     setShowAdmin(false);
+  };
+
+  if (!isReady) return null;
+
+  return (
+    <main className="w-full h-dvh-real bg-gray-900 lg:flex lg:justify-center lg:items-center lg:py-8 overflow-hidden relative">
+
+      {/* Botão Admin Mágico */}
+      <div className="absolute top-4 right-4 z-[9999] flex flex-col items-end gap-2">
+        <button onClick={() => setShowAdmin(!showAdmin)} className="bg-white text-black p-3 rounded-full shadow-xl hover:scale-110 transition-transform border-2 border-purple-500">
+          <Wand2 size={24} className="text-purple-600" />
+        </button>
+        {showAdmin && (
+          <div className="bg-white p-2 rounded-xl shadow-2xl flex flex-col gap-2 min-w-[140px] animate-in fade-in slide-in-from-top-2">
+            <span className="text-[10px] font-bold text-gray-400 uppercase px-2">Opções</span>
+            {/* NOVO BOTÃO: Abre o Painel Admin Global */}
+            <button onClick={handleOpenGlobalAdmin} className="text-left px-3 py-2 hover:bg-gray-100 rounded-lg text-xs font-bold text-purple-600 border border-purple-100 bg-purple-50 mb-1">
+              ⚙️ Painel Admin
+            </button>
+            
+            <div className="h-px bg-gray-200 my-1"></div>
+            <span className="text-[10px] font-bold text-gray-400 uppercase px-2">Temas</span>
+            
+            <button onClick={() => switchTheme('clothing')} className="text-left px-3 py-2 hover:bg-gray-100 rounded-lg text-xs font-bold text-blue-600">👕 Loja Roupas</button>
+            <button onClick={() => switchTheme('barber')} className="text-left px-3 py-2 hover:bg-gray-100 rounded-lg text-xs font-bold text-yellow-700">💈 Barbearia</button>
+            <button onClick={() => switchTheme('tech')} className="text-left px-3 py-2 hover:bg-gray-100 rounded-lg text-xs font-bold text-cyan-600">🤖 Cyberpunk</button>
+            <button onClick={() => switchTheme('xmas')} className="text-left px-3 py-2 hover:bg-red-50 rounded-lg text-xs font-bold text-red-600">🎅 Natal</button>
+          </div>
+        )}
+      </div>
+
+      {/* APP SHELL */}
+      <div className={cn("w-full h-full flex flex-col relative overflow-hidden transition-colors duration-500", "lg:h-[850px] lg:max-h-[90vh] lg:w-full lg:max-w-[420px]", "lg:rounded-[2.5rem] lg:border-[8px] lg:border-gray-800 lg:shadow-2xl", "max-w-[100vw] lg:mx-auto", getAppBg())}>
+
+        {currentTheme === 'tech' && (
+          <div className="absolute inset-0 pointer-events-none opacity-20 z-0" style={{ backgroundImage: 'linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+        )}
+
+        {/* TOPO */}
+        <div className={cn("shrink-0 z-[60] relative transition-colors duration-300", currentTheme === 'tech' ? 'bg-[#050505]' : currentTheme === 'barber' ? 'bg-[#F5F5DC]' : currentTheme === 'xmas' ? 'bg-[#D42426]' : 'bg-white')}>
+          <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-xl pointer-events-none z-50"></div>
+          <div className="w-full h-safe-top lg:h-8" />
+        </div>
+
+        {/* CONTEÚDO */}
+        <div className="flex-1 overflow-y-auto scrollbar-hide bg-transparent relative w-full overscroll-contain pb-32 z-10">
+          <div className="flex flex-col min-h-full">
+            <AnimatePresence mode='wait'>
+              <div key={currentTheme} className="animate-in fade-in zoom-in-95 duration-500">
+                {scrollableBlocks.map((block) => (
+                  <BlockRenderer key={block.id} config={block} onAction={handleBlockAction} />
+                ))}
+              </div>
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* RODAPÉ */}
+        {footerBlock && footerBlock.isVisible && (
+          <div className="absolute bottom-0 left-0 w-full z-50 pb-safe-bottom bg-transparent pointer-events-none">
+            <div className="pointer-events-auto">
+              <FooterBlock config={footerBlock} />
+            </div>
+          </div>
+        )}
+
+        {/* MODAL REELS */}
+        <ReelsModal isOpen={!!activeReelsItem} item={activeReelsItem} onClose={() => setActiveReelsItem(null)} />
+        
+        {/* REMOVIDO DAQUI: <GlobalAdmin /> */}
+      </div>
+    </main>
+  );
+}
