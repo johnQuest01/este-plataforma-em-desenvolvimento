@@ -90,13 +90,8 @@ export const StockRegisterView = ({ onBack, onRegister }: StockRegisterViewPrope
   };
 
   const handleConfirmRegister = async () => {
-    // Sanitização final para garantir que alterações no input sigam o padrão Title Case
-    const sanitizedName = productName
-      .trim()
-      .toLowerCase()
-      .split(/\s+/)
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+    // Mantém o nome exatamente como o usuário digitou, removendo apenas espaços extras
+    const sanitizedName = productName.trim();
 
     if (!sanitizedName) return alert("⚠️ Digite o nome do produto antes de salvar!");
     
@@ -173,7 +168,7 @@ export const StockRegisterView = ({ onBack, onRegister }: StockRegisterViewPrope
             value={productName}
             onChange={(event) => setProductName(event.target.value)}
             placeholder="DIGITE O NOME DO PRODUTO"
-            className="w-full h-10 px-4 bg-gray-50 rounded-xl text-gray-900 placeholder:text-gray-400 font-black text-xs text-center outline-none border-2 border-transparent focus:border-[#5874f6] uppercase"
+            className="w-full h-10 px-4 bg-gray-50 rounded-xl text-gray-900 placeholder:text-gray-400 font-black text-xs text-center outline-none border-2 border-transparent focus:border-[#5874f6]"
           />
         </div>
 

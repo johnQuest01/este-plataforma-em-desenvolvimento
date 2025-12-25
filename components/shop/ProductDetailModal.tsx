@@ -109,7 +109,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }: ProductDetailMo
               {/* Info Básica */}
               <div className="bg-white rounded-2xl p-5 shadow-lg shadow-black/5 border border-gray-100 flex flex-col gap-3">
                 <div className="flex justify-between items-start">
-                  <h1 className="font-black text-xl text-gray-900 leading-tight flex-1 mr-2 uppercase tracking-wide">{product.name}</h1>
+                  <h1 className="font-black text-xl text-gray-900 leading-tight flex-1 mr-2 tracking-wide">{product.name}</h1>
                   <button className="p-2 bg-pink-50 text-pink-500 rounded-full hover:bg-pink-100 transition-colors active:scale-90"><Heart size={20} className="fill-current" /></button>
                 </div>
                 <div className="flex items-end justify-between border-t border-gray-100 pt-3 mt-1">

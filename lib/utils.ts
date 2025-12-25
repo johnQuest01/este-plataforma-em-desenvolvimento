@@ -6,15 +6,10 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Formata o nome do produto para Capitalize (Primeira letra maiúscula)
+ * Retorna o nome do produto sem forçar formatação de maiúsculas/minúsculas,
+ * apenas removendo espaços extras.
  */
 export const formatProductName = (name: string) => {
   if (!name) return '';
-  return name
-    .toLowerCase()
-    .trim()
-    .split(' ')
-    .filter(word => word.length > 0)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+  return name.trim();
 };

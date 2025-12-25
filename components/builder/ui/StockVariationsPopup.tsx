@@ -59,15 +59,10 @@ interface StockVariationsPopupProps {
   initialItems?: VariationItem[];
 }
 
-// Helper robusto para formatar o nome corretamente (Title Case)
+// Helper robusto para formatar o nome corretamente (Mantém como o usuário digitou)
 const formatNameSafe = (text: string): string => {
   if (!text) return "";
-  return text
-    .trim()
-    .toLowerCase()
-    .split(/\s+/)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+  return text.trim();
 };
 
 const blobUrlToBase64 = async (url: string): Promise<string> => {
@@ -471,7 +466,7 @@ export const StockVariationsPopup = ({ isOpen, onClose, onSave, initialItems = [
                       <div className="absolute bottom-0 right-0 bg-gray-900/80 text-white text-[9px] font-black px-1 rounded-tl-md">{item.size}</div>
                     </div>
                     <div className="flex flex-col truncate">
-                      <span className="text-xs font-bold text-gray-900 uppercase truncate leading-tight">{item.name}</span>
+                      <span className="text-xs font-bold text-gray-900 truncate leading-tight">{item.name}</span>
                       <span className="text-[10px] font-bold text-gray-600 uppercase">{item.color} - {item.qty} un</span>
                     </div>
                   </div>
