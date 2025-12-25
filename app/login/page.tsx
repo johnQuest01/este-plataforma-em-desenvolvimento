@@ -158,7 +158,7 @@ export default function EntryPage() {
           </div>
 
           <button type="submit" disabled={!formData.name || !formData.document}
-            className="w-full h-14 mt-2 bg-[#5874f6] text-white rounded-2xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-3 shadow-lg shadow-blue-500/30 hover:bg-[#4a63d6] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+            className="w-full h-14 mt-2 bg-green-500 text-white rounded-2xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-3 shadow-lg shadow-green-500/30 hover:bg-green-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
             Cadastrar e Entrar <ArrowRight size={20} />
           </button>
 

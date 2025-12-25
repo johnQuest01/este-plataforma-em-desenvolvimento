@@ -1,12 +1,13 @@
 // prisma/schema.prisma
 
 generator client {
-  provider = "prisma-client"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native"]
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // A URL foi removida daqui para seguir o padrão da V7
 }
 
 // --- USUÁRIO (Dono da Loja) ---
@@ -16,39 +17,27 @@ model User {
   name      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // Um usuário pode ter várias lojas
   stores    Store[]
 }
 
 // --- A LOJA (O Tenant do SaaS) ---
 model Store {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique // Ex: "loja-do-bruno"
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique 
+  nicheType    String   @default("clothing") 
+  features     Json     @default("{}")
+  layoutConfig Json?    @default("[]")
+  themeConfig  Json?    @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  // --- CONFIGURAÇÃO DE NICHO ---
-  // Ex: "clothing", "food", "service", "generic"
-  nicheType   String   @default("clothing") 
+  ownerId      String
+  owner        User     @relation(fields: [ownerId], references: [id])
 
-  // --- FEATURE FLAGS (JSON) ---
-  // Controla o que aparece no app (ex: { "tryOn": false, "delivery": true })
-  features    Json     @default("{}")
-
-  // Configuração Visual ("Lego")
-  layoutConfig Json?   @default("[]")
-
-  // Tema Global (Cores, fontes)
-  themeConfig  Json?   @default("{}")
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  ownerId     String
-  owner       User     @relation(fields: [ownerId], references: [id])
-
-  products    Product[]
-  orders      Order[]
+  products     Product[]
+  orders       Order[]
+  productions  ProductionItem[]
 }
 
 // --- PRODUTOS ---
@@ -56,7 +45,7 @@ model Product {
   id          String   @id @default(cuid())
   name        String
   description String?
-  price       Decimal  @db.Decimal(10, 2)
+  price       Decimal  @db.Decimal(10, 2) // Corrigido: Adicionado precisão
   imageColor  String?  
   imageUrl    String?
   tags        String[] 
@@ -64,37 +53,73 @@ model Product {
   isVisible   Boolean  @default(true)
   stock       Int      @default(0)
 
+  variants    ProductVariant[]
   storeId     String
   store       Store    @relation(fields: [storeId], references: [id])
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  orderItems  OrderItem[]
+  orderItems      OrderItem[]
+  productionItems ProductionItem[]
+}
+
+model ProductVariant {
+  id        String   @id @default(cuid())
+  name      String   
+  sku       String?  @unique
+  price     Decimal? @db.Decimal(10, 2) // Corrigido: Adicionado precisão
+  stock     Int      @default(0)
+
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+// --- FILA DE PRODUÇÃO ---
+model ProductionItem {
+  id            String   @id @default(cuid())
+  status        String   @default("PENDING") 
+  priority      Int      @default(0)
+  notes         String?
+  
+  storeId       String
+  store         Store    @relation(fields: [storeId], references: [id])
+  
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id])
+
+  orderItemId   String?  @unique
+  orderItem     OrderItem? @relation(fields: [orderItemId], references: [id])
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 // --- PEDIDOS ---
 model Order {
-  id        String      @id @default(cuid())
-  status    String      @default("PENDING") 
-  total     Decimal
+  id            String      @id @default(cuid())
+  status        String      @default("PENDING") 
+  total         Decimal     @db.Decimal(10, 2) // Corrigido: Adicionado precisão
+  customerName  String?
+  customerPhone String?
 
-  storeId   String
-  store     Store       @relation(fields: [storeId], references: [id])
+  storeId       String
+  store         Store       @relation(fields: [storeId], references: [id])
 
-  items     OrderItem[]
-
-  createdAt DateTime    @default(now())
+  items         OrderItem[]
+  createdAt     DateTime    @default(now())
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
-  quantity  Int
-  price     Decimal 
+  id         String   @id @default(cuid())
+  quantity   Int
+  price      Decimal  @db.Decimal(10, 2) // Corrigido: Adicionado precisão
 
-  orderId   String
-  order     Order   @relation(fields: [orderId], references: [id])
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id])
 
-  productId String
-  product   Product @relation(fields: [productId], references: [id])
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+
+  production ProductionItem?
 }
