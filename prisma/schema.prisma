@@ -10,7 +10,7 @@ datasource db {
   // A URL foi removida daqui para seguir o padrão da V7
 }
 
-// --- USUÁRIO (Dono da Loja) ---
+// --- USUÁRIO (Dono da Loja2) ---
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
