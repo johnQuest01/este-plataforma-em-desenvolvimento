@@ -1,8 +1,8 @@
-// app/layout.tsx
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { GlobalAdmin } from '@/components/admin/GlobalAdmin'; // <--- IMPORT
+import { GlobalAdmin } from '@/components/admin/GlobalAdmin';
+import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,10 +17,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Loja Maryland",
   description: "Sua loja virtual exclusiva",
-  manifest: "/manifest.json", // Link para o manifesto
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent", // Melhor visual no iPhone
+    statusBarStyle: "black-translucent",
     title: "Loja Maryland",
   },
 };
@@ -31,7 +31,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#5874f6", // Cor da barra de status do Android
+  themeColor: "#5874f6",
 };
 
 export default function RootLayout({
@@ -41,14 +41,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}>
         {children}
         
-        {/* INJEÇÃO DO ADMIN GLOBAL */}
-        <GlobalAdmin /> 
-        
+        {/* Renderizados fora do fluxo principal para evitar conflitos de CSS */}
+        <GlobalAdmin />
+        <InstallPrompt />
       </body>
     </html>
   );

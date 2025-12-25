@@ -1,4 +1,3 @@
-// components/builder/blocks/ProductGrid.tsx
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -9,12 +8,19 @@ import { useRouter } from 'next/navigation';
 
 export const PRODUCT_UPDATE_EVENT = 'product_db_updated';
 
-export const ProductGridBlock = ({ config }: { config: BlockConfig }) => {
+interface ProductGridBlockProps {
+  config: BlockConfig;
+}
+
+/**
+ * ProductGridBlock - Exibe produtos em grid horizontal com scroll suave.
+ * Corrigido: Removida a classe 'touch-pan-x' que impedia a rolagem vertical da página.
+ */
+export const ProductGridBlock = ({ config }: ProductGridBlockProps) => {
   const router = useRouter();
   const [products, setProducts] = useState<ProductData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Busca produtos do Server Action
   const fetchProducts = useCallback(async () => {
     try {
       const dbProducts = await getProductsAction();
@@ -29,16 +35,12 @@ export const ProductGridBlock = ({ config }: { config: BlockConfig }) => {
   useEffect(() => {
     fetchProducts();
 
-    const handleUpdate = () => {
-      console.log("⚡ Atualizando Grid com novos produtos...");
-      fetchProducts();
-    };
+    const handleUpdate = () => fetchProducts();
 
     if (typeof window !== 'undefined') {
       window.addEventListener(PRODUCT_UPDATE_EVENT, handleUpdate);
     }
 
-    // Polling de segurança a cada 3s
     const interval = setInterval(fetchProducts, 3000);
 
     return () => {
@@ -49,7 +51,6 @@ export const ProductGridBlock = ({ config }: { config: BlockConfig }) => {
     };
   }, [fetchProducts]);
 
-  // Se tiver produtos no banco, usa eles. Senão, usa os do JSON (config)
   const hasDbProducts = products.length > 0;
   const displayProducts = hasDbProducts ? products : (config.data.products as ProductItem[] || []);
   const title = config.data.title as string;
@@ -63,7 +64,6 @@ export const ProductGridBlock = ({ config }: { config: BlockConfig }) => {
       className="w-full py-6 flex flex-col gap-4 relative min-h-[200px]"
       style={{ backgroundColor: config.style.bgColor || 'transparent' }}
     >
-      {/* Cabeçalho */}
       {title && (
         <div className="px-4 flex items-center justify-between">
           <h3 className="font-bold text-lg tracking-tight" style={{ color: config.style.textColor || '#000000' }}>
@@ -75,39 +75,30 @@ export const ProductGridBlock = ({ config }: { config: BlockConfig }) => {
         </div>
       )}
 
-      {/* GRID HORIZONTAL */}
       {displayProducts.length === 0 && !isLoading ? (
         <div className="px-4 py-8 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 mx-4 rounded-xl bg-gray-50">
           <PackageX size={32} className="mb-2 opacity-50"/>
           <span className="text-xs font-bold uppercase tracking-wide">Sem produtos</span>
         </div>
       ) : (
-        <div className="flex gap-3 overflow-x-auto px-4 pb-4 scrollbar-hide snap-x snap-mandatory touch-pan-x">
+        /* Container de scroll horizontal corrigido: touch-pan-x removido */
+        <div className="flex gap-3 overflow-x-auto px-4 pb-4 scrollbar-hide snap-x snap-mandatory">
           {displayProducts.map((item, idx) => {
-            // Tipagem híbrida (pode ser do Banco ou do JSON)
             const prod = item as ProductData & ProductItem;
             const isDbProduct = !!prod.id;
             const name = prod.name;
             const price = prod.price;
 
-            // --- LÓGICA DE IMAGEM CORRIGIDA ---
             let imageUrl = '';
-            
             if (isDbProduct) {
-               // Prioridade 1: Imagem principal (Base64 real)
                if (prod.mainImage) {
                  imageUrl = prod.mainImage;
-               } 
-               // Prioridade 2: Primeira variação com imagem
-               else if (prod.variations && prod.variations.length > 0 && prod.variations[0].images?.[0]) {
+               } else if (prod.variations && prod.variations.length > 0 && prod.variations[0].images?.[0]) {
                  imageUrl = prod.variations[0].images[0];
-               }
-               // Fallback: Placeholder
-               else {
+               } else {
                  imageUrl = `https://placehold.co/800x800/e2e8f0/white?text=${name.substring(0,3)}`;
                }
             } else {
-               // Produtos do JSON (Estáticos)
                imageUrl = prod.imageUrl || `https://placehold.co/800x800/${prod.imageColor || 'e2e8f0'}/white?text=Oferta`;
             }
 
@@ -115,16 +106,12 @@ export const ProductGridBlock = ({ config }: { config: BlockConfig }) => {
               <div
                 key={prod.id || idx}
                 className="min-w-[170px] max-w-[170px] border border-gray-200 rounded-xl overflow-hidden bg-white relative flex flex-col shadow-sm snap-start shrink-0 cursor-pointer active:scale-[0.98] transition-transform duration-200"
-                onClick={() => {
-                  if (isDbProduct) handleProductClick(prod);
-                }}
+                onClick={() => isDbProduct && handleProductClick(prod)}
               >
-                {/* Tag */}
                 <div className="text-center py-1 text-[10px] uppercase tracking-wider font-bold text-gray-500 border-b border-gray-100 bg-gray-50/50">
                   {isDbProduct ? 'Novo' : (prod.tag || 'Oferta')}
                 </div>
 
-                {/* Imagem */}
                 <div className="relative aspect-[3/4] bg-gray-100 group overflow-hidden">
                   <img
                     src={imageUrl}
@@ -134,7 +121,6 @@ export const ProductGridBlock = ({ config }: { config: BlockConfig }) => {
                   />
                 </div>
 
-                {/* Info */}
                 <div className="p-3 text-left border-t border-gray-100 flex-1 flex flex-col justify-between">
                   <div>
                     <p className="font-medium text-gray-800 text-sm line-clamp-2 leading-tight h-9">
