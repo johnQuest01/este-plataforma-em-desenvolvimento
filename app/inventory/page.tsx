@@ -9,6 +9,7 @@ import { INVENTORY_BLOCKS, STOCK_BLOCKS } from '@/data/inventory-state';
 import { FooterBlock } from '@/components/builder/blocks/Footer';
 import { BlockRenderer } from '@/components/builder/BlockRender';
 import { checkForNewImage } from '@/app/actions';
+import { StoreHeader } from '@/components/builder/blocks/Header';
 
 // --- IMPORTS DOS POPUPS ---
 import { StockModal } from '@/components/builder/ui/StockModal';
@@ -107,9 +108,10 @@ export default function InventoryPage() {
         {/* 1. TOPO FIXO */}
         <div className="shrink-0 z-[60] bg-[#5874f6] relative border-b border-blue-600/20">
           <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-xl pointer-events-none z-50"></div>
-          <div className="flex justify-center items-center px-4 pt-safe-top pb-2 lg:pt-8 text-white">
-            <span className="text-xs font-bold opacity-80 uppercase tracking-widest">Inventário</span>
-          </div>
+          <StoreHeader 
+            data={{ title: '', address: 'Inventário Maryland' }} 
+            style={{ bgColor: '#5874f6', textColor: '#ffffff' }} 
+          />
         </div>
 
         {/* 2. ÁREA CENTRAL */}

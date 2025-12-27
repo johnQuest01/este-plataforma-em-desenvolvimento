@@ -26,6 +26,7 @@ const FOOTER_ITEMS: FooterItem[] = [
 export default function HistoryPage() {
   const [activeView, setActiveView] = useState<'main' | 'total-sales'>('main');
   const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
 
   const isBrunoFound = searchQuery.toLowerCase().includes('bruno');
 
@@ -50,11 +51,9 @@ export default function HistoryPage() {
       <div className="w-full h-full bg-white flex flex-col relative overflow-hidden lg:h-[850px] lg:max-h-[90vh] lg:w-full lg:max-w-[420px] lg:rounded-[2.5rem] lg:border-[8px] lg:border-gray-900 lg:shadow-2xl">
         
         <StoreHeader 
-          showBack={activeView !== 'main'} 
-          onBack={() => setActiveView('main')}
           data={{ 
-            title: activeView === 'main' ? 'Histórico' : 'Vendas', 
-            address: activeView === 'main' ? 'Gestão Maryland' : 'Relatório de Vendas' 
+            title: '', 
+            address: activeView === 'main' ? 'Histórico Maryland' : 'Relatório de Vendas' 
           }} 
           style={{ bgColor: THEME_PRIMARY, textColor: '#ffffff' }} 
         />

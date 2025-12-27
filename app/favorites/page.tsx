@@ -38,11 +38,9 @@ export default function FavoritesPage() {
             <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-xl pointer-events-none z-50"></div>
             
             <StoreHeader 
-                showBack={true} 
-                onBack={() => router.push('/')}
                 data={{ 
-                    title: 'Favoritos', 
-                    address: 'Seus itens salvos' 
+                    title: '', 
+                    address: 'Favoritos Maryland' 
                 }}
                 style={{ 
                     bgColor: '#5874f6', // Fundo Azul

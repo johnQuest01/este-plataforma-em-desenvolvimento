@@ -116,8 +116,14 @@ export const HeaderBlock = ({ config }: { config: BlockConfig }) => {
     <StoreHeader 
       style={config.style}
       data={{ 
-        address: config.data.address as string,
-        title: 'Loja'
+        address: (config.data?.address as string) || 'Maryland Gestão',
+        title: config.data?.title as string || 'Loja'
+      }}
+      showBack={config.data?.showBack as boolean}
+      onBack={() => {
+        if (typeof window !== 'undefined') {
+          window.history.back();
+        }
       }}
     />
   );

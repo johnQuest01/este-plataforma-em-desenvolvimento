@@ -15,6 +15,7 @@ import { CHRISTMAS_TEMPLATE as XMAS } from '@/data/templates/christmas';
 import { FooterBlock } from '@/components/builder/blocks/Footer';
 import { BlockRenderer } from '@/components/builder/BlockRender';
 import { ReelsModal } from '@/components/builder/ui/ReelsModal';
+import { StoreHeader } from '@/components/builder/blocks/Header';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -54,7 +55,8 @@ export default function DashboardPage() {
   };
 
   const footerBlock = blocks.find(b => b.type === 'footer');
-  const scrollableBlocks = blocks.filter(b => b.type !== 'footer');
+  const headerBlock = blocks.find(b => b.type === 'header');
+  const scrollableBlocks = blocks.filter(b => b.type !== 'footer' && b.type !== 'header');
 
   const handleBlockAction = (action: string, payload?: unknown) => {
     if (action === 'openReels' && payload) {
@@ -99,7 +101,15 @@ export default function DashboardPage() {
 
         <div className={cn("shrink-0 z-[60] relative transition-colors duration-300", currentTheme === 'tech' ? 'bg-[#050505]' : currentTheme === 'barber' ? 'bg-[#F5F5DC]' : currentTheme === 'xmas' ? 'bg-[#D42426]' : 'bg-white')}>
           <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-xl pointer-events-none z-50"></div>
-          <div className="w-full h-safe-top lg:h-8" />
+          {headerBlock && (
+            <StoreHeader 
+              style={headerBlock.style} 
+              data={{ 
+                address: headerBlock.data.address as string, 
+                title: 'Loja' 
+              }} 
+            />
+          )}
         </div>
 
         {/* CONTEÚDO CORRIGIDO: overscroll-contain removido para rolagem fluida */}

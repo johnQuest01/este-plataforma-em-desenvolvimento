@@ -22,7 +22,7 @@ export default function CartPage() {
       <div className={cn("w-full h-full bg-gray-50 flex flex-col relative overflow-hidden", "lg:h-[850px] lg:max-h-[90vh] lg:w-full lg:max-w-[420px] lg:rounded-[2.5rem] lg:border-[8px] lg:border-gray-900 lg:shadow-2xl max-w-[100vw] lg:mx-auto")}>
         <div className="shrink-0 z-[60] bg-[#5874f6] relative border-b border-blue-600/20">
             <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-xl pointer-events-none z-50"></div>
-            <StoreHeader showBack={true} onBack={() => router.push('/')} data={{ title: 'Carrinho', address: 'Seus produtos' }} style={{ bgColor: '#5874f6', textColor: '#ffffff' }} />
+            <StoreHeader data={{ title: '', address: 'Carrinho Maryland' }} style={{ bgColor: '#5874f6', textColor: '#ffffff' }} />
         </div>
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in duration-300">
             <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-6 shadow-sm"><ShoppingCart size={48} className="text-[#5874f6]" /></div>
