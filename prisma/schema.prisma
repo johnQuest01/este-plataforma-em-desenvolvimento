@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // A URL foi removida daqui para seguir o padrão da V7
+  url      = env("DATABASE_URL") // Adicione esta linha
 }
 
 // --- USUÁRIO (Dono da Loja2) ---

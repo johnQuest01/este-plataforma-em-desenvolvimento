@@ -3,6 +3,7 @@ import { BlockConfig } from '@/types/builder';
 
 export const INVENTORY_BLOCKS: BlockConfig[] = [
   // 1. HEADER
+  /* REMOVED a new header was created for this page
   {
     id: 'inv_header',
     type: 'header',
@@ -10,6 +11,7 @@ export const INVENTORY_BLOCKS: BlockConfig[] = [
     data: { address: '' },
     style: { bgColor: '#5874f6', textColor: '#ffffff' }
   },
+  */
   // 2. INFO USUÁRIO
   {
     id: 'inv_user_info',

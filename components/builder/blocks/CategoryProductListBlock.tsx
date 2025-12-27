@@ -66,7 +66,7 @@ export const CategoryProductListBlock = ({ config, onAction }: CategoryProductLi
         <div className="grid grid-cols-2 gap-4">
           {filteredProducts.map((product) => {
             const mainImage = product.mainImage || product.variations[0]?.images[0] || '';
-            const price = product.price && product.price !== 'R$ 0,00' ? product.price : 'R$ 121,55';
+            const price = product.price && product.price !== 'R$ 0,00' ? product.price : null;
             const stockName = targetStock || product.variations[0]?.stockLocations?.[0] || 'Estoque Geral';
 
             return (
