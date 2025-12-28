@@ -3,7 +3,47 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, Layers, RefreshCw } from 'lucide-react';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 import { ProductData, getProductsAction } from '@/app/actions/product';
+
+// --- UTILS ---
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+// ============================================================================
+// COMPONENTE VISUAL: ProductImage (Isolado para o Editor Visual)
+// ============================================================================
+interface ProductImageProps {
+  src: string;
+  alt: string;
+  totalQty: number;
+  className?: string;
+}
+
+const ProductImage = ({ src, alt, totalQty, className }: ProductImageProps) => {
+  return (
+    <div className={cn("relative w-20 h-24 bg-gray-100 rounded-xl overflow-hidden border border-gray-100 shrink-0", className)}>
+      <img src={src} alt={alt} className="w-full h-full object-cover" />
+      
+      {/* ALTERAÇÃO REALIZADA: 
+        Transformamos a faixa inferior em um "Badge Flutuante".
+        - `bottom-1 inset-x-1`: Descola das bordas.
+        - `rounded-lg`: Arredonda a imagem preta debaixo do texto.
+      */}
+      <div className="absolute bottom-1 inset-x-1 bg-black/70 backdrop-blur-sm text-center py-1 rounded-lg">
+        <span className="text-[10px] text-white font-bold block leading-none">
+          {totalQty} total
+        </span>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// TELA PRINCIPAL
+// ============================================================================
 
 interface StockResupplyPopupProps {
   isOpen: boolean;
@@ -15,7 +55,6 @@ export const StockResupplyPopup = ({ isOpen, onClose }: StockResupplyPopupProps)
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
-  // Busca os produtos ao abrir o popup
   useEffect(() => {
     if (isOpen) {
       const load = async () => {
@@ -103,14 +142,14 @@ export const StockResupplyPopup = ({ isOpen, onClose }: StockResupplyPopupProps)
                   return (
                     <div key={product.id} className="bg-white p-4 rounded-3xl border border-gray-200 shadow-sm flex flex-col gap-4">
                       
-                      {/* Cabeçalho do Card (Foto e Nome) */}
+                      {/* Cabeçalho do Card (Com Componente Isolado) */}
                       <div className="flex gap-4">
-                        <div className="w-20 h-24 bg-gray-100 rounded-xl overflow-hidden border border-gray-100 shrink-0 relative">
-                          <img src={product.mainImage} alt={product.name} className="w-full h-full object-cover" />
-                          <div className="absolute bottom-0 inset-x-0 bg-black/70 backdrop-blur-sm text-center py-1">
-                            <span className="text-[10px] text-white font-bold">{totalQty} total</span>
-                          </div>
-                        </div>
+                        <ProductImage 
+                          src={product.mainImage} 
+                          alt={product.name} 
+                          totalQty={totalQty} 
+                        />
+                        
                         <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
                           <h3 className="font-black text-gray-900 text-base uppercase leading-tight line-clamp-2">
                             {product.name}
@@ -121,23 +160,20 @@ export const StockResupplyPopup = ({ isOpen, onClose }: StockResupplyPopupProps)
                         </div>
                       </div>
 
-                      {/* --- LISTA DE VARIAÇÕES (Scroll Mantido e Textos Maiores) --- */}
+                      {/* --- LISTA DE VARIAÇÕES --- */}
                       <div className="bg-gray-50 rounded-2xl p-2 border border-gray-100 flex flex-col gap-2 max-h-48 overflow-y-auto custom-scrollbar">
                         {product.variations.map((v, idx) => (
                           <div key={idx} className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-gray-200 shadow-sm">
                             
                             <div className="flex items-center gap-3 overflow-hidden">
-                              {/* Quadrado do Tamanho (Aumentado) */}
                               <span className="font-black bg-gray-900 text-white w-10 h-10 flex items-center justify-center rounded-lg text-sm shrink-0 shadow-sm">
                                 {v.size}
                               </span>
                               
                               <div className="flex flex-col leading-tight truncate">
-                                {/* Cor (Aumentado) */}
                                 <span className="font-extrabold text-gray-800 text-sm truncate uppercase">
                                   {v.color}
                                 </span>
-                                {/* Tipo/Variação (Aumentado) */}
                                 {(v.variation || v.type) && (
                                   <span className="text-xs font-semibold text-gray-500 truncate">
                                     {v.variation || v.type}
@@ -146,7 +182,6 @@ export const StockResupplyPopup = ({ isOpen, onClose }: StockResupplyPopupProps)
                               </div>
                             </div>
 
-                            {/* Quantidade (Aumentado e Destacado) */}
                             <div className="flex flex-col items-end pl-2">
                               <span className="font-black text-gray-900 text-base leading-none">
                                 {v.qty}
@@ -162,7 +197,7 @@ export const StockResupplyPopup = ({ isOpen, onClose }: StockResupplyPopupProps)
 
                       {/* Botão de Ação */}
                       <button 
-                        onClick={() => alert(`Separando estoque para vendedoras: ${product.name}`)}
+                        onClick={() => alert(`Separando estoque: ${product.name}`)}
                         className="w-full h-12 bg-white border-2 border-[#5874f6] text-[#5874f6] rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-blue-50 active:scale-95 transition-all shadow-sm"
                       >
                         <Layers size={18} strokeWidth={2.5} />

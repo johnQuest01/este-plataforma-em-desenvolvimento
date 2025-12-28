@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { 
   ChevronLeft, 
@@ -13,9 +13,9 @@ import {
   Image as ImageIcon, 
   Plus, 
   Sparkles, 
-  Store, 
-  Eraser, 
-  Factory 
+  Factory,
+  Box,
+  Layers // Icone para o botão Adicionar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -38,6 +38,8 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { createProductionOrderAction } from '@/app/actions/production';
 
+// --- Types ---
+
 export interface VariationItem {
   id: string;
   name: string;
@@ -59,10 +61,22 @@ interface StockVariationsPopupProps {
   initialItems?: VariationItem[];
 }
 
-// Helper robusto para formatar o nome corretamente (Mantém como o usuário digitou)
+interface DraftState {
+  name: string;
+  category: string;
+  keyword: string;
+  color: string;
+  type: string; // Usado como input temporário
+  types: string[]; // Lista de tipos adicionados
+  images: string[];
+  stockLocations: string[];
+}
+
+// --- Helpers ---
+
 const formatNameSafe = (text: string): string => {
   if (!text) return "";
-  return text.trim();
+  return text.trim(); 
 };
 
 const blobUrlToBase64 = async (url: string): Promise<string> => {
@@ -82,14 +96,69 @@ const blobUrlToBase64 = async (url: string): Promise<string> => {
   }
 };
 
+// --- Sub-components (Lego Architecture) ---
+
+const MiniPreviewCard = ({ draft, sizePreview }: { draft: DraftState, sizePreview?: string }) => {
+  const hasImage = draft.images.length > 0;
+  const hasName = draft.name.trim().length > 0;
+  const hasColor = draft.color.trim().length > 0;
+  const hasCategory = draft.category.trim().length > 0;
+  const hasKeyword = draft.keyword.trim().length > 0;
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="w-12 h-12 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden shrink-0 relative">
+        {hasImage ? (
+          <img src={draft.images[0]} alt="Preview" className="w-full h-full object-cover" />
+        ) : (
+          <ImageIcon size={20} className="text-gray-300" />
+        )}
+        {sizePreview && (
+          <div className="absolute bottom-0 right-0 bg-[#5874f6] text-white text-[9px] font-black px-1.5 py-0.5 rounded-tl-md">
+            {sizePreview}
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-col min-w-0 gap-0.5">
+        <span className={cn("text-xs font-bold truncate", hasName ? "text-gray-900" : "text-gray-400 italic")}>
+          {hasName ? draft.name : "Produto sem nome"}
+        </span>
+        
+        <div className="flex items-center gap-1.5">
+          <span className={cn("w-2 h-2 rounded-full", hasColor ? "bg-blue-500" : "bg-gray-300")} />
+          <span className={cn("text-[10px] font-medium truncate", hasColor ? "text-gray-600" : "text-gray-400")}>
+            {hasColor ? draft.color : "Cor indefinida"}
+          </span>
+        </div>
+
+        {/* Categoria e Palavra Chave Formatadas */}
+        {(hasCategory || hasKeyword) && (
+            <div className="flex items-center gap-1.5 mt-0.5 overflow-hidden">
+                {hasCategory && (
+                    <span className="text-[9px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded flex items-center gap-0.5 shrink-0">
+                        {draft.category}
+                    </span>
+                )}
+                {hasKeyword && (
+                    <span className="text-[9px] text-gray-400 italic truncate">
+                        #{draft.keyword}
+                    </span>
+                )}
+            </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 function SortablePhotoItem({ id, url, onRemove }: { id: string, url: string, onRemove: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 999 : 1,
-    WebkitTouchCallout: 'none',
-    touchAction: 'manipulation'
   };
 
   return (
@@ -107,7 +176,7 @@ function SortablePhotoItem({ id, url, onRemove }: { id: string, url: string, onR
       <button 
         onClick={(e) => { e.stopPropagation(); onRemove(); }} 
         onPointerDown={(e) => e.stopPropagation()} 
-        className="absolute top-1 right-1 bg-white/90 text-red-500 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm z-20"
+        className="absolute top-1 right-1 bg-white/90 text-red-500 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm z-20 hover:bg-red-50"
       >
         <X size={12} strokeWidth={3} />
       </button>
@@ -115,29 +184,34 @@ function SortablePhotoItem({ id, url, onRemove }: { id: string, url: string, onR
   );
 }
 
+// --- Main Component ---
+
 export const StockVariationsPopup = ({ isOpen, onClose, onSave, initialItems = [] }: StockVariationsPopupProps) => {
   const [variations, setVariations] = useState<VariationItem[]>(initialItems);
-  const lastItem = initialItems.length > 0 ? initialItems[initialItems.length - 1] : null;
-
-  const [currentName, setCurrentName] = useState(lastItem?.name || "");
-  const [currentCategory, setCurrentCategory] = useState(lastItem?.category || "");
-  const [currentKeyword, setCurrentKeyword] = useState(lastItem?.keyword || "");
-  const [currentColor, setCurrentColor] = useState(lastItem?.color || "");
-  const [currentType, setCurrentType] = useState(lastItem?.variation || lastItem?.type || "");
-  const [selectedStocks, setSelectedStocks] = useState<string[]>(lastItem?.stockLocations || ['Loja Principal']);
-  const [currentPhotos, setCurrentPhotos] = useState<string[]>(lastItem?.images || []);
+  
+  const [draft, setDraft] = useState<DraftState>(() => {
+    const lastItem = initialItems.length > 0 ? initialItems[initialItems.length - 1] : null;
+    return {
+      name: lastItem?.name || "",
+      category: lastItem?.category || "",
+      keyword: lastItem?.keyword || "",
+      color: lastItem?.color || "",
+      type: lastItem?.variation || lastItem?.type || "",
+      types: [], // Inicializa lista de tipos
+      images: lastItem?.images || [],
+      stockLocations: lastItem?.stockLocations || ['Loja Principal']
+    };
+  });
 
   const [availableStocks, setAvailableStocks] = useState<string[]>(['Loja Principal', 'Depósito', 'Vitrine']);
   const [newStockName, setNewStockName] = useState("");
-
   const [qtyModalOpen, setQtyModalOpen] = useState(false);
   const [editingSize, setEditingSize] = useState<string | null>(null);
   const [tempQty, setTempQty] = useState("");
-  const [errorShake, setErrorShake] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSendingToProduction, setIsSendingToProduction] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const sizes = ['PP', 'P', 'M', 'G', 'GG', 'XG'];
 
   const sensors = useSensors(
@@ -151,110 +225,114 @@ export const StockVariationsPopup = ({ isOpen, onClose, onSave, initialItems = [
       setVariations(initialItems);
       if (initialItems.length > 0) {
         const last = initialItems[initialItems.length - 1];
-        if (!currentName) setCurrentName(last.name);
-        if (!currentCategory) setCurrentCategory(last.category);
-        if (!currentKeyword) setCurrentKeyword(last.keyword);
-        if (!currentColor) setCurrentColor(last.color);
-        if (currentPhotos.length === 0) setCurrentPhotos(last.images);
+        setDraft({
+          name: last.name,
+          category: last.category,
+          keyword: last.keyword,
+          color: last.color,
+          type: last.variation || last.type || "",
+          types: [],
+          images: last.images,
+          stockLocations: last.stockLocations
+        });
       }
     }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (variations.length === 0) return;
-    setVariations(prev => prev.map(item => ({
-      ...item,
-      name: currentName,
-      category: currentCategory,
-      keyword: currentKeyword,
-    })));
-  }, [currentName, currentCategory, currentKeyword]);
-
-  const activeVariationsForCurrentContext = useMemo(() => {
-    return variations.filter(v => 
-      v.name.toLowerCase() === currentName.trim().toLowerCase() &&
-      v.color.toLowerCase() === currentColor.trim().toLowerCase() &&
-      (v.variation || v.type || '').toLowerCase() === currentType.trim().toLowerCase()
-    );
-  }, [variations, currentName, currentColor, currentType]);
+  }, [isOpen, initialItems]);
 
   if (!isOpen) return null;
 
-  const formatQty = (num: number) => num >= 1000 ? (num / 1000).toFixed(1).replace('.0', '') + 'k' : num.toString();
+  const updateDraft = <K extends keyof DraftState>(field: K, value: DraftState[K]) => {
+    setDraft(prev => ({ ...prev, [field]: value }));
+
+    if (field === 'name' || field === 'category' || field === 'keyword') {
+      setVariations(prev => prev.map(item => ({
+        ...item,
+        [field]: value as string 
+      })));
+    }
+
+    // Lógica de imagens mantida: só atualiza se for da mesma cor
+    if (field === 'images') {
+       setVariations(prev => prev.map(item => {
+           if (item.color === draft.color) {
+               return { ...item, images: value as string[] };
+           }
+           return item;
+       }));
+    }
+  };
+
+  const handleAddType = () => {
+    if (draft.type.trim() && !draft.types.includes(draft.type.trim())) {
+        updateDraft('types', [...draft.types, draft.type.trim()]);
+        updateDraft('type', ''); // Limpa o input
+    }
+  };
+
+  const handleRemoveType = (typeToRemove: string) => {
+      updateDraft('types', draft.types.filter(t => t !== typeToRemove));
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      const remainingSlots = 20 - currentPhotos.length;
+      const remainingSlots = 20 - draft.images.length;
       const filesToAdd = files.slice(0, remainingSlots);
       const newPhotoUrls = filesToAdd.map(file => URL.createObjectURL(file));
-      setCurrentPhotos(prev => [...prev, ...newPhotoUrls]);
+      
+      updateDraft('images', [...draft.images, ...newPhotoUrls]);
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleRemovePhoto = (urlToRemove: string) => {
-    setCurrentPhotos(prev => prev.filter(url => url !== urlToRemove));
-  };
-
-  const handleClearPhotos = () => {
-    if (confirm("Limpar todas as fotos deste lote?")) {
-      setCurrentPhotos([]);
-    }
+    updateDraft('images', draft.images.filter(url => url !== urlToRemove));
   };
 
   const handleDragEndPhotos = (event: DragEndEvent) => {
     const { active, over } = event;
     if (active.id !== over?.id) {
-      setCurrentPhotos((items) => {
-        const oldIndex = items.indexOf(active.id as string);
-        const newIndex = items.indexOf(over?.id as string);
-        return arrayMove(items, oldIndex, newIndex);
-      });
+      const oldIndex = draft.images.indexOf(active.id as string);
+      const newIndex = draft.images.indexOf(over?.id as string);
+      updateDraft('images', arrayMove(draft.images, oldIndex, newIndex));
     }
   };
 
   const handleCreateStock = () => {
-    if (!newStockName.trim()) return;
-    if (!availableStocks.includes(newStockName.trim())) {
-      setAvailableStocks(prev => [...prev, newStockName.trim()]);
+    const trimmed = newStockName.trim();
+    if (!trimmed) return;
+    
+    if (!availableStocks.includes(trimmed)) {
+      setAvailableStocks(prev => [...prev, trimmed]);
     }
-    if (!selectedStocks.includes(newStockName.trim())) {
-      setSelectedStocks(prev => [...prev, newStockName.trim()]);
+    if (!draft.stockLocations.includes(trimmed)) {
+      updateDraft('stockLocations', [...draft.stockLocations, trimmed]);
     }
     setNewStockName("");
   };
 
   const toggleStockSelection = (stock: string) => {
-    setSelectedStocks(prev => 
-      prev.includes(stock) ? prev.filter(s => s !== stock) : [...prev, stock]
-    );
+    const current = draft.stockLocations;
+    const newSelection = current.includes(stock) 
+      ? current.filter(s => s !== stock) 
+      : [...current, stock];
+    updateDraft('stockLocations', newSelection);
   };
 
   const handleSizeClick = (sizeLabel: string) => {
-    if (!currentName.trim() || !currentColor.trim() || !currentCategory.trim() || !currentKeyword.trim()) {
-      setErrorShake(true);
-      setTimeout(() => setErrorShake(false), 500);
-      alert("⚠️ Preencha Nome, Cor, Categoria e Palavra-chave antes de selecionar o tamanho.");
-      return;
+    if (draft.stockLocations.length === 0) {
+      updateDraft('stockLocations', ['Loja Principal']);
     }
 
-    if (selectedStocks.length === 0) {
-      alert("⚠️ Selecione pelo menos um local de estoque!");
-      return;
-    }
-
-    const existingIndex = variations.findIndex(
-      v => 
-        v.name.toLowerCase() === currentName.trim().toLowerCase() &&
-        v.color.toLowerCase() === currentColor.trim().toLowerCase() &&
-        (v.variation || '').toLowerCase() === currentType.trim().toLowerCase() &&
-        v.size === sizeLabel
+    const existingIndex = variations.findIndex(v => 
+      v.size === sizeLabel && 
+      v.color === draft.color && 
+      v.name === draft.name
     );
 
     if (existingIndex >= 0) {
-      setVariations(prev => prev.filter((_, idx) => idx !== existingIndex));
-      return;
+       setVariations(prev => prev.filter((_, idx) => idx !== existingIndex));
+       return;
     }
 
     setEditingSize(sizeLabel);
@@ -262,26 +340,43 @@ export const StockVariationsPopup = ({ isOpen, onClose, onSave, initialItems = [
     setQtyModalOpen(true);
   };
 
-  const handleConfirmQty = async () => {
+  const handleConfirmQty = () => {
     const qty = parseInt(tempQty);
-    if (editingSize && currentName && currentColor && !isNaN(qty) && qty > 0) {
-      const newItem: VariationItem = {
+    
+    if (editingSize && !isNaN(qty) && qty > 0) {
+      // Se houver tipos múltiplos, cria uma variação para cada tipo OU usa o tipo único se a lista estiver vazia
+      // Se a lista de tipos estiver vazia, usa o valor atual do input 'type' ou string vazia
+      const typesToUse = draft.types.length > 0 ? draft.types : [draft.type];
+
+      const newItems: VariationItem[] = typesToUse.map(typeVal => ({
         id: Math.random().toString(36).substr(2, 9),
-        name: currentName.trim(),
-        color: currentColor.trim(),
-        category: currentCategory.trim(),
-        keyword: currentKeyword.trim(),
-        variation: currentType.trim(),
-        type: currentType.trim(), 
-        stockLocations: [...selectedStocks],
-        images: [...currentPhotos],
-        size: editingSize,
+        name: draft.name || "Produto Sem Nome", 
+        color: draft.color || "Única",          
+        category: draft.category,
+        keyword: draft.keyword,
+        variation: typeVal,
+        type: typeVal,
+        stockLocations: [...draft.stockLocations],
+        images: [...draft.images],
+        size: editingSize!,
         qty: qty,
-      };
-      setVariations(prev => [...prev, newItem]);
+      }));
+
+      setVariations(prev => [...prev, ...newItems]);
     }
     setQtyModalOpen(false);
     setEditingSize(null);
+  };
+
+  const handleAddNew = () => {
+    // Reset parcial inteligente
+    setDraft(prev => ({
+      ...prev,
+      color: "", // Limpa cor
+      type: "", // Limpa tipo input
+      types: [], // Limpa lista de tipos
+      images: [] // Limpa imagens
+    }));
   };
 
   const handleRemoveItem = (id: string) => {
@@ -292,38 +387,44 @@ export const StockVariationsPopup = ({ isOpen, onClose, onSave, initialItems = [
     if (!onSave) return;
     setIsSaving(true);
     
-    const formattedName = formatNameSafe(currentName);
+    const formattedName = formatNameSafe(draft.name);
 
     const processedVariations = await Promise.all(variations.map(async (v) => {
-      const processedImages = await Promise.all(v.images.map(async (img) => {
+      const imagesToProcess = v.images.length > 0 ? v.images : draft.images;
+      const processedImages = await Promise.all(imagesToProcess.map(async (img) => {
         return await blobUrlToBase64(img);
       }));
+
       return { 
         ...v, 
-        name: formattedName,
+        name: formattedName || v.name, 
         images: processedImages 
       };
     }));
 
     onSave(processedVariations, { name: formattedName });
-    
     setIsSaving(false);
     onClose();
   };
 
   const handleSendToProduction = async () => {
     if (variations.length === 0) return alert("⚠️ Adicione variações antes de enviar.");
-    if (!confirm("Confirma o envio deste lote para a tela de Produção?")) return;
+    if (!confirm("Confirma o envio para Produção?")) return;
+    
     setIsSendingToProduction(true);
     try {
-        let mainImage = currentPhotos.length > 0 ? currentPhotos[0] : (variations[0].images[0] || "");
+        let mainImage = draft.images[0] || ""; 
+        if (!mainImage && variations.length > 0) mainImage = variations[0].images[0] || "";
+        
         mainImage = await blobUrlToBase64(mainImage);
+        
         const result = await createProductionOrderAction({
-            productName: formatNameSafe(currentName) || variations[0].name,
+            productName: formatNameSafe(draft.name) || "Produto",
             image: mainImage,
-            variations: variations.map(v => ({ ...v, name: formatNameSafe(currentName) }))
+            variations: variations.map(v => ({ ...v, name: formatNameSafe(draft.name) || v.name }))
         });
-        if (result.success) alert("✅ Enviado para a Produção!");
+        
+        if (result.success) alert("✅ Enviado para Produção!");
         else alert("❌ Erro ao enviar.");
     } catch (error) {
         alert("Erro técnico ao enviar.");
@@ -332,120 +433,172 @@ export const StockVariationsPopup = ({ isOpen, onClose, onSave, initialItems = [
     }
   };
 
+  const formatQty = (num: number) => num >= 1000 ? (num / 1000).toFixed(1).replace('.0', '') + 'k' : num.toString();
+
   return (
     <div className="flex flex-col h-full bg-[#eeeeee] relative overflow-hidden">
-      <div className="flex-1 overflow-y-auto scrollbar-hide p-3 pb-32 space-y-3">
+      
+      <div className="bg-white px-4 py-3 shadow-sm z-10 flex items-center justify-between shrink-0">
+        <div>
+           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Editor de Variações</span>
+           <h2 className="text-lg font-black text-gray-900 tracking-tight leading-none">Novo Cadastro</h2>
+        </div>
+        <div className="hidden md:block">
+           <MiniPreviewCard draft={draft} />
+        </div>
+      </div>
+
+      <div className={cn("flex-1 scrollbar-hide p-3 pb-80 space-y-3", qtyModalOpen ? "overflow-hidden" : "overflow-y-auto")}>
         
-        <div className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Cadastro Rápido</span>
-            <h2 className="text-lg font-black text-gray-900 tracking-tight leading-none">Gerenciar Variações</h2>
-          </div>
+        <div className="md:hidden">
+           <MiniPreviewCard draft={draft} />
         </div>
 
-        <div className={cn("bg-white rounded-2xl p-4 shadow-sm border flex flex-col gap-3", errorShake ? "border-red-400 ring-2 ring-red-100" : "border-gray-200")}>
-          <div className="flex items-center justify-between">
-            <span className={cn("text-xs font-black uppercase tracking-wide", errorShake ? "text-red-500" : "text-gray-900")}>1. Defina o Produto</span>
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 flex flex-col gap-3">
+          <div className="flex items-center gap-2 mb-1">
+             <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-black text-gray-600">1</div>
+             <span className="text-xs font-black text-gray-900 uppercase tracking-wide">Dados do Produto</span>
           </div>
 
           <div className="flex flex-col gap-3">
             <input 
               type="text" 
-              value={currentName} 
-              onChange={(e) => setCurrentName(e.target.value)} 
-              placeholder="Nome (Ex: Jeans Skinny)" 
+              value={draft.name} 
+              onChange={(e) => updateDraft('name', e.target.value)} 
+              placeholder="Nome do Produto (Ex: Jeans Skinny)" 
               className="w-full h-11 bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm font-bold text-gray-900 placeholder:text-gray-400 outline-none focus:border-[#5874f6] focus:bg-white transition-all" 
             />
             
             <div className="flex gap-2">
                 <div className="relative flex-1">
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"><Tag size={16} /></div>
-                    <input type="text" value={currentCategory} onChange={(e) => setCurrentCategory(e.target.value)} placeholder="Categoria" className="w-full h-11 bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 text-sm font-bold text-gray-900 placeholder:text-gray-400 outline-none focus:border-[#5874f6] focus:bg-white transition-all" />
+                    <input type="text" value={draft.category} onChange={(e) => updateDraft('category', e.target.value)} placeholder="Categoria" className="w-full h-11 bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 text-sm font-bold text-gray-900 placeholder:text-gray-400 outline-none focus:border-[#5874f6] focus:bg-white transition-all" />
                 </div>
                 <div className="relative flex-1">
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"><Type size={16} /></div>
-                    <input type="text" value={currentKeyword} onChange={(e) => setCurrentKeyword(e.target.value)} placeholder="Palavra-chave" className="w-full h-11 bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 text-sm font-bold text-gray-900 placeholder:text-gray-400 outline-none focus:border-[#5874f6] focus:bg-white transition-all" />
+                    <input type="text" value={draft.keyword} onChange={(e) => updateDraft('keyword', e.target.value)} placeholder="Palavra-chave" className="w-full h-11 bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 text-sm font-bold text-gray-900 placeholder:text-gray-400 outline-none focus:border-[#5874f6] focus:bg-white transition-all" />
                 </div>
             </div>
-
-            <div className="w-full h-px bg-gray-100 my-1"></div>
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Variação Atual (Lote)</span>
-
-            <div className="relative">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"><Palette size={16} /></div>
-                <input type="text" value={currentColor} onChange={(e) => setCurrentColor(e.target.value)} placeholder="Cor (Ex: Azul Marinho, Vermelho...)" className="w-full h-11 bg-blue-50/50 border border-blue-100 rounded-xl pl-10 pr-4 text-sm font-bold text-gray-900 placeholder:text-gray-400 outline-none focus:border-[#5874f6] focus:bg-white transition-all" />
-            </div>
-
-            <div className="relative">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"><Sparkles size={16} /></div>
-                <input type="text" value={currentType} onChange={(e) => setCurrentType(e.target.value)} placeholder="Tipo/Detalhe (Ex: Com Gliter) - Opcional" className="w-full h-11 bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 text-sm font-bold text-gray-900 placeholder:text-gray-400 outline-none focus:border-[#5874f6] focus:bg-white transition-all" />
-            </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-black text-gray-900 uppercase tracking-wide">2. Fotos (Para a cor atual)</span>
-            {currentPhotos.length > 0 && (
-                <button onClick={handleClearPhotos} className="flex items-center gap-1 text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-md hover:bg-red-100 transition-colors">
-                    <Eraser size={12} /> Limpar
-                </button>
-            )}
-            <span className="text-[10px] font-bold text-gray-400 ml-auto">{currentPhotos.length}/20</span>
-          </div>
-          <div onClick={() => fileInputRef.current?.click()} className="w-full aspect-[4/3] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors group relative overflow-hidden">
-            <div className="flex flex-col items-center gap-3 text-gray-400 group-hover:text-gray-600 z-10 p-4 text-center">
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-1"><Plus size={24} strokeWidth={3} className="text-gray-400" /></div>
-              <h4 className="text-sm font-bold text-gray-800 leading-tight">Adicionar fotos para<br/><span className="text-[#5874f6]">{currentColor || 'esta variação'}</span></h4>
-            </div>
-            <input type="file" ref={fileInputRef} multiple accept="image/*" className="hidden" onChange={handleFileSelect} disabled={currentPhotos.length >= 20} />
-          </div>
-          {currentPhotos.length > 0 && (
-            <div className="mt-2 select-none">
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndPhotos}>
-                <SortableContext items={currentPhotos} strategy={rectSortingStrategy}>
-                  <div className="grid grid-cols-5 gap-2 touch-manipulation">
-                    {currentPhotos.map((url) => (
-                      <SortablePhotoItem key={url} id={url} url={url} onRemove={() => handleRemovePhoto(url)} />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            </div>
-          )}
-        </div>
-
-        <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-4">
-          <span className="text-xs font-black text-gray-900 uppercase tracking-wide">3. Local de Estoque</span>
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"><Store size={16} /></div>
-                <input type="text" value={newStockName} onChange={(e) => setNewStockName(e.target.value)} placeholder="Novo local..." className="w-full h-10 bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 text-sm font-bold text-gray-900 placeholder:text-gray-400 outline-none focus:border-[#5874f6] focus:bg-white transition-all" onKeyDown={(e) => e.key === 'Enter' && handleCreateStock()} />
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 flex flex-col gap-3">
+           <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center text-xs font-black text-blue-600">2</div>
+                <span className="text-xs font-black text-gray-900 uppercase tracking-wide">Cor & Mídia</span>
               </div>
-              <button onClick={handleCreateStock} className="h-10 px-4 bg-gray-900 text-white rounded-xl shadow-sm active:scale-95 transition-transform flex items-center justify-center"><Plus size={20} strokeWidth={3} /></button>
-            </div>
-            <div className="flex flex-wrap gap-2">
+              <span className="text-[10px] font-bold text-gray-400">{draft.images.length}/20 fotos</span>
+           </div>
+
+           <div className="flex gap-3 flex-col md:flex-row">
+              <div className="flex-1 space-y-3">
+                  <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"><Palette size={16} /></div>
+                      <input type="text" value={draft.color} onChange={(e) => updateDraft('color', e.target.value)} placeholder="Cor (Ex: Azul Marinho)" className="w-full h-11 bg-blue-50/30 border border-blue-100 rounded-xl pl-10 pr-4 text-sm font-bold text-gray-900 placeholder:text-gray-400 outline-none focus:border-[#5874f6] focus:bg-white transition-all" />
+                  </div>
+                  
+                  {/* --- NOVA LÓGICA DE TIPOS MÚLTIPLOS --- */}
+                  <div className="flex flex-col gap-2">
+                      <div className="flex gap-2">
+                          <div className="relative flex-1">
+                              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"><Sparkles size={16} /></div>
+                              <input 
+                                type="text" 
+                                value={draft.type} 
+                                onChange={(e) => updateDraft('type', e.target.value)} 
+                                onKeyDown={(e) => e.key === 'Enter' && handleAddType()}
+                                placeholder="Detalhe (Opcional)" 
+                                className="w-full h-11 bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 text-sm font-bold text-gray-900 placeholder:text-gray-400 outline-none focus:border-[#5874f6] focus:bg-white transition-all" 
+                              />
+                          </div>
+                          <button onClick={handleAddType} className="h-11 px-3 bg-gray-100 text-gray-600 rounded-xl border border-gray-200 hover:bg-gray-200 transition-colors flex items-center justify-center">
+                              <Plus size={20} />
+                          </button>
+                      </div>
+                      
+                      {/* Lista de Tipos Adicionados */}
+                      {draft.types.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                              {draft.types.map((type, idx) => (
+                                  <span key={idx} className="px-2 py-1 bg-gray-100 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 flex items-center gap-1">
+                                      {type}
+                                      <button onClick={() => handleRemoveType(type)} className="text-gray-400 hover:text-red-500"><X size={12} /></button>
+                                  </span>
+                              ))}
+                          </div>
+                      )}
+                  </div>
+              </div>
+
+              <div className="flex-1">
+                 {draft.images.length === 0 ? (
+                    <div onClick={() => fileInputRef.current?.click()} className="h-[100px] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors group">
+                        <Plus size={20} className="text-gray-400 mb-1" />
+                        <span className="text-xs font-bold text-gray-500">Adicionar Fotos</span>
+                    </div>
+                 ) : (
+                    <div className="h-[100px] overflow-y-auto pr-1">
+                       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndPhotos}>
+                        <SortableContext items={draft.images} strategy={rectSortingStrategy}>
+                          <div className="grid grid-cols-4 gap-2">
+                            {draft.images.map((url) => (
+                              <SortablePhotoItem key={url} id={url} url={url} onRemove={() => handleRemovePhoto(url)} />
+                            ))}
+                            {draft.images.length < 20 && (
+                               <button onClick={() => fileInputRef.current?.click()} className="aspect-square border border-dashed border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50 text-gray-400">
+                                  <Plus size={16} />
+                               </button>
+                            )}
+                          </div>
+                        </SortableContext>
+                      </DndContext>
+                    </div>
+                 )}
+                 <input type="file" ref={fileInputRef} multiple accept="image/*" className="hidden" onChange={handleFileSelect} disabled={draft.images.length >= 20} />
+              </div>
+           </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 flex flex-col gap-4">
+          <div className="flex items-center gap-2">
+             <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-black text-gray-600">3</div>
+             <span className="text-xs font-black text-gray-900 uppercase tracking-wide">Grade & Estoque</span>
+          </div>
+
+          <div className="flex flex-wrap gap-2 mb-2">
               {availableStocks.map((stock) => (
-                  <button key={stock} onClick={() => toggleStockSelection(stock)} className={cn("px-3 py-2 rounded-lg text-xs font-bold border transition-all active:scale-95 flex items-center gap-1.5", selectedStocks.includes(stock) ? "bg-blue-50 border-[#5874f6] text-[#5874f6]" : "bg-white border-gray-200 text-gray-500")}>
-                    {selectedStocks.includes(stock) && <Check size={12} strokeWidth={4} />}
+                  <button key={stock} onClick={() => toggleStockSelection(stock)} className={cn("px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all active:scale-95 flex items-center gap-1.5", draft.stockLocations.includes(stock) ? "bg-blue-50 border-[#5874f6] text-[#5874f6]" : "bg-white border-gray-200 text-gray-500")}>
+                    {draft.stockLocations.includes(stock) && <Check size={10} strokeWidth={4} />}
                     {stock}
                   </button>
               ))}
-            </div>
+              <div className="flex items-center gap-1 bg-gray-50 rounded-lg px-2 border border-gray-200 focus-within:border-gray-400 transition-colors">
+                  <Plus size={12} className="text-gray-400" />
+                  <input 
+                    type="text" 
+                    value={newStockName} 
+                    onChange={(e) => setNewStockName(e.target.value)} 
+                    onKeyDown={(e) => e.key === 'Enter' && handleCreateStock()}
+                    placeholder="Novo Local" 
+                    className="w-20 h-7 bg-transparent text-[10px] font-bold text-gray-900 outline-none"
+                  />
+              </div>
           </div>
-        </div>
 
-        <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-4">
-          <span className="text-xs font-black text-gray-900 uppercase tracking-wide">4. Selecione os Tamanhos</span>
           <div className="flex flex-wrap gap-3">
             {sizes.map((size) => {
-              const registeredItem = activeVariationsForCurrentContext.find(v => v.size === size);
+              const registeredItem = variations.find(v => 
+                 v.size === size && 
+                 v.color.toLowerCase() === draft.color.toLowerCase() && 
+                 v.name.toLowerCase() === draft.name.toLowerCase()
+              );
+              
               return (
                 <div key={size} className="flex flex-col items-center gap-1">
-                  <button onClick={() => handleSizeClick(size)} className={cn("w-12 h-12 rounded-xl font-black text-sm border flex items-center justify-center relative transition-all", registeredItem ? "bg-[#5874f6] text-white border-[#5874f6]" : "bg-white text-gray-900 border-gray-200")}>
+                  <button onClick={() => handleSizeClick(size)} className={cn("w-12 h-12 rounded-xl font-black text-sm border flex items-center justify-center relative transition-all active:scale-90", registeredItem ? "bg-[#5874f6] text-white border-[#5874f6] shadow-md shadow-blue-500/20" : "bg-white text-gray-900 border-gray-200 hover:border-blue-300")}>
                     {size}
-                    {registeredItem && (<div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border border-white" />)}
+                    {registeredItem && (<div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white flex items-center justify-center"><Check size={8} strokeWidth={4} className="text-white"/></div>)}
                   </button>
                   <span className={cn("text-[10px] font-bold h-4 uppercase", registeredItem ? "text-[#5874f6]" : "text-transparent")}>{registeredItem ? formatQty(registeredItem.qty) : "."}</span>
                 </div>
@@ -454,53 +607,88 @@ export const StockVariationsPopup = ({ isOpen, onClose, onSave, initialItems = [
           </div>
         </div>
 
+        {/* --- LISTA DE ITENS PRONTOS --- */}
         {variations.length > 0 && (
-          <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-3">
-            <span className="text-xs font-black text-gray-900 uppercase tracking-wide">Resumo ({variations.length})</span>
-            <div className="flex flex-col gap-2 max-h-[250px] overflow-y-auto pr-1">
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 flex flex-col gap-3">
+            <span className="text-xs font-black text-gray-900 uppercase tracking-wide">Itens Prontos ({variations.length})</span>
+            <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto pr-1">
               {variations.slice().reverse().map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-2 bg-gray-50 border border-gray-100 rounded-xl">
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="w-12 h-12 bg-white border border-gray-200 rounded-lg flex shrink-0 items-center justify-center overflow-hidden relative">
-                      {item.images && item.images.length > 0 ? <img src={item.images[0]} alt="Mini" className="w-full h-full object-cover" /> : <ImageIcon size={16} className="text-gray-300" />}
-                      <div className="absolute bottom-0 right-0 bg-gray-900/80 text-white text-[9px] font-black px-1 rounded-tl-md">{item.size}</div>
+                <div key={item.id} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all">
+                  <div className="flex items-center gap-4 overflow-hidden">
+                    <div className="w-16 h-16 bg-gray-50 border border-gray-200 rounded-xl flex shrink-0 items-center justify-center overflow-hidden relative shadow-sm">
+                      {item.images && item.images.length > 0 ? <img src={item.images[0]} alt="Mini" className="w-full h-full object-cover" /> : <ImageIcon size={24} className="text-gray-300" />}
+                      <div className="absolute bottom-0 right-0 bg-gray-900 text-white text-[10px] font-black px-1.5 py-0.5 rounded-tl-lg">{item.size}</div>
                     </div>
-                    <div className="flex flex-col truncate">
-                      <span className="text-xs font-bold text-gray-900 truncate leading-tight">{item.name}</span>
-                      <span className="text-[10px] font-bold text-gray-600 uppercase">{item.color} - {item.qty} un</span>
+                    <div className="flex flex-col justify-center gap-1 truncate">
+                      <span className="text-sm font-black text-gray-900 truncate leading-tight">{item.name}</span>
+                      <div className="flex flex-col gap-0.5">
+                         <span className="text-xs font-bold text-gray-600 uppercase flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 border border-blue-200"></span>
+                            {item.color}
+                         </span>
+                         {item.type && <span className="text-xs text-gray-500">{item.type}</span>}
+                         <span className="text-xs font-medium text-gray-400">Quantidade: <strong className="text-gray-900">{item.qty}</strong></span>
+                      </div>
                     </div>
                   </div>
-                  <button onClick={() => handleRemoveItem(item.id)} className="w-8 h-8 text-gray-400 hover:text-red-500"><Trash2 size={16} /></button>
+                  <button onClick={() => handleRemoveItem(item.id)} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
+                    <Trash2 size={20} />
+                  </button>
                 </div>
               ))}
             </div>
           </div>
         )}
+
       </div>
 
-      <div className="absolute bottom-0 left-0 w-full p-3 pt-4 bg-[#eeeeee] z-20 flex flex-col gap-2">
-        <button onClick={handleSendToProduction} disabled={isSendingToProduction} className="w-full h-11 bg-gray-900 text-white rounded-xl shadow-md flex items-center justify-center gap-2">
-            {isSendingToProduction ? <span className="animate-pulse">Enviando...</span> : <><Factory size={18} /><span>Enviar para Produção</span></>}
+      <div className="absolute bottom-0 left-0 w-full p-3 pt-4 bg-[#eeeeee] z-20 flex flex-col gap-2 border-t border-gray-200/50 backdrop-blur-sm">
+        <button onClick={handleAddNew} className="w-full h-11 bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm flex items-center justify-center gap-2 hover:bg-gray-50 active:scale-[0.98] transition-all">
+            <Layers size={16} /> <span className="text-xs font-bold uppercase">Adicionar Novo (Manter Dados)</span>
+        </button>
+
+        <button onClick={handleSendToProduction} disabled={isSendingToProduction} className="w-full h-11 bg-gray-900 text-white rounded-xl shadow-md flex items-center justify-center gap-2 hover:bg-black transition-colors active:scale-[0.98]">
+            {isSendingToProduction ? <span className="animate-pulse text-xs font-bold">Enviando...</span> : <><Factory size={16} /> <span className="text-xs font-bold uppercase">Enviar para Produção</span></>}
         </button>
 
         <div className="flex gap-2">
-          <button onClick={onClose} className="flex-1 h-12 bg-[#ff4d6d] text-white rounded-xl shadow-lg flex items-center justify-center gap-2">
-            <ChevronLeft size={20} strokeWidth={3} />
+          <button onClick={onClose} className="flex-1 h-12 bg-white text-gray-900 border border-gray-200 rounded-xl shadow-sm flex items-center justify-center gap-2 hover:bg-gray-50 active:scale-[0.98] transition-all">
+            <ChevronLeft size={18} strokeWidth={2.5} />
             <span className="font-black text-xs uppercase">Voltar</span>
           </button>
-          <button onClick={handleSaveAll} disabled={isSaving} className="flex-[2] h-12 bg-[#5874f6] text-white rounded-xl shadow-lg flex items-center justify-center gap-2">
-            {isSaving ? <span className="animate-pulse">Salvando...</span> : <><Check size={20} strokeWidth={3} /><span className="font-black text-sm uppercase">Salvar Tudo</span></>}
+          <button onClick={handleSaveAll} disabled={isSaving} className="flex-[2] h-12 bg-[#5874f6] text-white rounded-xl shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all">
+            {isSaving ? <span className="animate-pulse">Salvando...</span> : <><Check size={18} strokeWidth={3} /><span className="font-black text-sm uppercase">Salvar Tudo</span></>}
           </button>
         </div>
       </div>
 
       <AnimatePresence>
         {qtyModalOpen && (
-          <div className="absolute inset-0 z-[60] flex items-center justify-center bg-gray-900/20 backdrop-blur-[2px] p-6">
-            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className="bg-white w-full max-w-[280px] rounded-xl border border-black shadow-2xl p-5 flex flex-col items-center gap-4">
-              <h3 className="text-base font-bold text-black">Qtd. para {currentColor} ({editingSize})</h3>
-              <input type="number" value={tempQty} onChange={(e) => setTempQty(e.target.value)} placeholder="0" autoFocus className="w-full h-12 border border-gray-400 rounded-lg text-center text-xl font-bold text-gray-900 outline-none" />
-              <button onClick={handleConfirmQty} className="w-full h-11 bg-[#00c853] text-white rounded-lg font-bold text-sm uppercase">Confirmar</button>
+          <div className="absolute inset-0 z-[60] flex items-center justify-center bg-gray-900/40 p-6 pb-60 touch-none cursor-default">
+            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="bg-white w-full max-w-[280px] rounded-2xl shadow-2xl p-5 flex flex-col items-center gap-4 relative overflow-hidden">
+               <div className="w-full flex items-center gap-3 p-2 bg-gray-50 rounded-xl mb-1">
+                   {draft.images.length > 0 ? (
+                       <img src={draft.images[0]} className="w-8 h-8 rounded-lg object-cover bg-white border border-gray-200" />
+                   ) : (
+                       <div className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center"><Box size={14} className="text-gray-300"/></div>
+                   )}
+                   <div className="flex flex-col leading-none">
+                       <span className="text-[10px] font-bold text-gray-500 uppercase">Adicionando</span>
+                       <span className="text-xs font-black text-gray-900">{editingSize}</span>
+                   </div>
+                   <div className="ml-auto">
+                       <button onClick={() => setQtyModalOpen(false)} className="w-6 h-6 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center hover:bg-gray-300"><X size={12} strokeWidth={3}/></button>
+                   </div>
+               </div>
+
+              <div className="flex flex-col items-center w-full gap-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Quantidade</label>
+                  <input type="number" value={tempQty} onChange={(e) => setTempQty(e.target.value)} placeholder="0" autoFocus className="w-full h-14 border-2 border-gray-100 focus:border-[#5874f6] rounded-xl text-center text-3xl font-black text-gray-900 outline-none transition-all bg-gray-50 focus:bg-white" />
+              </div>
+              
+              <button onClick={handleConfirmQty} className="w-full h-12 bg-[#00c853] text-white rounded-xl font-black text-sm uppercase shadow-lg shadow-green-500/20 active:scale-95 transition-all flex items-center justify-center gap-2">
+                 <Check size={20} strokeWidth={3} /> Confirmar
+              </button>
             </motion.div>
           </div>
         )}

@@ -38,7 +38,8 @@ export default async function ProductPage({ params }: PageProps) {
         {product ? (
           // CENÁRIO 1: PRODUTO ENCONTRADO
           // Adicionado padding na parte inferior (pb-24) para dar espaço para o rodapé
-          <div className="flex-1 overflow-y-auto scrollbar-hide relative bg-white h-full pb-24">
+          // CORREÇÃO: Adicionado overflow-x-hidden e break-words para garantir que textos longos quebrem linha
+          <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide relative bg-white h-full pb-24 break-words">
              <ProductDetailContent product={product} />
           </div>
         ) : (
