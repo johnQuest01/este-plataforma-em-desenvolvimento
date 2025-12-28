@@ -6,11 +6,14 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL") // Adicione esta linha
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // Usa a conexão rápida para o site
+  directUrl = env("DIRECT_URL")   // Usa a conexão direta para criar tabelas
 }
 
-// --- USUÁRIO (Dono da Loja2) ---
+// ... o resto do arquivo continua igual ...
+
+// --- USUÁRIO (Dono da Loja) ---
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -24,102 +27,138 @@ model User {
 model Store {
   id           String   @id @default(cuid())
   name         String
-  slug         String   @unique 
-  nicheType    String   @default("clothing") 
+  slug         String   @unique
+  nicheType    String   @default("clothing")
   features     Json     @default("{}")
   layoutConfig Json?    @default("[]")
   themeConfig  Json?    @default("{}")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  ownerId      String
-  owner        User     @relation(fields: [ownerId], references: [id])
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
 
-  products     Product[]
-  orders       Order[]
-  productions  ProductionItem[]
+  products         Product[]
+  orders           Order[]
+  productionItems  ProductionItem[] // Itens individuais de pedidos
+  productionOrders ProductionOrder[] // Lotes de produção (NOVO)
 }
 
-// --- PRODUTOS ---
+// --- PRODUTOS (Catálogo de Venda) ---
 model Product {
   id          String   @id @default(cuid())
   name        String
   description String?
-  price       Decimal  @db.Decimal(10, 2) // Corrigido: Adicionado precisão
-  imageColor  String?  
+  price       Decimal  @db.Decimal(10, 2)
+  imageColor  String?
   imageUrl    String?
-  tags        String[] 
+  tags        String[]
 
-  isVisible   Boolean  @default(true)
-  stock       Int      @default(0)
+  isVisible Boolean @default(true)
+  stock     Int     @default(0)
 
-  variants    ProductVariant[]
-  storeId     String
-  store       Store    @relation(fields: [storeId], references: [id])
+  variants ProductVariant[]
+  storeId  String
+  store    Store            @relation(fields: [storeId], references: [id])
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   orderItems      OrderItem[]
   productionItems ProductionItem[]
 }
 
 model ProductVariant {
-  id        String   @id @default(cuid())
-  name      String   
-  sku       String?  @unique
-  price     Decimal? @db.Decimal(10, 2) // Corrigido: Adicionado precisão
-  stock     Int      @default(0)
+  id    String   @id @default(cuid())
+  name  String
+  sku   String?  @unique
+  price Decimal? @db.Decimal(10, 2)
+  stock Int      @default(0)
 
   productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
-// --- FILA DE PRODUÇÃO ---
+// --- PRODUÇÃO (Lote / Entrada de Estoque / App Mobile) ---
+// Este é o modelo novo para suportar o "StockVariationsPopup"
+model ProductionOrder {
+  id          String   @id @default(cuid())
+  productName String
+  image       String   @db.Text // Suporta Base64 grande
+  status      String   @default("PENDING") // PENDING, IN_PRODUCTION, COMPLETED
+  
+  // Vínculo com a loja (Importante para o SaaS)
+  storeId     String?  
+  store       Store?   @relation(fields: [storeId], references: [id])
+
+  variations  Variation[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Detalhes das Variações do Lote de Produção
+model Variation {
+  id             String   @id @default(cuid())
+  name           String
+  category       String?
+  color          String
+  size           String
+  qty            Int
+  stockLocations String[] // Array de strings (Postgres suporta)
+  images         String[] // Array de Base64/URLs das fotos
+
+  productionOrderId String
+  productionOrder   ProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+// --- FILA DE PRODUÇÃO (Legado/Vinculado a Pedido de Venda) ---
 model ProductionItem {
-  id            String   @id @default(cuid())
-  status        String   @default("PENDING") 
-  priority      Int      @default(0)
-  notes         String?
-  
-  storeId       String
-  store         Store    @relation(fields: [storeId], references: [id])
-  
-  productId     String
-  product       Product  @relation(fields: [productId], references: [id])
+  id       String  @id @default(cuid())
+  status   String  @default("PENDING")
+  priority Int     @default(0)
+  notes    String?
 
-  orderItemId   String?  @unique
-  orderItem     OrderItem? @relation(fields: [orderItemId], references: [id])
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  orderItemId String?    @unique
+  orderItem   OrderItem? @relation(fields: [orderItemId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-// --- PEDIDOS ---
+// --- PEDIDOS (Vendas) ---
 model Order {
-  id            String      @id @default(cuid())
-  status        String      @default("PENDING") 
-  total         Decimal     @db.Decimal(10, 2) // Corrigido: Adicionado precisão
+  id            String  @id @default(cuid())
+  status        String  @default("PENDING")
+  total         Decimal @db.Decimal(10, 2)
   customerName  String?
   customerPhone String?
 
-  storeId       String
-  store         Store       @relation(fields: [storeId], references: [id])
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
 
-  items         OrderItem[]
-  createdAt     DateTime    @default(now())
+  items     OrderItem[]
+  createdAt DateTime    @default(now())
 }
 
 model OrderItem {
-  id         String   @id @default(cuid())
-  quantity   Int
-  price      Decimal  @db.Decimal(10, 2) // Corrigido: Adicionado precisão
+  id       String  @id @default(cuid())
+  quantity Int
+  price    Decimal @db.Decimal(10, 2)
 
-  orderId    String
-  order      Order    @relation(fields: [orderId], references: [id])
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
 
-  productId  String
-  product    Product  @relation(fields: [productId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
 
   production ProductionItem?
 }
