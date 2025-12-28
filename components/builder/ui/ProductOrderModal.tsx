@@ -154,11 +154,31 @@ const OrderModalContent = ({
     };
   }, [product]);
 
+  // --- LÓGICA DE CORREÇÃO: Calcular Tipos Relevantes ---
+  const relevantTypes = useMemo(() => {
+    // Se não há produto ou não há tipos globais, retorna vazio
+    if (!product || options.types.length === 0) return [];
+
+    // Se nenhuma cor foi selecionada ainda, assumimos que todos os tipos são relevantes (mostra as opções)
+    if (!selections['color']) return options.types;
+
+    // Se tem cor selecionada, verificamos se EXISTE algum tipo associado a essa cor
+    const variationsForColor = product.variations.filter(v => v.color === selections['color']);
+    
+    // Verifica se alguma variação dessa cor possui "type" ou "variation" preenchido
+    const hasTypeForColor = variationsForColor.some(v => v.variation || v.type);
+
+    // Se tiver tipos para essa cor, retorna a lista global (ou filtrada, se preferir), 
+    // caso contrário retorna array vazio (não obrigatório)
+    return hasTypeForColor ? options.types : [];
+  }, [product, selections, options.types]);
+
   if (!product) return null;
 
+  // Atualização na validação do formulário
   const isFormComplete = Boolean(
     (options.colors.length === 0 || selections['color']) &&
-    (options.types.length === 0 || selections['model']) &&
+    (relevantTypes.length === 0 || selections['model']) && // Agora usa relevantTypes
     (options.sizes.length === 0 || selections['size'])
   );
 
@@ -245,7 +265,7 @@ const OrderModalContent = ({
                           "w-9 h-9 rounded-full flex items-center justify-center transition-colors shadow-sm",
                           isSelected ? "bg-gray-900 text-white" : "bg-gray-100 text-transparent"
                         )}>
-                           <Check size={16} strokeWidth={4} />
+                            <Check size={16} strokeWidth={4} />
                         </div>
                         <span className={cn(
                             "text-sm font-bold uppercase tracking-wide",
@@ -259,10 +279,16 @@ const OrderModalContent = ({
             )}
 
             {/* 2. SELEÇÃO DE TIPO / MODELO */}
+            {/* Renderiza se houver tipos globais, mas aplica estilo visual se não for relevante para a cor atual */}
             {options.types.length > 0 && (
-              <div className="animate-in slide-in-from-bottom-2 duration-300 delay-100">
+              <div className={cn(
+                "animate-in slide-in-from-bottom-2 duration-300 delay-100",
+                // Se a cor foi selecionada E não há tipos relevantes para ela, esconde/desabilita visualmente
+                (selections['color'] && relevantTypes.length === 0) ? "opacity-30 pointer-events-none grayscale" : ""
+              )}>
                 <h3 className="font-bold text-sm uppercase tracking-wide mb-4 flex items-center gap-2 text-gray-500">
                   <Component size={16} /> Modelo
+                  {(selections['color'] && relevantTypes.length === 0) && <span className="text-xs ml-2 text-gray-400">(Não necessário)</span>}
                 </h3>
                 <div className="flex flex-wrap gap-3">
                   {options.types.map((type) => {
@@ -331,7 +357,10 @@ const OrderModalContent = ({
                 <AlertCircle size={20} className="text-blue-500 shrink-0 mt-0.5" />
                 <p className="text-sm text-blue-800 font-medium leading-relaxed">
                     Para finalizar o pedido, certifique-se de selecionar: <br/>
-                    <span className="font-bold"> Cor</span>, <span className="font-bold"> Modelo</span> e <span className="font-bold"> Tamanho</span>.
+                    {/* Exibe dinamicamente o que falta */}
+                    {(options.colors.length > 0 && !selections['color']) && <span className="font-bold mr-1">Cor,</span>}
+                    {(relevantTypes.length > 0 && !selections['model']) && <span className="font-bold mr-1">Modelo,</span>}
+                    {(options.sizes.length > 0 && !selections['size']) && <span className="font-bold mr-1">Tamanho.</span>}
                 </p>
              </div>
         )}
