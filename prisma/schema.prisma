@@ -7,19 +7,21 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL") // Usa a conexão rápida para o site
-  directUrl = env("DIRECT_URL")   // Usa a conexão direta para criar tabelas
+  url       = env("DATABASE_URL") // Conexão via Pooler (rápida para o App)
+  directUrl = env("DIRECT_URL")   // Conexão Direta (necessária para migrações no Neon)
 }
 
-// ... o resto do arquivo continua igual ...
-
-// --- USUÁRIO (Dono da Loja) ---
+// --- USUÁRIO (Identidade e Acesso) ---
 model User {
   id        String   @id @default(cuid())
-  email     String   @unique
+  email     String?  @unique // Tornado opcional para login via documento
+  document  String   @unique // CPF ou CNPJ (Chave de Identificação)
   name      String?
+  whatsapp  String? // Adicionado para suporte e notificações
+  role      String   @default("customer") // "customer" (Pessoa Física/Jurídica) ou "seller" (Vendedor)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
   stores    Store[]
 }
 
@@ -30,7 +32,7 @@ model Store {
   slug         String   @unique
   nicheType    String   @default("clothing")
   features     Json     @default("{}")
-  layoutConfig Json?    @default("[]")
+  layoutConfig Json?    @default("[]") // Onde salvamos os "Blocos Lego"
   themeConfig  Json?    @default("{}")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -40,8 +42,8 @@ model Store {
 
   products         Product[]
   orders           Order[]
-  productionItems  ProductionItem[] // Itens individuais de pedidos
-  productionOrders ProductionOrder[] // Lotes de produção (NOVO)
+  productionItems  ProductionItem[]
+  productionOrders ProductionOrder[]
 }
 
 // --- PRODUTOS (Catálogo de Venda) ---
@@ -80,15 +82,13 @@ model ProductVariant {
 }
 
 // --- PRODUÇÃO (Lote / Entrada de Estoque / App Mobile) ---
-// Este é o modelo novo para suportar o "StockVariationsPopup"
 model ProductionOrder {
   id          String   @id @default(cuid())
   productName String
-  image       String   @db.Text // Suporta Base64 grande
-  status      String   @default("PENDING") // PENDING, IN_PRODUCTION, COMPLETED
+  image       String   @db.Text
+  status      String   @default("PENDING")
   
-  // Vínculo com a loja (Importante para o SaaS)
-  storeId     String?  
+  storeId     String?
   store       Store?   @relation(fields: [storeId], references: [id])
 
   variations  Variation[]
@@ -97,7 +97,6 @@ model ProductionOrder {
   updatedAt   DateTime @updatedAt
 }
 
-// Detalhes das Variações do Lote de Produção
 model Variation {
   id             String   @id @default(cuid())
   name           String
@@ -105,8 +104,8 @@ model Variation {
   color          String
   size           String
   qty            Int
-  stockLocations String[] // Array de strings (Postgres suporta)
-  images         String[] // Array de Base64/URLs das fotos
+  stockLocations String[]
+  images         String[]
 
   productionOrderId String
   productionOrder   ProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
@@ -114,7 +113,7 @@ model Variation {
   createdAt DateTime @default(now())
 }
 
-// --- FILA DE PRODUÇÃO (Legado/Vinculado a Pedido de Venda) ---
+// --- FILA DE PRODUÇÃO ---
 model ProductionItem {
   id       String  @id @default(cuid())
   status   String  @default("PENDING")
