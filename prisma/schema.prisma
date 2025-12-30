@@ -1,29 +1,29 @@
 // prisma/schema.prisma
 
-// prisma/schema.prisma
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"] // Necessário para o driver Neon Serverless [1]
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
-  // REMOVA A LINHA: url = env("DATABASE_URL")
-  // O Prisma 7 agora busca isso no prisma.config.ts ou no Client
+  // url = env("DATABASE_URL") // Removido conforme sua instrução
 }
 
 // --- USUÁRIO (Identidade e Acesso) ---
+// CORREÇÃO: O model User foi restaurado aqui
 model User {
   id        String   @id @default(cuid())
-  email     String?  @unique // Tornado opcional para login via documento
-  document  String   @unique // CPF ou CNPJ (Chave de Identificação)
+  email     String?  @unique
+  document  String   @unique // CPF ou CNPJ
   name      String?
-  whatsapp  String? // Adicionado para suporte e notificações
-  role      String   @default("customer") // "customer" (Pessoa Física/Jurídica) ou "seller" (Vendedor)
+  whatsapp  String?
+  role      String   @default("customer") // "customer" ou "seller"
+  
+  stores    Store[] // Relação inversa com Store
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  stores    Store[]
 }
 
 // --- A LOJA (O Tenant do SaaS) ---
@@ -33,7 +33,7 @@ model Store {
   slug         String   @unique
   nicheType    String   @default("clothing")
   features     Json     @default("{}")
-  layoutConfig Json?    @default("[]") // Onde salvamos os "Blocos Lego"
+  layoutConfig Json?    @default("[]")
   themeConfig  Json?    @default("{}")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -71,12 +71,15 @@ model Product {
   productionItems ProductionItem[]
 }
 
+// CORREÇÃO: Mantido apenas uma definição de ProductVariant com o campo images
 model ProductVariant {
   id    String   @id @default(cuid())
   name  String
   sku   String?  @unique
   price Decimal? @db.Decimal(10, 2)
   stock Int      @default(0)
+  
+  images String[] // <--- CAMPO ADICIONADO CORRETAMENTE
 
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
