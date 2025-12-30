@@ -1,14 +1,15 @@
 // prisma/schema.prisma
 
+// prisma/schema.prisma
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native"]
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"] // Necessário para o driver Neon Serverless [1]
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL") // Conexão via Pooler (rápida para o App)
-  directUrl = env("DIRECT_URL")   // Conexão Direta (necessária para migrações no Neon)
+  provider = "postgresql"
+  // REMOVA A LINHA: url = env("DATABASE_URL")
+  // O Prisma 7 agora busca isso no prisma.config.ts ou no Client
 }
 
 // --- USUÁRIO (Identidade e Acesso) ---
