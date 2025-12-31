@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // url = env("DATABASE_URL") // Removido conforme sua instrução
+  // A URL NUNCA deve estar aqui no Prisma 7 com driverAdapters
 }
 
 // --- USUÁRIO (Identidade e Acesso) ---
