@@ -5,6 +5,8 @@ import { ArrowRight, PackageX } from 'lucide-react';
 import { BlockConfig, ProductItem } from '@/types/builder';
 import { ProductData, getProductsAction } from '@/app/actions/product';
 import { useRouter } from 'next/navigation';
+import { formatCurrencyBRL } from '@/lib/utils/currency';
+import Image from 'next/image';
 
 export const PRODUCT_UPDATE_EVENT = 'product_db_updated';
 
@@ -12,10 +14,6 @@ interface ProductGridBlockProps {
   config: BlockConfig;
 }
 
-/**
- * ProductGridBlock - Exibe produtos em grid horizontal com scroll suave.
- * Corrigido: Removida a classe 'touch-pan-x' que impedia a rolagem vertical da página.
- */
 export const ProductGridBlock = ({ config }: ProductGridBlockProps) => {
   const router = useRouter();
   const [products, setProducts] = useState<ProductData[]>([]);
@@ -41,7 +39,7 @@ export const ProductGridBlock = ({ config }: ProductGridBlockProps) => {
       window.addEventListener(PRODUCT_UPDATE_EVENT, handleUpdate);
     }
 
-    const interval = setInterval(fetchProducts, 3000);
+    const interval = setInterval(fetchProducts, 10000); // Polling de 10s
 
     return () => {
       if (typeof window !== 'undefined') {
@@ -52,7 +50,8 @@ export const ProductGridBlock = ({ config }: ProductGridBlockProps) => {
   }, [fetchProducts]);
 
   const hasDbProducts = products.length > 0;
-  const displayProducts = hasDbProducts ? products : (config.data.products as ProductItem[] || []);
+  // Cast seguro pois ProductData é compatível com a estrutura esperada, mas priorizamos DB
+  const displayProducts = hasDbProducts ? products : (config.data.products as unknown as ProductData[] || []);
   const title = config.data.title as string;
 
   const handleProductClick = (product: ProductData) => {
@@ -81,43 +80,37 @@ export const ProductGridBlock = ({ config }: ProductGridBlockProps) => {
           <span className="text-xs font-bold uppercase tracking-wide">Sem produtos</span>
         </div>
       ) : (
-        /* Container de scroll horizontal corrigido: touch-pan-x removido */
         <div className="flex gap-3 overflow-x-auto px-4 pb-4 scrollbar-hide snap-x snap-mandatory">
-          {displayProducts.map((item, idx) => {
-            const prod = item as ProductData & ProductItem;
-            const isDbProduct = !!prod.id;
-            const name = prod.name;
-            const price = prod.price;
+          {displayProducts.map((item) => {
+            const name = item.name;
+            const price = item.price; // String ISO ou formatada
 
-            let imageUrl = '';
-            if (isDbProduct) {
-               if (prod.mainImage) {
-                 imageUrl = prod.mainImage;
-               } else if (prod.variations && prod.variations.length > 0 && prod.variations[0].images?.[0]) {
-                 imageUrl = prod.variations[0].images[0];
-               } else {
-                 imageUrl = `https://placehold.co/800x800/e2e8f0/white?text=${name.substring(0,3)}`;
-               }
-            } else {
-               imageUrl = prod.imageUrl || `https://placehold.co/800x800/${prod.imageColor || 'e2e8f0'}/white?text=Oferta`;
+            // Lógica de imagem prioritária
+            let imageUrl = item.imageUrl;
+            if (!imageUrl && item.variants && item.variants.length > 0) {
+               imageUrl = item.variants[0].images?.[0];
+            }
+            if (!imageUrl) {
+               imageUrl = `https://placehold.co/800x800/e2e8f0/white?text=${name.substring(0,3)}`;
             }
 
             return (
               <div
-                key={prod.id || idx}
+                key={item.id}
                 className="min-w-[170px] max-w-[170px] border border-gray-200 rounded-xl overflow-hidden bg-white relative flex flex-col shadow-sm snap-start shrink-0 cursor-pointer active:scale-[0.98] transition-transform duration-200"
-                onClick={() => isDbProduct && handleProductClick(prod)}
+                onClick={() => handleProductClick(item)}
               >
                 <div className="text-center py-1 text-[10px] uppercase tracking-wider font-bold text-gray-500 border-b border-gray-100 bg-gray-50/50">
-                  {isDbProduct ? 'Novo' : (prod.tag || 'Oferta')}
+                  {item.id ? 'Novo' : (item.tag || 'Oferta')}
                 </div>
 
                 <div className="relative aspect-[3/4] bg-gray-100 group overflow-hidden">
-                  <img
+                  <Image
                     src={imageUrl}
                     alt={name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    loading="lazy"
+                    fill
+                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                    sizes="(max-width: 768px) 170px, 200px"
                   />
                 </div>
 
@@ -127,7 +120,10 @@ export const ProductGridBlock = ({ config }: ProductGridBlockProps) => {
                       {name}
                     </p>
                     {price && (
-                      <p className="font-black text-gray-900 text-base mt-1">{price}</p>
+                      <p className="font-black text-gray-900 text-base mt-1">
+                        {/* CORREÇÃO: Formatação aplicada na renderização */}
+                        {formatCurrencyBRL(price)}
+                      </p>
                     )}
                   </div>
                 </div>

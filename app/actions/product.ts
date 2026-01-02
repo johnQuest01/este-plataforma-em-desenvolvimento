@@ -3,177 +3,150 @@
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { uploadImageToCloud } from '@/lib/upload-service';
-import { VariationItem } from '@/components/builder/ui/StockVariationsPopup';
 import { Prisma } from '@prisma/client';
+import { parseBrazilianCurrency } from '@/lib/utils/currency';
+import { 
+  CreateProductInput, 
+  ProductData, 
+  CreateProductInputSchema 
+} from './product.schema';
 
-// --- TIPOS ---
+export type { ProductData, ProductVariantData, CreateProductInput } from './product.schema';
 
-// Tipo base do Prisma para variante (sem campos virtuais)
-type PrismaVariant = Prisma.ProductVariantGetPayload<true>;
+// --- HELPERS INTERNOS ---
 
-// Tipo estendido para a UI (com campos virtuais)
-export type ProductVariantData = Omit<PrismaVariant, 'price'> & {
-  price: string | null;
-  color?: string;
-  size?: string;
-  type?: string;
+const serializeVariantName = (baseName: string, variation: { color?: string; size?: string; type?: string }): string => {
+  return `${baseName}|${variation.color || 'Padrão'}|${variation.size || 'Único'}|${variation.type || ''}`;
 };
 
-// Tipo final do Produto para a UI
-export type ProductData = Omit<
-  Prisma.ProductGetPayload<{ include: { variants: true } }>,
-  'createdAt' | 'updatedAt' | 'price' | 'variants'
-> & {
-  createdAt: string;
-  updatedAt: string;
-  price: string;
-  variants: ProductVariantData[];
-};
-
-export interface CreateProductInput {
-  name: string;
-  price: string;
-  variations: VariationItem[];
-  visibility: string;
-  image?: string;
-  storeId?: string;
-}
-
-// --- HELPERS ---
-const parseDecimal = (value: string | number): Prisma.Decimal => {
-  if (!value) return new Prisma.Decimal(0);
-  if (typeof value === 'number') return new Prisma.Decimal(value);
-  let cleanValue = value.replace(/[^\d.,-]/g, '');
-  cleanValue = cleanValue.replace(',', '.');
-  const numberValue = parseFloat(cleanValue);
-  if (isNaN(numberValue)) return new Prisma.Decimal(0);
-  return new Prisma.Decimal(numberValue);
-};
-
-const generateSKU = (productName: string, variationName: string): string => {
-  const prefix = (productName || 'PROD').substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, 'X');
-  const varSuffix = (variationName || 'VAR').substring(0, 2).toUpperCase().replace(/[^A-Z0-9]/g, 'X');
-  const timestamp = Date.now().toString().slice(-4);
-  const random = Math.random().toString(36).substring(2, 4).toUpperCase();
-  return `${prefix}-${varSuffix}-${timestamp}${random}`;
-};
-
-// Codifica atributos no nome: "Nome|Cor|Tamanho|Tipo"
-const serializeVariantName = (baseName: string, v: VariationItem) => {
-  return `${baseName}|${v.color}|${v.size}|${v.type || ''}`;
-};
-
-// Decodifica atributos do nome
-const parseVariantName = (fullName: string) => {
+const parseVariantMetadata = (fullName: string) => {
   const parts = fullName.split('|');
   if (parts.length >= 3) {
     return {
-      name: parts[0],
+      baseName: parts[0],
       color: parts[1],
       size: parts[2],
       type: parts[3] || undefined
     };
   }
-  return { name: fullName, color: 'Padrão', size: 'Único' };
+  return { baseName: fullName, color: 'Padrão', size: 'Único', type: undefined };
 };
 
-// --- AÇÕES ---
+const mapToUserInterface = (product: Prisma.ProductGetPayload<{ include: { variants: true } }>): ProductData => {
+  return {
+    id: product.id,
+    name: product.name,
+    description: product.description,
+    price: product.price.toString(), 
+    imageUrl: product.imageUrl,
+    isVisible: product.isVisible,
+    stock: product.stock,
+    storeId: product.storeId,
+    createdAt: product.createdAt.toISOString(),
+    updatedAt: product.updatedAt.toISOString(),
+    variants: product.variants.map((variant) => {
+      const metadata = parseVariantMetadata(variant.name);
+      return {
+        id: variant.id,
+        name: metadata.baseName,
+        price: variant.price ? variant.price.toString() : null,
+        stock: variant.stock,
+        sku: variant.sku,
+        images: variant.images,
+        color: metadata.color,
+        size: metadata.size,
+        type: metadata.type,
+        qty: variant.stock // Mapeia stock do banco para qty da UI
+      };
+    })
+  };
+};
+
+const generateStockKeepingUnit = (productName: string, variationName: string): string => {
+  const prefix = productName.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, 'X');
+  const timestamp = Date.now().toString().slice(-4);
+  return `${prefix}-${variationName.substring(0, 2).toUpperCase()}-${timestamp}`;
+};
+
+// --- SERVER ACTIONS ---
 
 export async function saveProductAction(inputData: CreateProductInput) {
   try {
-    console.log("🚀 [Server Action] Iniciando cadastro:", inputData.name);
-    
-    if (!process.env.DATABASE_URL) {
-      throw new Error("DATABASE_URL não configurada no servidor.");
+    // 1. Validação Zod (Agora aceita qty e stock com defaults)
+    const validatedInput = CreateProductInputSchema.parse(inputData);
+
+    // 2. Conversão de Preço
+    const numericPrice = parseBrazilianCurrency(validatedInput.price);
+    const decimalPrice = new Prisma.Decimal(numericPrice);
+
+    // 3. Resolução de Loja
+    let targetStoreId = validatedInput.storeId;
+    if (!targetStoreId) {
+      const store = await prisma.store.findFirst();
+      if (!store) throw new Error("Nenhuma loja encontrada.");
+      targetStoreId = store.id;
     }
 
-    let storeId = inputData.storeId;
-    if (!storeId) {
-      const defaultStore = await prisma.store.findFirst({ select: { id: true } });
-      if (defaultStore) {
-        storeId = defaultStore.id;
-      } else {
-        const newStore = await prisma.store.create({
-          data: {
-            name: "Loja Principal",
-            slug: "loja-" + Date.now(),
-            owner: {
-                connectOrCreate: {
-                    where: { document: "00000000000" },
-                    create: { name: "Admin", document: "00000000000", role: "seller" }
-                }
-             }
-          }
-        });
-        storeId = newStore.id;
-      }
-    }
-
+    // 4. Upload de Imagem
     let finalImageUrl: string | null = null;
-    if (inputData.image && inputData.image.startsWith('data:image')) {
-      finalImageUrl = await uploadImageToCloud(inputData.image, inputData.name);
-    } else if (inputData.variations.length > 0) {
-      const vImg = inputData.variations.find(v => v.images && v.images.length > 0);
-      if (vImg && vImg.images[0].startsWith('data:image')) {
-        finalImageUrl = await uploadImageToCloud(vImg.images[0], inputData.name);
-      }
+    if (validatedInput.image?.startsWith('data:image')) {
+      finalImageUrl = await uploadImageToCloud(validatedInput.image, validatedInput.name);
+    } else {
+      finalImageUrl = validatedInput.image || `https://placehold.co/600x800/png?text=${encodeURIComponent(validatedInput.name)}`;
     }
-    if (!finalImageUrl) finalImageUrl = `https://placehold.co/600x800/png?text=${inputData.name.substring(0,3)}`;
 
-    const totalStock = inputData.variations.reduce((acc, curr) => acc + curr.qty, 0);
+    // 5. Cálculo de Estoque Total (Prioriza qty, fallback para stock)
+    const totalStock = validatedInput.variations.reduce((acc, curr) => {
+      const quantity = curr.qty ?? curr.stock ?? 0;
+      return acc + quantity;
+    }, 0);
 
-    const createdProduct = await prisma.product.create({
-      data: {
-        name: inputData.name,
-        price: parseDecimal(inputData.price),
-        isVisible: inputData.visibility === 'visible',
-        stock: totalStock,
-        imageUrl: finalImageUrl,
-        tags: [],
-        storeId: storeId,
-        variants: {
-          create: inputData.variations.map((variation) => ({
-            name: serializeVariantName(inputData.name, variation),
-            stock: variation.qty,
-            price: parseDecimal(inputData.price),
-            sku: generateSKU(inputData.name, variation.name || 'VAR'),
-            images: variation.images
-          }))
-        }
-      },
-      include: { variants: true }
+    // 6. Transação de Persistência
+    const createdProduct = await prisma.$transaction(async (transaction) => {
+      return await transaction.product.create({
+        data: {
+          name: validatedInput.name,
+          price: decimalPrice,
+          isVisible: validatedInput.visibility === 'visible',
+          stock: totalStock,
+          imageUrl: finalImageUrl,
+          storeId: targetStoreId as string,
+          variants: {
+            create: validatedInput.variations.map((variation) => {
+              // Lógica de unificação de quantidade
+              const variantStock = variation.qty ?? variation.stock ?? 0;
+              
+              return {
+                name: serializeVariantName(validatedInput.name, variation),
+                stock: variantStock, // Grava no banco como 'stock'
+                price: decimalPrice,
+                sku: generateStockKeepingUnit(validatedInput.name, variation.color || 'VAR'),
+                images: variation.images
+              };
+            })
+          }
+        },
+        include: { variants: true }
+      });
     });
 
     revalidatePath('/dashboard');
     revalidatePath('/inventory');
 
-    // CORREÇÃO 1: Cast explícito para ProductData no retorno do save
-    // Precisamos mapear de volta para o formato UI para evitar erro de tipo
-    const productForUI: ProductData = {
-      ...createdProduct,
-      createdAt: createdProduct.createdAt.toISOString(),
-      updatedAt: createdProduct.updatedAt.toISOString(),
-      price: createdProduct.price.toString(),
-      variants: createdProduct.variants.map(v => {
-        const meta = parseVariantName(v.name);
-        return {
-          ...v,
-          price: v.price?.toString() || null,
-          name: meta.name,
-          color: meta.color,
-          size: meta.size,
-          type: meta.type
-        };
-      })
+    return { 
+      success: true, 
+      product: mapToUserInterface(createdProduct) 
     };
 
-    return { success: true, product: productForUI };
-
   } catch (error) {
-    console.error("❌ ERRO CRÍTICO:", error);
+    console.error("❌ Erro ao salvar produto:", error);
+    // Retorna o erro formatado se for do Zod, ou mensagem genérica
+    if (error instanceof z.ZodError) {
+        return { success: false, error: error.errors };
+    }
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : "Erro desconhecido ao salvar." 
+      error: error instanceof Error ? error.message : "Erro interno no servidor." 
     };
   }
 }
@@ -184,25 +157,7 @@ export async function getProductsAction(): Promise<ProductData[]> {
       orderBy: { createdAt: 'desc' },
       include: { variants: true }
     });
-    
-    // CORREÇÃO 2: Mapeamento seguro com tipagem explícita
-    return products.map(p => ({
-      ...p,
-      createdAt: p.createdAt.toISOString(),
-      updatedAt: p.updatedAt.toISOString(),
-      price: p.price.toString(),
-      variants: p.variants.map(v => {
-        const meta = parseVariantName(v.name);
-        return {
-          ...v,
-          price: v.price?.toString() || null,
-          name: meta.name,
-          color: meta.color,
-          size: meta.size,
-          type: meta.type
-        };
-      })
-    }));
+    return products.map(mapToUserInterface);
   } catch (error) {
     console.error("Erro ao buscar produtos:", error);
     return [];
@@ -215,28 +170,9 @@ export async function getProductByIdAction(id: string): Promise<ProductData | nu
       where: { id },
       include: { variants: true }
     });
-    
-    if (!product) return null;
-
-    return {
-      ...product,
-      createdAt: product.createdAt.toISOString(),
-      updatedAt: product.updatedAt.toISOString(),
-      price: product.price.toString(),
-      variants: product.variants.map(v => {
-        const meta = parseVariantName(v.name);
-        return {
-          ...v,
-          price: v.price?.toString() || null,
-          name: meta.name,
-          color: meta.color,
-          size: meta.size,
-          type: meta.type
-        };
-      })
-    };
+    return product ? mapToUserInterface(product) : null;
   } catch (error) {
-    console.error("Erro ao buscar produto:", error);
+    console.error("Erro ao buscar produto por ID:", error);
     return null;
   }
 }
