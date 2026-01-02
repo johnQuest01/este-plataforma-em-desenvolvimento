@@ -4,6 +4,7 @@ import React from 'react';
 import { BlockComponentProps } from '@/types/builder';
 
 // --- Imports de Blocos ---
+import { StandardButtonBlock } from './blocks/StandardButtonBlock';
 import { HeaderBlock } from './blocks/Header';
 import { ProductGridBlock } from './blocks/ProductGrid';
 import { BannerBlock } from './blocks/Banner';
@@ -71,6 +72,7 @@ export const COMPONENT_MAP: Record<string, LegoComponent> = {
   'history-links': HistoryLinksBlock,
   'production-list': ProductionListBlock,
   'ready-stock-list': ReadyStockListBlock,
+  'standard-button': StandardButtonBlock,
   
   // REGISTRO DO NOVO BLOCO
   'total-sales': TotalSalesBlock,

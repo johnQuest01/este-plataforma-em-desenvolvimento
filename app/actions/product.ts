@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { uploadImageToCloud } from '@/lib/upload-service';
 import { Prisma } from '@prisma/client';
 import { parseBrazilianCurrency } from '@/lib/utils/currency';
+import { z } from 'zod'; 
 import { 
   CreateProductInput, 
   ProductData, 
@@ -56,30 +57,29 @@ const mapToUserInterface = (product: Prisma.ProductGetPayload<{ include: { varia
         color: metadata.color,
         size: metadata.size,
         type: metadata.type,
-        qty: variant.stock // Mapeia stock do banco para qty da UI
+        qty: variant.stock
       };
     })
   };
 };
 
-const generateStockKeepingUnit = (productName: string, variationName: string): string => {
+const generateStockKeepingUnit = (productName: string, variationName: string, index: number): string => {
   const prefix = productName.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, 'X');
-  const timestamp = Date.now().toString().slice(-4);
-  return `${prefix}-${variationName.substring(0, 2).toUpperCase()}-${timestamp}`;
+  const varSuffix = variationName.substring(0, 2).toUpperCase().replace(/[^A-Z0-9]/g, 'X');
+  const timestamp = Date.now().toString().slice(-6);
+  const random = Math.random().toString(36).substring(2, 5).toUpperCase();
+  return `${prefix}-${varSuffix}-${timestamp}${index}-${random}`;
 };
 
 // --- SERVER ACTIONS ---
 
 export async function saveProductAction(inputData: CreateProductInput) {
   try {
-    // 1. Validação Zod (Agora aceita qty e stock com defaults)
     const validatedInput = CreateProductInputSchema.parse(inputData);
 
-    // 2. Conversão de Preço
     const numericPrice = parseBrazilianCurrency(validatedInput.price);
     const decimalPrice = new Prisma.Decimal(numericPrice);
 
-    // 3. Resolução de Loja
     let targetStoreId = validatedInput.storeId;
     if (!targetStoreId) {
       const store = await prisma.store.findFirst();
@@ -87,7 +87,6 @@ export async function saveProductAction(inputData: CreateProductInput) {
       targetStoreId = store.id;
     }
 
-    // 4. Upload de Imagem
     let finalImageUrl: string | null = null;
     if (validatedInput.image?.startsWith('data:image')) {
       finalImageUrl = await uploadImageToCloud(validatedInput.image, validatedInput.name);
@@ -95,13 +94,11 @@ export async function saveProductAction(inputData: CreateProductInput) {
       finalImageUrl = validatedInput.image || `https://placehold.co/600x800/png?text=${encodeURIComponent(validatedInput.name)}`;
     }
 
-    // 5. Cálculo de Estoque Total (Prioriza qty, fallback para stock)
     const totalStock = validatedInput.variations.reduce((acc, curr) => {
       const quantity = curr.qty ?? curr.stock ?? 0;
       return acc + quantity;
     }, 0);
 
-    // 6. Transação de Persistência
     const createdProduct = await prisma.$transaction(async (transaction) => {
       return await transaction.product.create({
         data: {
@@ -112,15 +109,14 @@ export async function saveProductAction(inputData: CreateProductInput) {
           imageUrl: finalImageUrl,
           storeId: targetStoreId as string,
           variants: {
-            create: validatedInput.variations.map((variation) => {
-              // Lógica de unificação de quantidade
+            create: validatedInput.variations.map((variation, index) => {
               const variantStock = variation.qty ?? variation.stock ?? 0;
               
               return {
                 name: serializeVariantName(validatedInput.name, variation),
-                stock: variantStock, // Grava no banco como 'stock'
+                stock: variantStock,
                 price: decimalPrice,
-                sku: generateStockKeepingUnit(validatedInput.name, variation.color || 'VAR'),
+                sku: generateStockKeepingUnit(validatedInput.name, variation.color || 'VAR', index),
                 images: variation.images
               };
             })
@@ -140,10 +136,16 @@ export async function saveProductAction(inputData: CreateProductInput) {
 
   } catch (error) {
     console.error("❌ Erro ao salvar produto:", error);
-    // Retorna o erro formatado se for do Zod, ou mensagem genérica
+    
+    // CORREÇÃO: Uso de .issues em vez de .errors para compatibilidade de tipos
     if (error instanceof z.ZodError) {
-        return { success: false, error: error.errors };
+        return { success: false, error: error.issues };
     }
+    
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+       return { success: false, error: "Erro de duplicidade: SKU ou Nome já existem." };
+    }
+
     return { 
       success: false, 
       error: error instanceof Error ? error.message : "Erro interno no servidor." 
