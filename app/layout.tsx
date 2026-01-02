@@ -4,6 +4,9 @@ import "./globals.css";
 import { GlobalAdmin } from '@/components/admin/GlobalAdmin';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 
+// IMPORTAR O GUARDIAN
+import { MasterGuardianDashboard } from "@/components/builder/blocks/MasterGuardianDashboard";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -18,11 +21,6 @@ export const metadata: Metadata = {
   title: "Loja Maryland",
   description: "Sua loja virtual exclusiva",
   manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Loja Maryland",
-  },
 };
 
 export const viewport: Viewport = {
@@ -44,9 +42,11 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}>
         {children}
         
-        {/* Renderizados fora do fluxo principal para evitar conflitos de CSS */}
         <GlobalAdmin />
         <InstallPrompt />
+
+        {/* INSERIR O GUARDIAN AQUI */}
+        <MasterGuardianDashboard />
       </body>
     </html>
   );
