@@ -13,19 +13,16 @@ interface StockPricePopupProps {
   initialVisibility?: ProductVisibility;
 }
 
-// 1. COMPONENTE WRAPPER (Controlador)
-// Sua única função é gerenciar a presença na árvore DOM para as animações
+// 1. COMPONENTE WRAPPER
 export const StockPricePopup = (props: StockPricePopupProps) => {
   return (
     <AnimatePresence>
-      {/* Quando isOpen for true, o Content é montado do zero.
-          Isso garante que o estado interno seja reiniciado corretamente sem useEffect. */}
       {props.isOpen && <StockPricePopupContent {...props} />}
     </AnimatePresence>
   );
 };
 
-// 2. COMPONENTE DE CONTEÚDO (Lógica e Visual)
+// 2. COMPONENTE DE CONTEÚDO
 const StockPricePopupContent = ({
   onClose,
   onConfirm,
@@ -33,29 +30,56 @@ const StockPricePopupContent = ({
   initialVisibility = 'none'
 }: StockPricePopupProps) => {
   
-  // INICIALIZAÇÃO INTELIGENTE (Lazy Initializer)
-  // Como este componente só nasce quando o modal abre, podemos processar as props aqui.
-  // Isso substitui o useEffect que causava o erro.
   const [price, setPrice] = useState(() => {
-    const clean = initialPrice.replace('R$', '').trim().replace('.', ',');
+    // Remove R$ e espaços, mantém a vírgula decimal
+    const clean = initialPrice.replace(/[^\d,]/g, '');
     return clean === '0,00' ? '' : clean;
   });
 
   const [visibility, setVisibility] = useState<ProductVisibility>(initialVisibility);
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value.replace(/[^\d,]/g, '');
-    // Garante apenas uma vírgula
-    const sanitizedValue = rawValue.replace(/,/, '#TEMP#').replace(/,/g, '').replace('#TEMP#', ',');
-    setPrice(sanitizedValue);
+    let value = e.target.value;
+    
+    // Permite apenas números e uma vírgula
+    value = value.replace(/[^0-9,]/g, '');
+    
+    // Impede múltiplas vírgulas
+    const parts = value.split(',');
+    if (parts.length > 2) {
+      value = parts[0] + ',' + parts.slice(1).join('');
+    }
+    
+    // Limita a 2 casas decimais
+    if (parts.length === 2 && parts[1].length > 2) {
+      value = parts[0] + ',' + parts[1].substring(0, 2);
+    }
+
+    setPrice(value);
   };
 
   const handleConfirm = () => {
-    const valueToProcess = price === '' ? '0,00' : price;
-    const numericPrice = parseFloat(valueToProcess.replace(',', '.') || '0');
+    if (!price) {
+      onConfirm('R$ 0,00', visibility);
+      onClose();
+      return;
+    }
+
+    // Converte para float para formatação segura
+    // Substitui vírgula por ponto para o parseFloat
+    const numericValue = parseFloat(price.replace(',', '.'));
     
-    const formattedPrice = `R$ ${numericPrice.toFixed(2).replace('.', ',')}`;
-    onConfirm(formattedPrice, visibility);
+    if (isNaN(numericValue)) {
+      onConfirm('R$ 0,00', visibility);
+    } else {
+      // Formata de volta para o padrão BRL
+      const formatted = new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      }).format(numericValue);
+      
+      onConfirm(formatted, visibility);
+    }
     onClose();
   }
 
@@ -70,7 +94,6 @@ const StockPricePopupContent = ({
       className="absolute inset-0 z-[150] flex flex-col justify-end pb-[15vh]"
       key="stock-price-popup-wrapper"
     >
-      {/* Fundo Escuro */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -79,7 +102,6 @@ const StockPricePopupContent = ({
         onClick={onClose}
       />
 
-      {/* O Card do Preço */}
       <motion.div
         initial={{ y: "100%", opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -91,8 +113,6 @@ const StockPricePopupContent = ({
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        
-        {/* Botão Fechar */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:bg-gray-100 transition-colors active:scale-90"
@@ -100,7 +120,6 @@ const StockPricePopupContent = ({
           <X size={22} />
         </button>
 
-        {/* Título */}
         <div className="text-center mt-2">
             <h3 className="text-2xl font-black text-gray-900 tracking-tight leading-none">
             Definir Preço
@@ -108,7 +127,6 @@ const StockPricePopupContent = ({
             <span className="text-sm font-medium text-gray-500">e Visibilidade</span>
         </div>
 
-        {/* Input de Preço */}
         <div className="w-full max-w-[240px] h-12 border border-gray-300 rounded-xl flex items-center px-4 gap-2 bg-white shadow-sm focus-within:border-[#5874f6] focus-within:ring-2 focus-within:ring-blue-500/10 transition-all duration-200">
           <span className="font-black text-sm text-gray-400 mt-0.5">R$</span>
           
@@ -122,7 +140,6 @@ const StockPricePopupContent = ({
           />
         </div>
 
-        {/* Opções de Visibilidade */}
         <div className="flex flex-col gap-2 w-full pt-1">
           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 text-center">
               Visibilidade do Produto
@@ -146,10 +163,7 @@ const StockPricePopupContent = ({
                 )}>
                     {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                 </div>
-                <span className={cn(
-                  "text-xs leading-snug font-bold uppercase tracking-tight",
-                  isSelected ? "text-blue-900" : "text-gray-500"
-                )}>
+                <span className="text-xs leading-snug font-bold uppercase tracking-tight">
                   {option.label}
                 </span>
               </button>
@@ -157,7 +171,6 @@ const StockPricePopupContent = ({
           })}
         </div>
 
-        {/* Botão Confirmar */}
         <button
           onClick={handleConfirm}
           className="mt-2 bg-[#5874f6] w-full h-14 rounded-2xl shadow-lg shadow-blue-500/30 active:scale-95 transition-all flex items-center justify-center gap-2"

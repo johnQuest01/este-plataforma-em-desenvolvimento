@@ -1,4 +1,3 @@
-// arquivo: next.config.ts
 import type { NextConfig as NextConfiguration } from "next";
 import withProgressiveWebAppInitialization from "@ducanh2912/next-pwa";
 
@@ -52,8 +51,7 @@ const nextConfiguration: NextConfiguration = {
   
   output: "standalone",
 
-  // --- CORREÇÃO CRÍTICA DO PRISMA 7 + NEON ---
-  // Isso impede que o Next.js quebre a conexão do banco de dados
+  // Ensure Prisma Client is treated as a server package
   serverExternalPackages: [
     "@google-cloud/vertexai", 
     "@prisma/client", 
@@ -64,6 +62,12 @@ const nextConfiguration: NextConfiguration = {
   experimental: {
     serverActions: {
       bodySizeLimit: "50mb",
+      // CORRECTION: Allow your Cloud Workstation origin
+      allowedOrigins: [
+        "localhost:3000", 
+        "*.cloudworkstations.dev", 
+        "*.app.github.dev"
+      ],
     },
   },
 };

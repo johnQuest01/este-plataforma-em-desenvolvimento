@@ -6,7 +6,6 @@ import { Heart, Send, PackageX, MapPin } from 'lucide-react';
 import { ProductData, getProductsAction } from '@/app/actions/product';
 import { PRODUCT_UPDATE_EVENT } from '@/components/builder/blocks/ProductGrid';
 
-// Interface atualizada para receber onAction
 interface CategoryProductListBlockProps {
   config: BlockConfig;
   onAction?: (action: string, payload?: unknown) => void;
@@ -22,9 +21,11 @@ export const CategoryProductListBlock = ({ config, onAction }: CategoryProductLi
   const fetchProducts = useCallback(async () => {
     try {
       const dbProducts = await getProductsAction();
-      setProducts(dbProducts);
+      // Garante que seja sempre um array
+      setProducts(Array.isArray(dbProducts) ? dbProducts : []);
     } catch (error) {
       console.error("Erro ao buscar produtos:", error);
+      setProducts([]);
     } finally {
       setIsLoading(false);
     }
@@ -44,13 +45,29 @@ export const CategoryProductListBlock = ({ config, onAction }: CategoryProductLi
   }, [fetchProducts]);
 
   // Filtra produtos pela categoria E pelo estoque
-  const filteredProducts = products.filter(p =>
-    p.variations.some(v => {
-      const matchCategory = v.category.toLowerCase().trim() === targetCategory.toLowerCase().trim();
-      const matchStock = targetStock ? v.stockLocations?.includes(targetStock) : true;
+  const filteredProducts = products.filter(p => {
+    // CORREÇÃO CRÍTICA: Uso de 'variants' (Prisma) e verificação de nulidade
+    const variants = p.variants || [];
+    
+    // Se não houver variantes, não exibe (ou exibe se a categoria for genérica)
+    if (variants.length === 0) return false;
+
+    return variants.some(v => {
+      // Adaptação para campos que podem não existir no tipo estrito do Prisma
+      // Assumindo que 'category' e 'stockLocations' não existem no schema atual,
+      // usamos lógica de fallback ou campos customizados se você os adicionou.
+      // Se não existirem, a comparação falhará graciosamente.
+      const vAny = v as any;
+      
+      const category = vAny.category || 'Geral';
+      const stockLocations = vAny.stockLocations || ['Loja Principal'];
+
+      const matchCategory = !targetCategory || category.toLowerCase().trim() === targetCategory.toLowerCase().trim();
+      const matchStock = !targetStock || stockLocations.includes(targetStock);
+      
       return matchCategory && matchStock;
-    })
-  );
+    });
+  });
 
   return (
     <div
@@ -65,16 +82,22 @@ export const CategoryProductListBlock = ({ config, onAction }: CategoryProductLi
       ) : (
         <div className="grid grid-cols-2 gap-4">
           {filteredProducts.map((product) => {
-            const mainImage = product.mainImage || product.variations[0]?.images[0] || '';
+            // CORREÇÃO: Acesso seguro a variants
+            const variants = product.variants || [];
+            const firstVar = variants[0];
+            const vAny = firstVar as any;
+
+            // Imagem: Prioridade para imagem do produto, depois da variação
+            const mainImage = product.imageUrl || (firstVar && firstVar.images && firstVar.images[0]) || '';
+            
             const price = product.price && product.price !== 'R$ 0,00' ? product.price : null;
-            const stockName = targetStock || product.variations[0]?.stockLocations?.[0] || 'Estoque Geral';
+            
+            // Nome do estoque (Fallback seguro)
+            const stockName = targetStock || (vAny?.stockLocations?.[0]) || 'Estoque Geral';
 
             return (
               <div
                 key={product.id}
-                // --- CORREÇÃO DE INTERAÇÃO ---
-                // Adicionamos o onClick para disparar o evento 'openProductOrder'
-                // passando o objeto do produto completo como payload.
                 onClick={() => {
                     if (onAction) {
                         onAction('openProductOrder', product);

@@ -1,4 +1,3 @@
-// components/shop/ProductDetailContent.tsx
 'use client';
 
 import React, { useMemo, useState } from 'react';
@@ -31,34 +30,33 @@ const ProductDetailInner = () => {
     buyQuantity
   } = useOrder();
 
-  // Estados locais para feedback de erro específico
   const [errors, setErrors] = useState({
     color: false,
-    model: false, // Tipo/Variação
+    model: false,
     size: false
   });
 
-  // --- EXTRAÇÃO DE METADADOS (Categoria e Palavra-chave) ---
+  // --- EXTRAÇÃO DE METADADOS ---
   const metadata = useMemo(() => {
-    if (!product || !product.variations || product.variations.length === 0) return { category: null, keyword: null };
-    const firstVar = product.variations[0];
+    if (!product || !product.variants || product.variants.length === 0) return { category: null, keyword: null };
+    // Como não temos category/keyword no schema, usamos valores padrão ou extraímos do nome se necessário
     return {
-        category: firstVar.category || null,
-        keyword: firstVar.keyword || null
+        category: 'Geral', 
+        keyword: 'Novo'
     };
   }, [product]);
 
   const options = useMemo(() => {
-    if (!product) return { colors: [], types: [], sizes: [] };
+    if (!product || !product.variants) return { colors: [], types: [], sizes: [] };
 
     const colors = new Set<string>();
     const types = new Set<string>();
     const sizes = new Set<string>();
 
-    product.variations.forEach(v => {
+    product.variants.forEach(v => {
+      // Agora acessamos diretamente as propriedades virtuais injetadas pelo Server Action
       if (v.color) colors.add(v.color.trim());
-      const typeVal = v.variation || v.type;
-      if (typeVal) types.add(typeVal.trim());
+      if (v.type) types.add(v.type.trim());
       if (v.size) sizes.add(v.size.trim());
     });
 
@@ -82,8 +80,6 @@ const ProductDetailInner = () => {
   const handleSelection = (group: string, value: string) => {
     const newValue = selections[group] === value ? null : value;
     setSelection(group, newValue);
-    
-    // Limpa o erro do grupo específico ao selecionar algo
     setErrors(prev => ({ ...prev, [group]: false }));
   };
 
@@ -98,16 +94,12 @@ const ProductDetailInner = () => {
 
     setErrors(newErrors);
 
-    // Se houver algum erro, para e vibra
     if (Object.values(newErrors).some(Boolean)) {
       if (navigator.vibrate) navigator.vibrate(50);
-      
-      // Monta mensagem de erro
       const missingFields = [];
       if (newErrors.color) missingFields.push("Cor");
       if (newErrors.model) missingFields.push("Tipo");
       if (newErrors.size) missingFields.push("Tamanho");
-      
       alert(`⚠️ Por favor, selecione: ${missingFields.join(", ")}.`);
       return;
     }
@@ -120,7 +112,8 @@ const ProductDetailInner = () => {
     await createOrderAction({
       title: product.name,
       total: totalValue, 
-      itemsCount: buyQuantity
+      itemsCount: buyQuantity,
+      items: [{ productId: product.id, quantity: buyQuantity }] 
     });
 
     alert(`✅ Pedido Realizado com Sucesso!\n\nVocê pode acompanhar o status em "Meus Pedidos".`);
@@ -151,7 +144,7 @@ const ProductDetailInner = () => {
         {/* Imagem Principal */}
         <div className="w-full aspect-[4/5] bg-gray-100 relative group">
           <img
-            src={product.mainImage || 'https://placehold.co/600x800/png'}
+            src={product.imageUrl || 'https://placehold.co/600x800/png'} 
             className="w-full h-full object-cover"
             alt={product.name}
           />
@@ -177,7 +170,7 @@ const ProductDetailInner = () => {
               <div className="flex flex-col">
                 <span className="text-xs font-bold text-gray-400 uppercase">Preço Unitário</span>
                 <span className="font-black text-3xl text-[#5874f6] tracking-tight">
-                  R$ {basePrice.toFixed(2).replace('.', ',')}
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(basePrice)}
                 </span>
               </div>
               <div className="flex gap-3 text-gray-400">
@@ -190,25 +183,7 @@ const ProductDetailInner = () => {
           {/* --- SELETORES DE VARIAÇÃO --- */}
           <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4 duration-500 delay-100">
             
-            {/* --- EXIBIÇÃO DE CATEGORIA E PALAVRA-CHAVE --- */}
-            {(metadata.category || metadata.keyword) && (
-                <div className="flex flex-wrap gap-2">
-                    {metadata.category && (
-                        <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gray-100 border border-gray-200">
-                            <Layers size={10} className="text-gray-500" />
-                            <span className="text-[10px] font-bold text-gray-600 uppercase break-all">{metadata.category}</span>
-                        </div>
-                    )}
-                    {metadata.keyword && (
-                        <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-50 border border-blue-100">
-                            <Hash size={10} className="text-blue-500" />
-                            <span className="text-[10px] font-bold text-blue-600 italic break-all">{metadata.keyword}</span>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* 1. SELEÇÃO DE CORES (OBRIGATÓRIO) */}
+            {/* 1. SELEÇÃO DE CORES (LAYOUT MELHORADO) */}
             {options.colors.length > 0 && (
               <div className={cn("rounded-xl p-2 transition-colors", errors.color && "bg-red-50 border border-red-200 animate-pulse")}>
                 <h3 className={cn("font-bold text-sm uppercase tracking-wide mb-3 flex items-center gap-2", errors.color ? "text-red-500" : "text-gray-500")}>
@@ -225,24 +200,22 @@ const ProductDetailInner = () => {
                         onClick={() => available && handleSelection('color', color)}
                         disabled={!available}
                         className={cn(
-                          "group transition-all flex items-center gap-3 px-1",
+                          "group transition-all flex items-center gap-3 px-2 py-2 rounded-xl border-2",
+                          isSelected 
+                            ? "border-gray-900 bg-gray-50 ring-1 ring-gray-900 scale-105" 
+                            : "border-gray-100 bg-white hover:border-gray-300",
                           !available && "opacity-50 grayscale cursor-not-allowed"
                         )}
                       >
                         <div className={cn(
-                          "w-8 h-8 rounded-full border shadow-sm ring-2 ring-offset-2 transition-all flex items-center justify-center",
+                          "w-8 h-8 rounded-full border shadow-sm ring-2 ring-offset-2 transition-all flex items-center justify-center shrink-0",
                           isSelected ? "ring-[#5874f6] border-transparent bg-[#5874f6] text-white" : "ring-transparent border-gray-300 bg-gray-100 text-transparent"
                         )}>
                            <Check size={14} strokeWidth={4} />
                         </div>
-                        <div className={cn(
-                          "px-4 py-2 rounded-xl border-2 transition-all min-w-[80px] flex flex-col items-start max-w-[150px]", 
-                          isSelected 
-                            ? "border-gray-900 bg-gray-900 text-white" 
-                            : "border-gray-200 bg-white text-gray-900 group-hover:border-gray-300"
-                        )}>
-                          <span className="text-xs font-black uppercase break-words w-full text-left">{color}</span>
-                          <span className="text-[9px] font-bold opacity-70">
+                        <div className="flex flex-col items-start min-w-[60px]">
+                          <span className="text-xs font-black uppercase break-words text-left leading-tight">{color}</span>
+                          <span className="text-[9px] font-bold opacity-70 mt-0.5">
                             {available ? `${qty} disp.` : 'Esgotado'}
                           </span>
                         </div>
@@ -253,7 +226,7 @@ const ProductDetailInner = () => {
               </div>
             )}
 
-            {/* 2. SELEÇÃO DE TIPO / VARIAÇÃO (OBRIGATÓRIO) */}
+            {/* 2. SELEÇÃO DE TIPO / VARIAÇÃO (LAYOUT MELHORADO) */}
             {options.types.length > 0 && (
               <div className={cn("rounded-xl p-2 transition-colors", errors.model && "bg-red-50 border border-red-200 animate-pulse")}>
                 <h3 className={cn("font-bold text-sm uppercase tracking-wide mb-3 flex items-center gap-2", errors.model ? "text-red-500" : "text-gray-500")}>
@@ -270,7 +243,7 @@ const ProductDetailInner = () => {
                         onClick={() => available && handleSelection('model', type)}
                         disabled={!available}
                         className={cn(
-                          "px-4 py-2.5 rounded-xl border-2 text-xs font-black uppercase tracking-wide transition-all shadow-sm flex flex-col items-center max-w-[120px]", 
+                          "px-4 py-3 rounded-xl border-2 text-xs font-black uppercase tracking-wide transition-all shadow-sm flex flex-col items-center justify-center min-w-[80px] flex-grow-0", 
                           isSelected 
                             ? "bg-[#5874f6] border-[#5874f6] text-white shadow-blue-500/30 scale-105" 
                             : available 
@@ -278,7 +251,7 @@ const ProductDetailInner = () => {
                               : "bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed"
                         )}
                       >
-                        <span className="break-words w-full text-center">{type}</span>
+                        <span className="break-words text-center leading-tight">{type}</span>
                         {available && isSelected && <span className="text-[8px] opacity-80 mt-0.5">{qty} un.</span>}
                       </button>
                     );
@@ -287,7 +260,7 @@ const ProductDetailInner = () => {
               </div>
             )}
 
-            {/* 3. SELEÇÃO DE TAMANHOS (OBRIGATÓRIO) */}
+            {/* 3. SELEÇÃO DE TAMANHOS (LAYOUT MELHORADO) */}
             {options.sizes.length > 0 && (
               <div className={cn("rounded-xl p-2 transition-colors", errors.size && "bg-red-50 border border-red-200 animate-pulse")}>
                 <h3 className={cn("font-bold text-sm uppercase tracking-wide mb-3 flex items-center gap-2", errors.size ? "text-red-500" : "text-gray-500")}>
@@ -304,7 +277,7 @@ const ProductDetailInner = () => {
                         onClick={() => available && handleSelection('size', size)}
                         disabled={!available}
                         className={cn(
-                          "w-12 h-14 flex flex-col items-center justify-center rounded-xl border-2 transition-all active:scale-90",
+                          "w-14 h-14 flex flex-col items-center justify-center rounded-xl border-2 transition-all active:scale-90",
                           isSelected 
                             ? "bg-gray-900 border-gray-900 text-white shadow-lg" 
                             : available
@@ -352,7 +325,7 @@ const ProductDetailInner = () => {
           <div className="flex flex-col pl-2">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total</span>
             <span className="text-xl font-black text-gray-900 leading-none">
-              R$ {totalValue > 0 ? totalValue.toFixed(2).replace('.', ',') : basePrice.toFixed(2).replace('.', ',')}
+              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue > 0 ? totalValue : basePrice)}
             </span>
           </div>
 
@@ -362,7 +335,7 @@ const ProductDetailInner = () => {
               "flex-1 h-14 rounded-2xl flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95",
               isValidCombination 
                 ? "bg-[#00c853] text-white hover:bg-[#00b34a] shadow-green-500/30" 
-                : "bg-gray-900 text-white shadow-none opacity-90" // Botão sempre "clicável" para feedback
+                : "bg-gray-900 text-white shadow-none opacity-90" 
             )}
           >
             <ShoppingBag size={20} strokeWidth={2.5} />

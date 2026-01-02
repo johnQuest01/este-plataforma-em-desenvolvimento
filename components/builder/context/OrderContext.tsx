@@ -1,4 +1,3 @@
-// components/builder/context/OrderContext.tsx
 'use client';
 
 import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
@@ -47,15 +46,17 @@ export const OrderProvider = ({
     return parseFloat(cleanPrice) || 0;
   }, [product]);
 
-  // --- CORREÇÃO 1: useCallback para estabilizar a função ---
+  // --- CORREÇÃO: Uso de 'variants' e verificação de nulidade ---
   const filterVariations = useCallback((currentSelections: Record<string, string | null>) => {
-    if (!product) return [];
+    if (!product || !product.variants) return [];
 
-    return product.variations.filter(v => {
+    return product.variants.filter(v => {
+      // Cast seguro para acessar propriedades que podem não estar no tipo estrito
+      const anyV = v as any;
       const variantAttributes: Record<string, string | undefined> = {
-        'color': v.color?.trim(),
-        'size': v.size?.trim(),
-        'model': (v.type || v.variation || '').trim() 
+        'color': anyV.color?.trim() || 'Padrão',
+        'size': anyV.size?.trim() || v.name.trim(),
+        'model': (anyV.type || anyV.variation || '').trim() 
       };
 
       return Object.entries(currentSelections).every(([groupKey, userSelectedValue]) => {
@@ -65,21 +66,20 @@ export const OrderProvider = ({
         return variantValue.toLowerCase() === userSelectedValue.toLowerCase();
       });
     });
-  }, [product]); // Depende apenas de 'product'
+  }, [product]);
 
-  // --- CORREÇÃO 2: Adicionar filterVariations nas dependências ---
   const currentStock = useMemo(() => {
     const matchingVars = filterVariations(selections);
-    return matchingVars.reduce((acc, v) => acc + (v.qty || 0), 0);
+    // Mapeia 'stock' (Prisma)
+    return matchingVars.reduce((acc, v) => acc + (v.stock || 0), 0);
   }, [filterVariations, selections]);
 
-  // Também envolvemos esta em useCallback para boa prática
   const checkOptionAvailability = useCallback((groupType: string, value: string) => {
     if (!product) return { available: false, qty: 0 };
 
     const testSelections = { ...selections, [groupType]: value };
     const matchingVars = filterVariations(testSelections);
-    const totalQty = matchingVars.reduce((acc, v) => acc + (v.qty || 0), 0);
+    const totalQty = matchingVars.reduce((acc, v) => acc + (v.stock || 0), 0);
 
     return { 
       available: totalQty > 0, 

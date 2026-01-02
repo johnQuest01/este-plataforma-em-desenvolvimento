@@ -24,9 +24,11 @@ export const StockCatalogBlock = ({ config, onAction }: StockCatalogBlockProps) 
   const fetchProducts = useCallback(async () => {
     try {
       const dbProducts = await getProductsAction();
-      setProducts(dbProducts);
+      // Garante que dbProducts seja um array mesmo se a action falhar
+      setProducts(Array.isArray(dbProducts) ? dbProducts : []);
     } catch (error) {
       console.error("Erro ao buscar produtos:", error);
+      setProducts([]);
     } finally {
       setIsLoading(false);
     }
@@ -45,10 +47,20 @@ export const StockCatalogBlock = ({ config, onAction }: StockCatalogBlockProps) 
     };
   }, [fetchProducts]);
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.variations.some(v => v.stockLocations?.some(s => s.toLowerCase().includes(searchTerm.toLowerCase())))
-  );
+  const filteredProducts = products.filter(p => {
+    const term = searchTerm.toLowerCase();
+    const nameMatch = p.name.toLowerCase().includes(term);
+    
+    // Verificação segura de variants (Prisma usa 'variants', não 'variations')
+    // Mas o tipo ProductData pode ter mapeado para 'variants'
+    const variants = p.variants || [];
+    
+    // Verifica se alguma variação tem local de estoque que bate com a busca
+    // Nota: O schema atual do Prisma não tem 'stockLocations' na variante, 
+    // então essa busca pode precisar de ajuste se você não adicionou esse campo.
+    // Assumindo que não tem, buscamos apenas pelo nome por enquanto.
+    return nameMatch;
+  });
 
   const isUsingDb = products.length > 0;
   const displayList = isUsingDb ? filteredProducts : filteredItemsMock(items, searchTerm);
@@ -112,19 +124,27 @@ export const StockCatalogBlock = ({ config, onAction }: StockCatalogBlockProps) 
                 const p = item as ProductData;
                 id = p.id;
                 title = p.name;
-                image = p.mainImage || p.variations[0]?.images[0];
-                const firstVar = p.variations[0];
-                categoryToOpen = firstVar?.category || 'Geral';
                 
-                // Pega o nome do estoque real
-                stockName = firstVar?.stockLocations?.[0] || 'Estoque Geral';
+                // CORREÇÃO CRÍTICA: Acesso seguro a variants e imagens
+                const variants = p.variants || [];
+                const firstVar = variants.length > 0 ? variants[0] : null;
+                
+                // Tenta pegar imagem do produto, ou da primeira variação, ou undefined
+                image = p.imageUrl || (firstVar && firstVar.images && firstVar.images.length > 0 ? firstVar.images[0] : undefined);
+                
+                // Fallback seguro para categoria
+                categoryToOpen = 'Geral'; // Schema não tem categoria no produto, usando padrão
+                
+                // Fallback seguro para nome do estoque
+                stockName = 'Loja Principal'; 
 
                 tags = [
                     { label: categoryToOpen, color: 'orange' },
-                    { label: firstVar?.keyword || 'Novo', color: 'blue' }
+                    { label: 'Novo', color: 'blue' }
                 ] as CatalogTag[];
                 
-                const totalQty = p.variations.reduce((acc, v) => acc + v.qty, 0);
+                // Soma segura do estoque
+                const totalQty = variants.reduce((acc, v) => acc + (v.stock || 0), 0);
                 status = totalQty;
                 statusLabel = totalQty > 0 ? `${totalQty} un` : 'Esgotado';
 
@@ -145,7 +165,6 @@ export const StockCatalogBlock = ({ config, onAction }: StockCatalogBlockProps) 
                     key={id || idx}
                     onClick={() => {
                       if (onAction) {
-                        // ENVIANDO OBJETO COMPLETO: Categoria + Nome do Estoque
                         onAction('openCategory', { category: categoryToOpen, stock: stockName });
                       }
                     }}

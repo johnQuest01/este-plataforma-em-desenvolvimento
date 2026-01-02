@@ -1,24 +1,33 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, LogOut, History, X, FileText, PackageCheck, ClipboardList } from 'lucide-react';
-import { OrderData } from '@/app/actions/order';
 import { ProductionItemData } from '@/types/builder';
 import { IncomingStockCard } from './IncomingStockCard';
 
 // --- INTERFACES ---
+
+// Explicit Interface for the UI Component (Decoupled from DB)
+export interface HistoryOrder {
+  id: string;
+  title: string;
+  total: string | number;
+  createdAt: string | Date; // Accepts both formats
+  paymentMethod?: string;
+  customerDoc?: string;
+  hasInvoice?: boolean;
+}
 
 interface BaseModalProps { 
   isOpen: boolean; 
   onClose: () => void; 
 }
 
-// Interface específica para os modais de movimentação de caixa (Abertura/Fechamento)
 interface CashModalProps {
   isOpen: boolean;
   value: string;
   onChange: (value: string) => void;
   onConfirm: () => void;
-  onClose?: () => void; // Opcional, pois o OpenCashModal não tem botão de fechar/cancelar
+  onClose?: () => void;
 }
 
 // --- MODAL ABRIR CAIXA ---
@@ -49,8 +58,6 @@ export const CloseCashModal = ({ isOpen, onClose, value, onChange, onConfirm }: 
           <p className="text-sm text-gray-500">Conte o dinheiro e informe o valor total.</p>
           <input type="number" value={value} onChange={(e) => onChange(e.target.value)} placeholder="0.00" autoFocus className="w-full h-12 border-2 border-gray-200 rounded-xl px-4 text-xl font-bold focus:border-red-500 outline-none transition-all" />
           <div className="flex gap-2">
-            {/* onClose é opcional na interface, mas obrigatório aqui no uso do CloseCashModal, 
-                então garantimos que ele existe com a verificação ou tipagem correta no pai */}
             <button onClick={onClose} className="flex-1 h-12 border border-gray-300 text-gray-600 font-bold rounded-xl hover:bg-gray-50">Cancelar</button>
             <button onClick={onConfirm} className="flex-1 h-12 bg-red-600 text-white font-black uppercase rounded-xl hover:bg-red-700 shadow-lg">Fechar</button>
           </div>
@@ -62,7 +69,7 @@ export const CloseCashModal = ({ isOpen, onClose, value, onChange, onConfirm }: 
 
 // --- MODAL HISTÓRICO ---
 interface HistoryModalProps extends BaseModalProps {
-  history: OrderData[];
+  history: HistoryOrder[]; // Uses the strict interface
 }
 
 export const HistoryModal = ({ isOpen, onClose, history }: HistoryModalProps) => (
@@ -79,10 +86,14 @@ export const HistoryModal = ({ isOpen, onClose, history }: HistoryModalProps) =>
               <div key={sale.id} className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
                 <div className="flex justify-between font-bold text-sm">
                   <span>{sale.title}</span>
-                  <span className="text-[#5874f6]">{sale.total}</span>
+                  <span className="text-[#5874f6]">
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(sale.total))}
+                  </span>
                 </div>
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>{sale.date}</span>
+                  <span>
+                    {new Date(sale.createdAt).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
+                  </span>
                   <span>{sale.paymentMethod?.toUpperCase()}</span>
                 </div>
                 {sale.customerDoc && <div className="text-[10px] text-gray-400 mt-1">CPF: {sale.customerDoc}</div>}

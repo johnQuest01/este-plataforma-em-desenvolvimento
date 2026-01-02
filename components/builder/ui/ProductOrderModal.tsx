@@ -1,4 +1,3 @@
-// components/builder/ui/ProductOrderModal.tsx
 'use client';
 
 import React, { useMemo } from 'react';
@@ -39,10 +38,9 @@ const MiniPreviewCard = ({ product }: { product: ProductData }) => {
 
   return (
     <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 flex gap-4 mb-2 animate-in fade-in zoom-in duration-300 shadow-sm">
-      {/* Imagem do Produto Aumentada */}
       <div className="w-24 h-28 bg-white rounded-xl border border-gray-200 overflow-hidden shrink-0 relative shadow-sm">
         <img 
-          src={product.mainImage || 'https://placehold.co/100x100/png'} 
+          src={product.imageUrl || 'https://placehold.co/100x100/png'} // FIX: mainImage -> imageUrl
           alt="Preview" 
           className="w-full h-full object-cover"
         />
@@ -51,14 +49,12 @@ const MiniPreviewCard = ({ product }: { product: ProductData }) => {
         )}
       </div>
 
-      {/* Resumo de Texto - Fontes Maiores */}
       <div className="flex flex-col justify-center flex-1 gap-2">
         <h4 className="text-sm font-black text-gray-900 line-clamp-2 leading-tight">
             {product.name}
         </h4>
         
         <div className="flex flex-wrap gap-2 mt-1">
-          {/* Badge Cor */}
           <span className={cn(
             "text-xs px-2.5 py-1 rounded-md border font-bold flex items-center gap-1.5 transition-colors",
             isColorSelected 
@@ -69,7 +65,6 @@ const MiniPreviewCard = ({ product }: { product: ProductData }) => {
             {selectedColor || "Cor?"}
           </span>
 
-          {/* Badge Tipo */}
           <span className={cn(
             "text-xs px-2.5 py-1 rounded-md border font-bold flex items-center gap-1.5 transition-colors",
             isModelSelected 
@@ -80,7 +75,6 @@ const MiniPreviewCard = ({ product }: { product: ProductData }) => {
             {selectedModel || "Tipo?"}
           </span>
 
-          {/* Badge Tamanho */}
           <span className={cn(
             "text-xs px-2.5 py-1 rounded-md border font-bold flex items-center gap-1.5 transition-colors",
             isSizeSelected 
@@ -92,7 +86,6 @@ const MiniPreviewCard = ({ product }: { product: ProductData }) => {
           </span>
         </div>
 
-        {/* Feedback de Estoque no Preview */}
         {isColorSelected && isModelSelected && isSizeSelected && (
             <div className="flex items-center gap-1.5 mt-1">
                 <div className={cn("w-2 h-2 rounded-full", isValidCombination ? "bg-green-500" : "bg-red-500")} />
@@ -107,11 +100,7 @@ const MiniPreviewCard = ({ product }: { product: ProductData }) => {
 };
 
 // --- COMPONENTE PRINCIPAL DO CONTEÚDO DO MODAL ---
-const OrderModalContent = ({
-  onClose
-}: {
-  onClose: () => void
-}) => {
+const OrderModalContent = ({ onClose }: { onClose: () => void }) => {
   const { 
     buyQuantity, 
     totalValue, 
@@ -123,18 +112,24 @@ const OrderModalContent = ({
   } = useOrder();
 
   const options = useMemo(() => {
-    // Validação inicial para evitar erros no hook
-    if (!product) return { colors: [], types: [], sizes: [] };
+    // FIX: Use variants instead of variations
+    if (!product || !product.variants) return { colors: [], types: [], sizes: [] };
 
     const colors = new Set<string>();
     const types = new Set<string>();
     const sizes = new Set<string>();
 
-    product.variations.forEach(variation => {
-      if (variation.color) colors.add(variation.color.trim());
-      const typeVal = variation.variation || variation.type;
+    product.variants.forEach(v => {
+      // Safe access with casting for flexible schema
+      const anyV = v as any;
+      if (anyV.color) colors.add(anyV.color.trim());
+      else colors.add('Padrão');
+
+      const typeVal = anyV.variation || anyV.type;
       if (typeVal) types.add(typeVal.trim());
-      if (variation.size) sizes.add(variation.size.trim());
+      
+      const sizeVal = anyV.size || v.name;
+      if (sizeVal) sizes.add(sizeVal.trim());
     });
 
     const sizeOrder = ['PP', 'P', 'M', 'G', 'GG', 'XG', '33', '34', '35', '36', '37', '38', '39', '40', '41', '42', '44', '46', '48'];
@@ -154,31 +149,22 @@ const OrderModalContent = ({
     };
   }, [product]);
 
-  // --- LÓGICA DE CORREÇÃO: Calcular Tipos Relevantes ---
   const relevantTypes = useMemo(() => {
-    // Se não há produto ou não há tipos globais, retorna vazio
     if (!product || options.types.length === 0) return [];
-
-    // Se nenhuma cor foi selecionada ainda, assumimos que todos os tipos são relevantes (mostra as opções)
     if (!selections['color']) return options.types;
 
-    // Se tem cor selecionada, verificamos se EXISTE algum tipo associado a essa cor
-    const variationsForColor = product.variations.filter(v => v.color === selections['color']);
-    
-    // Verifica se alguma variação dessa cor possui "type" ou "variation" preenchido
-    const hasTypeForColor = variationsForColor.some(v => v.variation || v.type);
+    // FIX: Use variants
+    const variationsForColor = product.variants.filter(v => (v as any).color === selections['color']);
+    const hasTypeForColor = variationsForColor.some(v => (v as any).variation || (v as any).type);
 
-    // Se tiver tipos para essa cor, retorna a lista global (ou filtrada, se preferir), 
-    // caso contrário retorna array vazio (não obrigatório)
     return hasTypeForColor ? options.types : [];
   }, [product, selections, options.types]);
 
   if (!product) return null;
 
-  // Atualização na validação do formulário
   const isFormComplete = Boolean(
     (options.colors.length === 0 || selections['color']) &&
-    (relevantTypes.length === 0 || selections['model']) && // Agora usa relevantTypes
+    (relevantTypes.length === 0 || selections['model']) && 
     (options.sizes.length === 0 || selections['size'])
   );
 
@@ -196,7 +182,9 @@ const OrderModalContent = ({
       await createOrderAction({
         title: product.name,
         total: totalValue, 
-        itemsCount: buyQuantity
+        itemsCount: buyQuantity,
+        // Add items for stock deduction
+        items: [{ productId: product.id, quantity: buyQuantity }]
       });
       
       if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
@@ -211,8 +199,6 @@ const OrderModalContent = ({
 
   return (
     <div className="flex flex-col h-full w-full bg-white relative overflow-hidden">
-
-      {/* --- HEADER --- */}
       <div className="shrink-0 px-6 py-5 bg-[#5874f6] flex justify-between items-center shadow-md z-20">
         <div className="flex flex-col text-white">
           <span className="text-xs font-bold opacity-90 uppercase tracking-widest mb-1">
@@ -230,13 +216,10 @@ const OrderModalContent = ({
         </button>
       </div>
 
-      {/* --- CONTEÚDO SCROLLÁVEL --- */}
       <div className="flex-1 overflow-y-auto scrollbar-hide bg-white relative w-full p-6 pb-36">
-        
         <MiniPreviewCard product={product} />
 
         <div className="flex flex-col gap-8 mt-6">
-
             {/* 1. SELEÇÃO DE CORES */}
             {options.colors.length > 0 && (
               <div className="animate-in slide-in-from-bottom-2 duration-300 delay-75">
@@ -260,7 +243,6 @@ const OrderModalContent = ({
                           !available && "opacity-50 grayscale"
                         )}
                       >
-                        {/* Círculo da Cor Aumentado */}
                         <div className={cn(
                           "w-9 h-9 rounded-full flex items-center justify-center transition-colors shadow-sm",
                           isSelected ? "bg-gray-900 text-white" : "bg-gray-100 text-transparent"
@@ -279,11 +261,9 @@ const OrderModalContent = ({
             )}
 
             {/* 2. SELEÇÃO DE TIPO / MODELO */}
-            {/* Renderiza se houver tipos globais, mas aplica estilo visual se não for relevante para a cor atual */}
             {options.types.length > 0 && (
               <div className={cn(
                 "animate-in slide-in-from-bottom-2 duration-300 delay-100",
-                // Se a cor foi selecionada E não há tipos relevantes para ela, esconde/desabilita visualmente
                 (selections['color'] && relevantTypes.length === 0) ? "opacity-30 pointer-events-none grayscale" : ""
               )}>
                 <h3 className="font-bold text-sm uppercase tracking-wide mb-4 flex items-center gap-2 text-gray-500">
@@ -357,7 +337,6 @@ const OrderModalContent = ({
                 <AlertCircle size={20} className="text-blue-500 shrink-0 mt-0.5" />
                 <p className="text-sm text-blue-800 font-medium leading-relaxed">
                     Para finalizar o pedido, certifique-se de selecionar: <br/>
-                    {/* Exibe dinamicamente o que falta */}
                     {(options.colors.length > 0 && !selections['color']) && <span className="font-bold mr-1">Cor,</span>}
                     {(relevantTypes.length > 0 && !selections['model']) && <span className="font-bold mr-1">Modelo,</span>}
                     {(options.sizes.length > 0 && !selections['size']) && <span className="font-bold mr-1">Tamanho.</span>}
@@ -366,10 +345,8 @@ const OrderModalContent = ({
         )}
       </div>
 
-      {/* --- FOOTER DE AÇÃO --- */}
       <div className="absolute bottom-0 left-0 w-full z-30 bg-white border-t border-gray-100 shadow-[0_-5px_30px_rgba(0,0,0,0.05)] pb-safe-bottom">
         <div className="p-5 flex gap-4 items-center">
-            
             <div className="flex flex-col pl-1">
                 <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Estimado</span>
                 <span className="text-2xl font-black text-gray-900 leading-none">
@@ -401,27 +378,24 @@ const OrderModalContent = ({
             </button>
         </div>
       </div>
-
     </div>
   );
 };
 
+// --- EXPORTAÇÃO NOMEADA CORRETA ---
 export const ProductOrderModal = ({ isOpen, onClose, product }: ProductOrderModalProps) => {
   return (
     <AnimatePresence>
       {isOpen && product && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 h-dvh w-screen overflow-hidden">
-          {/* Backdrop com Blur Forte mas Fundo Transparente/Claro */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            // MUDANÇA AQUI: bg-black/10 (quase transparente) e mantém o blur
             className="absolute inset-0 bg-black/10 backdrop-blur-md transition-all duration-300"
             onClick={onClose}
           />
 
-          {/* Modal Container */}
           <motion.div
             initial={{ scale: 0.9, opacity: 0, y: 50 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}

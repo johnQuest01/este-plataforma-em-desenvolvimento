@@ -8,14 +8,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // ACTIONS
 import { ProductData, getProductsAction } from '@/app/actions/product';
-import { createOrderAction, getOrdersAction, OrderData } from '@/app/actions/order';
+import { createOrderAction, getOrdersAction } from '@/app/actions/order';
 import { getCashRegisterStatus, openCashRegister, closeCashRegister, CashRegisterData } from '@/app/actions/cash';
 import { getReadyForStoreItemsAction, dispatchFromStoreAction, returnToProductionAction } from '@/app/actions/production';
-import { CartItem, PaymentMethod, CartVariation, ProductionItemData } from '@/types/builder';
+import { CartItem, PaymentMethod, ProductionItemData, CartVariation } from '@/types/builder';
 
-// COMPONENTES (NOVOS)
+// COMPONENTES
 import { CartSidebar } from './components/CartSidebar';
-import { OpenCashModal, CloseCashModal, HistoryModal, IncomingItemsModal } from './components/POSModals';
+import { 
+  OpenCashModal, 
+  CloseCashModal, 
+  HistoryModal, 
+  IncomingItemsModal,
+  HistoryOrder 
+} from './components/POSModals';
 
 export default function POSPage() {
   const router = useRouter();
@@ -37,14 +43,16 @@ export default function POSPage() {
   const [isCloseRegisterOpen, setIsCloseRegisterOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [cashInput, setCashInput] = useState('');
-  const [salesHistory, setSalesHistory] = useState<OrderData[]>([]);
+  
+  // Typed History State
+  const [salesHistory, setSalesHistory] = useState<HistoryOrder[]>([]);
   
   // Produção
   const [incomingItems, setIncomingItems] = useState<ProductionItemData[]>([]);
   const [isIncomingModalOpen, setIsIncomingModalOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // --- LOGICA E EFEITOS (MANTIDOS IGUAIS) ---
+  // --- LOGICA E EFEITOS ---
   const fetchIncomingItems = async () => {
     try {
       const items = await getReadyForStoreItemsAction();
@@ -117,7 +125,18 @@ export default function POSPage() {
   const handleOpenHistory = async () => {
     setIsHistoryOpen(true);
     const orders = await getOrdersAction();
-    setSalesHistory(orders);
+    
+    const mappedHistory: HistoryOrder[] = orders.map(order => ({
+      id: order.id,
+      title: order.title,
+      total: order.total,
+      createdAt: order.createdAt,
+      paymentMethod: order.paymentMethod,
+      customerDoc: order.customerDoc || undefined,
+      hasInvoice: order.hasInvoice
+    }));
+    
+    setSalesHistory(mappedHistory);
   };
 
   const filteredProducts = useMemo(() => {
@@ -130,8 +149,8 @@ export default function POSPage() {
 
   const addToCart = (product: ProductData) => {
     const existingItem = cart.find(item => item.product.id === product.id);
-    const variations = product.variations as unknown as CartVariation[];
-    const totalStock = variations.reduce((acc, v) => acc + (v.qty || 0), 0);
+    const variants = product.variants || [];
+    const totalStock = variants.reduce((acc: number, v) => acc + (v.stock || 0), 0);
     const currentInCart = existingItem ? existingItem.quantity : 0;
 
     if (currentInCart + 1 > totalStock) return alert("⚠️ Estoque insuficiente.");
@@ -139,12 +158,22 @@ export default function POSPage() {
     if (existingItem) {
       setCart(prev => prev.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item));
     } else {
-      const defaultVar = variations[0];
+      const defaultVar = variants[0];
+      const cartProduct = {
+        ...product,
+        mainImage: product.imageUrl || '',
+        variations: variants.map(v => ({
+            qty: v.stock,
+            size: v.name,
+            color: 'Padrão'
+        }))
+      };
+
       const newCartItem: CartItem = {
         cartId: Math.random().toString(36).substr(2, 9),
-        product: { ...product, variations },
+        product: cartProduct,
         quantity: 1,
-        variationLabel: defaultVar ? `${defaultVar.size || ''} ${defaultVar.color || ''}`.trim() : 'Padrão'
+        variationLabel: defaultVar ? defaultVar.name : 'Padrão'
       };
       setCart(prev => [...prev, newCartItem]);
     }
@@ -157,8 +186,9 @@ export default function POSPage() {
       if (item.cartId === cartId) {
         const newQty = item.quantity + delta;
         if (delta > 0) {
-          const vars = item.product.variations as unknown as CartVariation[];
-          if (newQty > vars.reduce((acc, v) => acc + (v.qty || 0), 0)) return item;
+          const vars = item.product.variations as CartVariation[];
+          const maxStock = vars ? vars.reduce((acc, v) => acc + (v.qty || 0), 0) : 0;
+          if (newQty > maxStock) return item;
         }
         return { ...item, quantity: Math.max(1, newQty) };
       }
@@ -201,7 +231,7 @@ export default function POSPage() {
   return (
     <main className="w-full h-dvh bg-[#f0f2f5] flex flex-col lg:flex-row overflow-hidden font-sans text-gray-900">
       
-      {/* --- MODAIS COMPONENTIZADOS --- */}
+      {/* --- MODAIS --- */}
       <OpenCashModal isOpen={isCashModalOpen} value={cashInput} onChange={setCashInput} onConfirm={handleOpenCash} />
       <CloseCashModal isOpen={isCloseRegisterOpen} onClose={() => setIsCloseRegisterOpen(false)} value={cashInput} onChange={setCashInput} onConfirm={handleCloseCash} />
       <HistoryModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} history={salesHistory} />
@@ -216,19 +246,35 @@ export default function POSPage() {
             </button>
             <div>
               <h1 className="text-xl font-black text-[#5874f6] tracking-tight leading-none">PDV</h1>
-              <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">{cashStatus?.isOpen ? `Op: ${cashStatus.operator}` : 'Fechado'}</span>
+              <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+                {cashStatus?.isOpen ? `Op: ${cashStatus.operator}` : 'Fechado'}
+              </span>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <button onClick={() => setIsIncomingModalOpen(true)} className="relative flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-2 rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors font-bold text-xs">
-              <PackageCheck size={16} /> <span className="hidden lg:inline">Recebimento</span>
-              {incomingItems.length > 0 && <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white animate-bounce">{incomingItems.length}</span>}
+            <button 
+              onClick={() => setIsIncomingModalOpen(true)} 
+              className="relative flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-2 rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors font-bold text-xs"
+            >
+              <PackageCheck size={16} /> 
+              <span className="hidden lg:inline">Recebimento</span>
+              {incomingItems.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white animate-bounce">
+                  {incomingItems.length}
+                </span>
+              )}
             </button>
-            <button onClick={handleOpenHistory} className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg font-bold text-xs hover:bg-blue-100 transition-colors">
+            <button 
+              onClick={handleOpenHistory} 
+              className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg font-bold text-xs hover:bg-blue-100 transition-colors"
+            >
               <History size={16}/> <span className="hidden sm:inline">Histórico</span>
             </button>
-            <button onClick={() => { setCashInput(''); setIsCloseRegisterOpen(true); }} className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-lg font-bold text-xs hover:bg-red-100 transition-colors">
+            <button 
+              onClick={() => { setCashInput(''); setIsCloseRegisterOpen(true); }} 
+              className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-lg font-bold text-xs hover:bg-red-100 transition-colors"
+            >
               <LogOut size={16}/> <span className="hidden sm:inline">Fechar Caixa</span>
             </button>
           </div>
@@ -236,24 +282,58 @@ export default function POSPage() {
 
         <div className="px-4 lg:px-6 py-4 bg-white border-b border-gray-100">
           <div className="relative group">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#5874f6] transition-colors"><Barcode size={24} /></div>
-            <input ref={searchInputRef} type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && filteredProducts.length === 1) addToCart(filteredProducts[0]); }} disabled={!cashStatus?.isOpen} placeholder={cashStatus?.isOpen ? "Bipar código ou digitar nome..." : "Caixa Fechado"} className="w-full h-14 pl-12 pr-4 bg-gray-100 border-2 border-transparent focus:bg-white focus:border-[#5874f6] rounded-xl text-lg font-bold outline-none transition-all disabled:opacity-50" />
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#5874f6] transition-colors">
+              <Barcode size={24} />
+            </div>
+            <input 
+              ref={searchInputRef} 
+              type="text" 
+              value={searchQuery} 
+              onChange={(e) => setSearchQuery(e.target.value)} 
+              onKeyDown={(e) => { if (e.key === 'Enter' && filteredProducts.length === 1) addToCart(filteredProducts[0]); }} 
+              disabled={!cashStatus?.isOpen} 
+              placeholder={cashStatus?.isOpen ? "Bipar código ou digitar nome..." : "Caixa Fechado"} 
+              className="w-full h-14 pl-12 pr-4 bg-gray-100 border-2 border-transparent focus:bg-white focus:border-[#5874f6] rounded-xl text-lg font-bold outline-none transition-all disabled:opacity-50" 
+            />
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 lg:p-6 scrollbar-hide">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-4 pb-24 lg:pb-0">
             {filteredProducts.map(product => {
-              const totalStock = product.variations.reduce((acc, v) => acc + v.qty, 0);
+              const variants = product.variants || [];
+              const totalStock = variants.reduce((acc: number, v) => acc + (v.stock || 0), 0);
+              
               return (
-                <button key={product.id} onClick={() => addToCart(product)} disabled={!cashStatus?.isOpen || totalStock === 0} className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm hover:border-[#5874f6] hover:shadow-md transition-all active:scale-95 flex flex-col gap-2 group text-left h-full disabled:opacity-50">
+                <button 
+                  key={product.id} 
+                  onClick={() => addToCart(product)} 
+                  disabled={!cashStatus?.isOpen || totalStock === 0} 
+                  className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm hover:border-[#5874f6] hover:shadow-md transition-all active:scale-95 flex flex-col gap-2 group text-left h-full disabled:opacity-50"
+                >
                   <div className="aspect-square bg-gray-50 rounded-xl overflow-hidden relative">
-                    <img src={product.mainImage} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    <div className={cn("absolute top-2 right-2 text-white text-[10px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm", totalStock > 0 ? "bg-black/60" : "bg-red-500")}>{totalStock > 0 ? `${totalStock} un` : 'Esgotado'}</div>
+                    {product.imageUrl ? (
+                        <img 
+                          src={product.imageUrl} 
+                          alt={product.name} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                          <PackageCheck size={32}/>
+                        </div>
+                    )}
+                    <div className={cn("absolute top-2 right-2 text-white text-[10px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm", totalStock > 0 ? "bg-black/60" : "bg-red-500")}>
+                      {totalStock > 0 ? `${totalStock} un` : 'Esgotado'}
+                    </div>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-xs lg:text-sm font-bold text-gray-800 line-clamp-2 leading-tight min-h-[2.5em]">{product.name}</span>
-                    <span className="text-sm lg:text-base font-black text-[#5874f6]">{product.price}</span>
+                    <span className="text-xs lg:text-sm font-bold text-gray-800 line-clamp-2 leading-tight min-h-[2.5em]">
+                      {product.name}
+                    </span>
+                    <span className="text-sm lg:text-base font-black text-[#5874f6]">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(product.price))}
+                    </span>
                   </div>
                 </button>
               );
@@ -264,7 +344,23 @@ export default function POSPage() {
 
       {/* --- LADO DIREITO: CARRINHO (DESKTOP) --- */}
       <div className="hidden lg:flex w-[400px] bg-white border-l border-gray-200 flex-col shadow-2xl z-30 h-full">
-        <CartSidebar cart={cart} total={subtotal} itemsCount={totalItems} onRemove={(id) => setCart(p => p.filter(i => i.cartId !== id))} onUpdate={updateQty} payment={selectedPayment} setPayment={setSelectedPayment} onFinish={handleFinishSale} processing={isProcessing} customerName={customerName} setCustomerName={setCustomerName} customerDoc={customerDoc} setCustomerDoc={setCustomerDoc} emitInvoice={emitInvoice} setEmitInvoice={setEmitInvoice} />
+        <CartSidebar 
+          cart={cart} 
+          total={subtotal} 
+          itemsCount={totalItems} 
+          onRemove={(id) => setCart(p => p.filter(i => i.cartId !== id))} 
+          onUpdate={updateQty} 
+          payment={selectedPayment} 
+          setPayment={setSelectedPayment} 
+          onFinish={handleFinishSale} 
+          processing={isProcessing} 
+          customerName={customerName} 
+          setCustomerName={setCustomerName} 
+          customerDoc={customerDoc} 
+          setCustomerDoc={setCustomerDoc} 
+          emitInvoice={emitInvoice} 
+          setEmitInvoice={setEmitInvoice} 
+        />
       </div>
 
       {/* --- MOBILE BAR --- */}
@@ -273,7 +369,10 @@ export default function POSPage() {
           <span className="text-xs font-bold text-gray-400 uppercase">Total</span>
           <span className="text-xl font-black text-gray-900">R$ {subtotal.toFixed(2).replace('.', ',')}</span>
         </div>
-        <button onClick={() => setIsMobileCartOpen(true)} className="bg-[#5874f6] text-white px-6 py-3 rounded-xl font-bold shadow-lg active:scale-95 flex items-center gap-2">
+        <button 
+          onClick={() => setIsMobileCartOpen(true)} 
+          className="bg-[#5874f6] text-white px-6 py-3 rounded-xl font-bold shadow-lg active:scale-95 flex items-center gap-2"
+        >
           <ShoppingBag size={20} /> <span>Ver Sacola</span>
         </button>
       </div>
@@ -282,14 +381,45 @@ export default function POSPage() {
       <AnimatePresence>
         {isMobileCartOpen && (
           <div className="fixed inset-0 z-[100] lg:hidden flex flex-col justify-end">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsMobileCartOpen(false)} />
-            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} className="bg-white w-full h-[90vh] rounded-t-[2rem] flex flex-col relative z-10 overflow-hidden">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+              onClick={() => setIsMobileCartOpen(false)} 
+            />
+            <motion.div 
+              initial={{ y: "100%" }} 
+              animate={{ y: 0 }} 
+              exit={{ y: "100%" }} 
+              className="bg-white w-full h-[90vh] rounded-t-[2rem] flex flex-col relative z-10 overflow-hidden"
+            >
               <div className="p-4 border-b flex justify-between items-center bg-gray-50">
-                <h2 className="font-black text-lg text-gray-800 flex items-center gap-2"><ShoppingBag size={20} className="text-[#5874f6]" /> Sacola</h2>
-                <button onClick={() => setIsMobileCartOpen(false)} className="p-2 bg-white rounded-full border shadow-sm"><X size={20} /></button>
+                <h2 className="font-black text-lg text-gray-800 flex items-center gap-2">
+                  <ShoppingBag size={20} className="text-[#5874f6]" /> Sacola
+                </h2>
+                <button onClick={() => setIsMobileCartOpen(false)} className="p-2 bg-white rounded-full border shadow-sm">
+                  <X size={20} />
+                </button>
               </div>
               <div className="flex-1 overflow-hidden">
-                <CartSidebar cart={cart} total={subtotal} itemsCount={totalItems} onRemove={(id) => setCart(p => p.filter(i => i.cartId !== id))} onUpdate={updateQty} payment={selectedPayment} setPayment={setSelectedPayment} onFinish={handleFinishSale} processing={isProcessing} customerName={customerName} setCustomerName={setCustomerName} customerDoc={customerDoc} setCustomerDoc={setCustomerDoc} emitInvoice={emitInvoice} setEmitInvoice={setEmitInvoice} />
+                <CartSidebar 
+                  cart={cart} 
+                  total={subtotal} 
+                  itemsCount={totalItems} 
+                  onRemove={(id) => setCart(p => p.filter(i => i.cartId !== id))} 
+                  onUpdate={updateQty} 
+                  payment={selectedPayment} 
+                  setPayment={setSelectedPayment} 
+                  onFinish={handleFinishSale} 
+                  processing={isProcessing} 
+                  customerName={customerName} 
+                  setCustomerName={setCustomerName} 
+                  customerDoc={customerDoc} 
+                  setCustomerDoc={setCustomerDoc} 
+                  emitInvoice={emitInvoice} 
+                  setEmitInvoice={setEmitInvoice} 
+                />
               </div>
             </motion.div>
           </div>

@@ -90,7 +90,6 @@ export const StockRegisterView = ({ onBack, onRegister }: StockRegisterViewPrope
   };
 
   const handleConfirmRegister = async () => {
-    // Mantém o nome exatamente como o usuário digitou, removendo apenas espaços extras
     const sanitizedName = productName.trim();
 
     if (!sanitizedName) return alert("⚠️ Digite o nome do produto antes de salvar!");
@@ -101,6 +100,7 @@ export const StockRegisterView = ({ onBack, onRegister }: StockRegisterViewPrope
     }
 
     setIsSendingData(true);
+    
     try {
       let finalImageBase64 = "";
       if (directPhotoFile) {
@@ -121,11 +121,15 @@ export const StockRegisterView = ({ onBack, onRegister }: StockRegisterViewPrope
       if (result.success) {
         window.dispatchEvent(new Event(PRODUCT_UPDATE_EVENT));
         alert("✅ Produto Salvo com Sucesso!");
-        if (onRegister && result.product) onRegister({ image: result.product.mainImage });
+        // CORREÇÃO: Acessa 'imageUrl' em vez de 'mainImage'
+        if (onRegister && result.product) onRegister({ image: result.product.imageUrl || undefined });
         onBack();
-      } else alert("❌ Erro ao salvar produto.");
+      } else {
+        alert(`❌ Erro ao salvar: ${result.error || 'Falha desconhecida'}`);
+      }
     } catch (error) {
-      alert("❌ Erro ao processar o cadastro.");
+      console.error("Erro no cliente:", error);
+      alert("❌ Erro de conexão ou processamento.");
     } finally {
       setIsSendingData(false);
     }

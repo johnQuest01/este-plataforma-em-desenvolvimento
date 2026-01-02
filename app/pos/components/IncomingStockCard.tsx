@@ -22,10 +22,16 @@ export const IncomingStockCard = ({ item, onConfirm, onReturn }: IncomingStockCa
 
   return (
     <div className="bg-white p-5 rounded-2xl border border-blue-200 shadow-md flex flex-col gap-4 w-full min-w-0 max-w-full">
-      {/* Header do Card */}
+      {/* Header */}
       <div className="flex gap-4 w-full">
         <div className="w-24 h-32 bg-gray-100 rounded-xl overflow-hidden shrink-0 border border-gray-200 relative shadow-sm">
-          <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" />
+          {item.productImage ? (
+             <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" />
+          ) : (
+             <div className="w-full h-full flex items-center justify-center bg-slate-200 text-slate-400">
+               <PackageCheck size={24} />
+             </div>
+          )}
           <div className="absolute bottom-0 right-0 bg-blue-600 text-white text-xs font-black px-2 py-1 rounded-tl-lg">
             {item.quantity} un
           </div>
@@ -51,7 +57,7 @@ export const IncomingStockCard = ({ item, onConfirm, onReturn }: IncomingStockCa
         </div>
       </div>
 
-      {/* MODO DEVOLUÇÃO ou NORMAL */}
+      {/* Return Mode */}
       {isReturning ? (
         <div className="bg-red-50 p-4 rounded-xl border border-red-200 animate-in fade-in zoom-in-95 duration-200 w-full">
           <div className="flex items-center gap-2 mb-2 text-red-600 font-black uppercase text-xs tracking-wider">
