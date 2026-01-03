@@ -1,19 +1,27 @@
+// components/builder/BlockRegistry.ts
 'use client';
 
 import React from 'react';
 import { BlockComponentProps } from '@/types/builder';
 
-// --- Imports de Blocos ---
+// --- Imports de Blocos do Sistema ---
+import { MasterGuardianDashboard } from "./blocks/MasterGuardianDashboard";
 import { StandardButtonBlock } from './blocks/StandardButtonBlock';
+
+// --- Imports de Blocos de Layout e UI ---
 import { HeaderBlock } from './blocks/Header';
 import { ProductGridBlock } from './blocks/ProductGrid';
 import { BannerBlock } from './blocks/Banner';
 import { CategoriesBlock } from './blocks/Categories';
 import { FooterBlock } from './blocks/Footer';
+
+// --- Imports de Blocos Funcionais ---
 import { UserInfoBlock } from './blocks/UserInfo';
 import { InventoryFeatureBlock } from './blocks/InventoryFeature';
 import { ActionButtonsBlock } from './blocks/ActionButtons';
 import { GridButtonsBlock } from './blocks/GridButtons';
+
+// --- Imports de Blocos de Estoque e Catálogo ---
 import { StockHeaderBlock } from './blocks/StockHeader';
 import { StockSearchBlock } from './blocks/StockSearch';
 import { StockCategoryGridBlock } from './blocks/StockCategoryGrid';
@@ -24,10 +32,14 @@ import { StockSearchResultCardBlock } from './blocks/StockSearchResultCard';
 import { StockDetailedProductCardBlock } from './blocks/StockDetailedProductCard';
 import { StockPopupCardBlock } from './blocks/StockPopupCard';
 import { StockSimpleCardBlock } from './blocks/StockSimpleCard';
+
+// --- Imports de Blocos de Pedidos (Order Flow) ---
 import { OrderHeaderBlock } from './blocks/order/OrderHeaderBlock';
 import { OrderProductInfoBlock } from './blocks/order/OrderProductInfoBlock';
 import { OrderVariantSelectorBlock } from './blocks/order/OrderVariantSelectorBlock';
 import { OrderSummaryFooterBlock } from './blocks/order/OrderSummaryFooterBlock';
+
+// --- Imports de Blocos Administrativos e Histórico ---
 import { AdminUserCardBlock } from '@/components/admin/AdminUserCard';
 import { HistorySearchBlock } from './blocks/HistorySearch';
 import { ClientHistoryCardBlock } from './blocks/ClientHistoryCard';
@@ -36,21 +48,32 @@ import { HistoryLinksBlock } from './blocks/HistoryLinksBlock';
 import { ProductionListBlock } from './blocks/ProductionListBlock';
 import { ReadyStockListBlock } from './blocks/ReadyStockListBlock';
 
-// NOVO BLOCO ADICIONADO
+// --- Novos Blocos de Inteligência ---
 import { TotalSalesBlock } from './blocks/TotalSalesBlock';
 
+/**
+ * Definição Estrita do Componente Lego
+ */
 type LegoComponent = React.FC<BlockComponentProps>;
 
+/**
+ * COMPONENT_MAP
+ * Mapeamento central para renderização dinâmica via BlockRenderer.
+ * Prioriza Clean Code e Resolução Única.
+ */
 export const COMPONENT_MAP: Record<string, LegoComponent> = {
+  // Infraestrutura e Governança
+  'master-guardian-dashboard': MasterGuardianDashboard as LegoComponent,
+  'standard-button': StandardButtonBlock,
+
+  // Layout Base
   'header': HeaderBlock,
-  'product-grid': ProductGridBlock,
+  'footer': FooterBlock,
   'banner': BannerBlock,
   'categories': CategoriesBlock,
-  'footer': FooterBlock,
-  'user-info': UserInfoBlock,
-  'inventory-feature': InventoryFeatureBlock,
-  'action-buttons': ActionButtonsBlock,
-  'grid-buttons': GridButtonsBlock,
+
+  // Ecommerce e Catálogo
+  'product-grid': ProductGridBlock,
   'stock-header': StockHeaderBlock,
   'stock-search': StockSearchBlock,
   'stock-category-grid': StockCategoryGridBlock,
@@ -61,19 +84,28 @@ export const COMPONENT_MAP: Record<string, LegoComponent> = {
   'stock-detailed-product-card': StockDetailedProductCardBlock,
   'stock-popup-card': StockPopupCardBlock,
   'stock-simple-card': StockSimpleCardBlock,
+
+  // Gestão de Pedidos
   'order-header': OrderHeaderBlock,
   'order-product-info': OrderProductInfoBlock,
   'order-variant-selector': OrderVariantSelectorBlock,
   'order-summary-footer': OrderSummaryFooterBlock,
+
+  // Fluxos de Negócio (Inventory/Admin)
+  'user-info': UserInfoBlock,
+  'inventory-feature': InventoryFeatureBlock,
+  'action-buttons': ActionButtonsBlock,
+  'grid-buttons': GridButtonsBlock,
   'admin-user-card': AdminUserCardBlock,
+  
+  // Histórico e Logística
   'history-search': HistorySearchBlock,
   'client-history-card': ClientHistoryCardBlock,
   'transaction-card': TransactionCardBlock,
   'history-links': HistoryLinksBlock,
   'production-list': ProductionListBlock,
   'ready-stock-list': ReadyStockListBlock,
-  'standard-button': StandardButtonBlock,
-  
-  // REGISTRO DO NOVO BLOCO
+
+  // Dashboard e Analytics
   'total-sales': TotalSalesBlock,
 };

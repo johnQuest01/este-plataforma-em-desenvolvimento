@@ -4,8 +4,8 @@
 export type ProductionStep = 'sewing' | 'sorting' | 'tagging' | 'packaging' | 'ready';
 
 export interface ProductionVariationDetail {
-  id?: string;    // Identificador opcional para controle de banco de dados
-  type: string;   // ATUALIZADO: Tipo da peça (ex: Manga Longa), agora padrão
+  id?: string;    
+  type: string;   
   size: string;
   color: string;
   qty: number;
@@ -26,7 +26,6 @@ export interface ProductionItemData {
   };
   startedAt: string;
   variationsDetail?: ProductionVariationDetail[];
-  // NOVO CAMPO: Motivo da devolução
   returnReason?: string;
 }
 
@@ -36,11 +35,11 @@ export interface SaleRecord {
   productName: string;
   totalValue: number;
   quantity: number;
-  date: string; // ISO format string
-  sellerName?: string; // ✅ CORREÇÃO: Adicionado para permitir o nome da vendedora no histórico
+  date: string; 
+  sellerName?: string; 
 }
 
-// --- NOVOS TIPOS PARA O POPUP DE DISTRIBUIÇÃO (ABASTECER ESTOQUE) ---
+// --- NOVOS TIPOS PARA O POPUP DE DISTRIBUIÇÃO ---
 export interface SaleswomanData {
   id: string;
   name: string;
@@ -126,7 +125,8 @@ export type BlockType =
   | 'production-list'
   | 'ready-stock-list'
   | 'stock-distribution-popup'
-  | 'total-sales'; // ADICIONADO: Novo bloco de vendas totais
+  | 'total-sales'
+  | 'standard-button'; // ✅ REGISTRADO PARA LEGO ARCHITECTURE
 
 export interface MenuItem {
   id: string;
@@ -258,8 +258,8 @@ export interface BlockData {
   since?: string;
   contact?: string;
   image?: string;
-  name?: string;  
-  sellerName?: string; // ✅ Também adicionado aqui para flexibilidade nos blocos Lego
+  name?: string; 
+  sellerName?: string;
 
   // Campos Transações/Header
   showBack?: boolean;
@@ -282,14 +282,21 @@ export interface BlockData {
   // Campos de Produção
   productionItems?: ProductionItemData[];
 
-  // Campos de Distribuição de Estoque (NOVO POPUP)
+  // Campos de Distribuição de Estoque
   saleswomen?: SaleswomanData[];
   totalStock?: number;
   labels?: StockDistributionLabels;
 
-  // --- NOVO: Campos de Vendas Totais ---
+  // Campos de Vendas Totais
   sales?: SaleRecord[];
   primaryColor?: string;
+
+  // --- CAMPOS ESPECÍFICOS DO STANDARD BUTTON ---
+  label?: string;
+  variant?: 'primary' | 'secondary' | 'outline' | 'danger';
+  size?: 'sm' | 'md' | 'lg';
+  actionType?: string;
+  fullWidthMobile?: boolean;
 
   [key: string]: string | number | boolean | null | undefined | object | unknown;
 }

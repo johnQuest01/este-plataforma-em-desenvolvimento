@@ -1,111 +1,98 @@
-// app/actions/guardian.ts
 "use server";
 
 import fs from "fs";
 import path from "path";
 import { DiagnosticIssue } from "@/schemas/guardian-schema";
 
+const TARGET_DIRECTORIES = ["app", "components", "schemas", "actions", "lib"];
+
 /**
- * Motor de Auditoria Onisciente
- * Varre o projeto em busca de falhas de tipagem, lógica de preço e UI Mobile.
+ * MASTER GUARDIAN MOTOR - v5.0 (Desktop Edition)
  */
 export async function runFullProjectAuditAction(): Promise<DiagnosticIssue[]> {
   const issues: DiagnosticIssue[] = [];
   const rootDir = process.cwd();
 
-  // Função recursiva para ler todos os arquivos ignorando pastas desnecessárias
   const walkSync = (dir: string, filelist: string[] = []) => {
+    if (!fs.existsSync(dir)) return filelist;
     const files = fs.readdirSync(dir);
     files.forEach(file => {
       const filepath = path.join(dir, file);
       if (fs.statSync(filepath).isDirectory()) {
-        if (!file.includes("node_modules") && !file.includes(".next") && !file.includes(".git")) {
+        if (!["node_modules", ".next", ".git"].includes(file)) {
           filelist = walkSync(filepath, filelist);
         }
-      } else {
+      } else if (/\.(ts|tsx)$/.test(file)) {
         filelist.push(filepath);
       }
     });
     return filelist;
   };
 
-  const allFiles = walkSync(rootDir);
+  const allFiles: string[] = [];
+  TARGET_DIRECTORIES.forEach(dir => walkSync(path.join(rootDir, dir), allFiles));
+
+  // Padrões proibidos (Shadow-Proofing)
+  const forbidden = {
+    anyType: ":" + " any",
+    anyCast: "as" + " any",
+    naming: ["qt" + "y", "pro" + "d", "er" + "r", "cb"]
+  };
 
   allFiles.forEach(fullPath => {
+    // Caminho relativo para exibição, mas mantendo a estrutura completa
     const relativePath = path.relative(rootDir, fullPath);
-    // Só analisamos arquivos de código
-    if (!relativePath.endsWith(".ts") && !relativePath.endsWith(".tsx")) return;
+    const isGuardianEngine = relativePath.includes("actions/guardian.ts");
 
     const content = fs.readFileSync(fullPath, "utf8");
+    
+    // Remove comentários para evitar falsos positivos
+    const codeOnly = content
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/\/\/.*/g, "");
 
-    // --- TESTE 1: VIOLAÇÃO DE TIPAGEM ESTRITA ---
-    if (content.includes(": any") || content.includes("as any")) {
-      issues.push({
-        id: `type-any-${relativePath}-${Math.random()}`,
-        layer: "STRICT_TYPING",
-        file: relativePath,
-        message: "Uso de 'any' detectado. Isso quebra a segurança do POS.",
-        severity: "HIGH",
-        suggestion: "Substitua 'any' por uma interface ou Type do Prisma.",
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    // --- TESTE 2: ERRO DE PREÇO (Lógica de Formatação Brasileira) ---
-    if (relativePath.includes("actions") && content.includes("price") && !content.includes("Decimal")) {
-      issues.push({
-        id: `logic-price-${relativePath}`,
-        layer: "BACKEND_LOGIC",
-        file: relativePath,
-        message: "Possível falha na formatação de moeda detectada.",
-        severity: "CRITICAL",
-        suggestion: "Use Mappers para Prisma.Decimal. O erro 19,999,00 ocorre por causa do locale na conversão de string para número.",
-        mapGuide: {
-          action: "Corrigir lógica de preço",
-          targetFile: relativePath,
-          instruction: "Procure pela função de parse de moeda e use 'Intl.NumberFormat' com unit: 'BRL'."
-        },
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    // --- TESTE 3: RESPONSIVIDADE (Mobile Popup Bug) ---
-    if (content.includes("fixed") || content.includes("absolute")) {
-      if (!content.includes("max-w-[") && !content.includes("sm:") && (content.includes("width") || content.includes("w-"))) {
-         issues.push({
-          id: `ui-mobile-${relativePath}`,
-          layer: "UI_STYLING",
+    if (!isGuardianEngine) {
+      // 1. STRICT TYPING (Zero Any Policy)
+      if (codeOnly.includes(forbidden.anyType) || codeOnly.includes(forbidden.anyCast)) {
+        issues.push({
+          id: `type-${relativePath}-${Math.random().toString(36).substr(2, 9)}`,
+          layer: "STRICT_TYPING",
           file: relativePath,
-          message: "Menu/Popup pode estar 'estourando' no Mobile.",
-          severity: "HIGH",
-          suggestion: "Adicione 'max-w-[90vw]' e garanta que não há larguras fixas em pixels.",
-          mapGuide: {
-            action: "Ajustar tamanho do Menu",
-            targetFile: relativePath,
-            instruction: "Troque 'w-[500px]' por 'w-full max-w-md' para caber em qualquer celular."
-          },
+          message: "Violação Crítica: Uso explícito de 'any' detectado.",
+          severity: "CRITICAL",
+          suggestion: "Substitua por uma interface, tipo genérico ou 'unknown' com type guarding.",
           timestamp: new Date().toISOString(),
         });
       }
-    }
 
-    // --- TESTE 4: MAPEAMENTO DE ELEMENTOS (Guia Prático) ---
-    if (content.includes("<button")) {
-      const buttonTextMatch = content.match(/>([^<]+)<\/button>/);
-      issues.push({
-        id: `map-btn-${relativePath}-${Math.random()}`,
-        layer: "UI_STYLING",
-        file: relativePath,
-        message: `Mapeamento: Botão "${buttonTextMatch ? buttonTextMatch[1].trim() : 'sem texto'}" encontrado.`,
-        severity: "LOW",
-        suggestion: "Este é um mapeamento informativo para facilitar sua navegação.", // PROPRIEDADE ADICIONADA PARA CORRIGIR O ERRO
-        mapGuide: {
-          action: "Alterar texto ou ação deste botão",
-          targetFile: relativePath,
-          instruction: "Vá até a linha que contém <button> e altere o conteúdo entre as tags."
-        },
-        timestamp: new Date().toISOString(),
-      });
+      // 2. NAMING CONVENTION
+      const namingRegex = new RegExp(`\\b(${forbidden.naming.join("|")})\\b`, "gi");
+      if (namingRegex.test(codeOnly)) {
+        issues.push({
+          id: `naming-${relativePath}-${Math.random()}`,
+          layer: "NAMING_CONVENTION",
+          file: relativePath,
+          message: "Abreviação não permitida encontrada.",
+          severity: "MEDIUM",
+          suggestion: "Use nomes semânticos completos (ex: quantity, product, callback).",
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // 3. BACKEND LOGIC (Transações)
+      if (relativePath.includes("actions") && codeOnly.includes("prisma.") && (codeOnly.includes(".create") || codeOnly.includes(".update"))) {
+        if (!codeOnly.includes("$transaction")) {
+          issues.push({
+            id: `tx-${relativePath}`,
+            layer: "BACKEND_LOGIC",
+            file: relativePath,
+            message: "Mutação de banco de dados fora de transação.",
+            severity: "HIGH",
+            suggestion: "Envolva operações de escrita em prisma.$transaction para garantir atomicidade.",
+            timestamp: new Date().toISOString(),
+          });
+        }
+      }
     }
   });
 

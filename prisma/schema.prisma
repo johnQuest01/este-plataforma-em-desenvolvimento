@@ -8,7 +8,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ... (Mantenha seus models User, Store, Product, etc. abaixo)
+// --- MODELOS DE USUÁRIO E LOJA ---
+
 model User {
   id        String   @id @default(cuid())
   email     String?  @unique
@@ -22,38 +23,40 @@ model User {
 }
 
 model Store {
-  id           String   @id @default(cuid())
-  name         String
-  slug         String   @unique
-  nicheType    String   @default("clothing")
-  features     Json     @default("{}")
-  layoutConfig Json?    @default("[]")
-  themeConfig  Json?    @default("{}")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  ownerId      String
-  owner        User     @relation(fields: [ownerId], references: [id])
-  products     Product[]
-  orders       Order[]
+  id               String            @id @default(cuid())
+  name             String
+  slug             String            @unique
+  nicheType        String            @default("clothing")
+  features         Json              @default("{}")
+  layoutConfig     Json?             @default("[]")
+  themeConfig      Json?             @default("{}")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  ownerId          String
+  owner            User              @relation(fields: [ownerId], references: [id])
+  products         Product[]
+  orders           Order[]
   productionItems  ProductionItem[]
   productionOrders ProductionOrder[]
 }
 
+// --- MODELOS DE PRODUTO ---
+
 model Product {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  price       Decimal  @db.Decimal(10, 2)
-  imageColor  String?
-  imageUrl    String?
-  tags        String[]
-  isVisible   Boolean  @default(true)
-  stock       Int      @default(0)
-  variants    ProductVariant[]
-  storeId     String
-  store       Store    @relation(fields: [storeId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String           @id @default(cuid())
+  name            String
+  description     String?
+  price           Decimal          @db.Decimal(10, 2)
+  imageColor      String?
+  imageUrl        String?
+  tags            String[]
+  isVisible       Boolean          @default(true)
+  stock           Int              @default(0)
+  variants        ProductVariant[]
+  storeId         String
+  store           Store            @relation(fields: [storeId], references: [id])
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   orderItems      OrderItem[]
   productionItems ProductionItem[]
 }
@@ -69,20 +72,22 @@ model ProductVariant {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
+// --- MODELOS DE PRODUÇÃO ---
+
 model ProductionOrder {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   productName String
-  image       String   @db.Text
-  status      String   @default("PENDING")
+  image       String      @db.Text
+  status      String      @default("PENDING")
   storeId     String?
-  store       Store?   @relation(fields: [storeId], references: [id])
+  store       Store?      @relation(fields: [storeId], references: [id])
   variations  Variation[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
 model Variation {
-  id                String   @id @default(cuid())
+  id                String          @id @default(cuid())
   name              String
   category          String?
   color             String
@@ -92,43 +97,55 @@ model Variation {
   images            String[]
   productionOrderId String
   productionOrder   ProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
-  createdAt         DateTime @default(now())
+  createdAt         DateTime        @default(now())
 }
 
 model ProductionItem {
-  id          String   @id @default(cuid())
-  status      String   @default("PENDING")
-  priority    Int      @default(0)
+  id          String     @id @default(cuid())
+  status      String     @default("PENDING")
+  priority    Int        @default(0)
   notes       String?
   storeId     String
-  store       Store    @relation(fields: [storeId], references: [id])
+  store       Store      @relation(fields: [storeId], references: [id])
   productId   String
-  product     Product  @relation(fields: [productId], references: [id])
-  orderItemId String?  @unique
+  product     Product    @relation(fields: [productId], references: [id])
+  orderItemId String?    @unique
   orderItem   OrderItem? @relation(fields: [orderItemId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
+// --- MODELOS DE PEDIDO ---
+
 model Order {
-  id            String   @id @default(cuid())
-  status        String   @default("PENDING")
-  total         Decimal  @db.Decimal(10, 2)
+  id            String      @id @default(cuid())
+  status        String      @default("PENDING")
+  total         Decimal     @db.Decimal(10, 2)
   customerName  String?
   customerPhone String?
   storeId       String
-  store         Store    @relation(fields: [storeId], references: [id])
+  store         Store       @relation(fields: [storeId], references: [id])
   items         OrderItem[]
-  createdAt     DateTime @default(now())
+  createdAt     DateTime    @default(now())
 }
 
 model OrderItem {
-  id        String   @id @default(cuid())
-  quantity  Int
-  price     Decimal  @db.Decimal(10, 2)
-  orderId   String
-  order     Order    @relation(fields: [orderId], references: [id])
-  productId String
-  product   Product  @relation(fields: [productId], references: [id])
+  id         String          @id @default(cuid())
+  quantity   Int
+  price      Decimal         @db.Decimal(10, 2)
+  orderId    String
+  order      Order           @relation(fields: [orderId], references: [id])
+  productId  String
+  product    Product         @relation(fields: [productId], references: [id])
   production ProductionItem?
+}
+
+// --- MODELOS DE SISTEMA / CONFIGURAÇÃO ---
+
+model GuardianConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique // Ex: "UI_THEME"
+  value     String   // Ex: "dark", "light"
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
 }

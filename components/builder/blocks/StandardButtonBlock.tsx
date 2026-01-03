@@ -7,50 +7,49 @@ import { BlockComponentProps } from '@/types/builder';
 import { StandardButtonDataSchema } from '@/schemas/blocks/button-schema';
 
 export const StandardButtonBlock: React.FC<BlockComponentProps> = ({ config, onAction }) => {
-  // Validação Segura dos Dados do Bloco
   const result = StandardButtonDataSchema.safeParse(config.data);
   
   if (!result.success) {
     return (
-      <div className="p-2 text-[10px] text-red-500 bg-red-500/10 rounded-lg border border-red-500/20">
-        Erro de Configuração no Botão: {result.error.message}
+      <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl text-[10px] text-red-400 font-mono">
+        [LEGO_ERR]: {result.error.errors[0].message}
       </div>
     );
   }
 
-  const { label, variant, size, actionType, fullWidthMobile } = result.data;
+  const { label, variant, size, actionType, fullWidthMobile, payload } = result.data;
 
-  // Mapeamento de Estilos via Tailwind 4
-  const variants = {
-    primary: "bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/20",
-    secondary: "bg-zinc-800 text-zinc-100 hover:bg-zinc-700",
-    outline: "bg-transparent border-2 border-zinc-800 text-zinc-300 hover:bg-zinc-800",
-    danger: "bg-red-600 text-white hover:bg-red-700 shadow-md shadow-red-500/20"
-  };
-
-  const sizes = {
-    sm: "px-4 py-2 text-xs",
-    md: "px-6 py-4 text-sm",
-    lg: "px-8 py-5 text-base"
+  const styles = {
+    variants: {
+      primary: "bg-blue-600 text-white shadow-xl shadow-blue-900/20 hover:bg-blue-500",
+      secondary: "bg-zinc-800 text-zinc-100 hover:bg-zinc-700",
+      outline: "bg-transparent border-2 border-zinc-800 text-zinc-400 hover:bg-zinc-800",
+      danger: "bg-red-600 text-white hover:bg-red-500"
+    },
+    sizes: {
+      sm: "h-10 px-6 text-xs",
+      md: "h-14 px-8 text-sm",
+      lg: "h-16 px-12 text-base"
+    }
   };
 
   return (
-    <div className="p-2 w-full flex justify-center">
+    <div className="w-full p-2 flex justify-center">
       <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={() => onAction?.(actionType, config.data)}
+        whileHover={{ scale: 1.02, y: -2 }}
+        whileTap={{ scale: 0.97 }}
+        onClick={() => onAction?.(actionType, payload)}
         className={`
-          ${variants[variant]} 
-          ${sizes[size]}
+          ${styles.variants[variant]} 
+          ${styles.sizes[size]}
           ${fullWidthMobile ? "w-full md:w-auto" : "w-auto"}
-          rounded-2xl font-black uppercase tracking-widest
-          transition-all duration-200 cursor-pointer
+          rounded-[1.4rem] font-black uppercase tracking-[0.15em]
+          transition-all duration-300 cursor-pointer
           flex items-center justify-center gap-3
         `}
       >
         {label}
-        <span className="opacity-50 text-[10px]">→</span>
+        <span className="opacity-30 text-xs">→</span>
       </motion.button>
     </div>
   );

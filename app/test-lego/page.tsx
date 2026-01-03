@@ -2,10 +2,11 @@
 
 import React from 'react';
 import { BlockRenderer } from "@/components/builder/BlockRender";
+import { BlockConfig } from "@/types/builder"; // Importar o tipo para validação estrita
 
 export default function LegoPlaygroundPage() {
-  // Simulação de Dados vindo do JSON/Banco
-  const demoConfig = {
+  // ✅ TIPAGEM ADICIONADA: Agora o TS exige todos os campos do contrato
+  const demoConfig: BlockConfig = {
     id: "btn-demo-01",
     type: "standard-button",
     isVisible: true,
@@ -14,7 +15,12 @@ export default function LegoPlaygroundPage() {
       variant: "primary",
       size: "md",
       actionType: "SUBMIT_ORDER",
-      fullWidthMobile: true // O pulo do gato para o mobile
+      fullWidthMobile: true
+    },
+    // ✅ PROPRIEDADE ADICIONADA: Resolve o erro ts(2741)
+    style: {
+      borderRadius: "1rem",
+      padding: "1rem"
     }
   };
 
@@ -25,7 +31,6 @@ export default function LegoPlaygroundPage() {
           Degustação Lego
         </h1>
         
-        {/* Renderizador de Bloco Único */}
         <BlockRenderer 
           config={demoConfig} 
           onAction={(type) => alert(`Ação disparada: ${type}`)} 
