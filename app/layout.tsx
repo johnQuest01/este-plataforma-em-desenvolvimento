@@ -1,4 +1,3 @@
-// app/layout.tsx
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -9,7 +8,6 @@ import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 
 // GUARDIAN SYSTEM (LEGO BLOCKS)
 import { MasterGuardianDashboard } from "@/components/builder/blocks/MasterGuardianDashboard";
-import { GuardianTrigger } from "@/components/builder/blocks/GuardianTrigger";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,6 +39,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Logic to ensure Guardian only runs in Dev
+  const isDev = process.env.NODE_ENV === 'development';
+
   return (
     <html lang="pt-BR" className="selection:bg-indigo-500/30">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-950 text-zinc-200`}>
@@ -49,16 +50,18 @@ export default function RootLayout({
           {children}
         </main>
         
-        {/* Camada de Utilidades de Admin */}
+        {/* Camada de Utilidades de Admin (Production Ready) */}
         <GlobalAdmin />
         <InstallPrompt />
 
-        {/* GUARDIAN ARCHITECTURE:
-            O Trigger controla o estado global (Zustand).
-            O Dashboard ouve esse estado e renderiza via Framer Motion.
+        {/* GUARDIAN ARCHITECTURE (DEV ONLY)
+            Protects production bundle size and performance.
         */}
-        <GuardianTrigger />
-        <MasterGuardianDashboard />
+        {isDev && (
+          <>
+            <MasterGuardianDashboard />
+          </>
+        )}
       </body>
     </html>
   );
