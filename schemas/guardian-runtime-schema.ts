@@ -1,36 +1,48 @@
 // path: src/schemas/guardian-runtime-schema.ts
 import { z } from "zod";
 
-export const RuntimeElementStateEnum = z.enum(["MOUNTED", "VISIBLE", "HIDDEN", "UNMOUNTED"]);
+export const RuntimeElementStateEnum = z.enum([
+  "MOUNTED",
+  "VISIBLE",
+  "HIDDEN",
+  "UNMOUNTED"
+]);
 
-// Estrutura de um nó da árvore de componentes
-export const ComponentNodeSchema: z.ZodType<any> = z.lazy(() => z.object({
-  name: z.string(),
-  file: z.string().optional(),
-  depth: z.number(),
-  children: z.array(ComponentNodeSchema).default([]),
-}));
-
-export type ComponentNode = z.infer<typeof ComponentNodeSchema>;
+export const UIMetricsSchema = z.object({
+  width: z.number(),
+  height: z.number(),
+  aspectRatio: z.string(),
+  isFlex: z.boolean(),
+  flexDirection: z.string(),
+  isGrid: z.boolean(),
+  computedDisplay: z.string(),
+  isResponsiveIssue: z.boolean(),
+  elementCount: z.object({
+    buttons: z.number(),
+    inputs: z.number(),
+    images: z.number(),
+    textNodes: z.number(),
+  }),
+  contentMap: z.object({
+    buttonLabels: z.array(z.string()),
+    headings: z.array(z.string()),
+    inputPlaceholders: z.array(z.string()),
+  })
+});
 
 export const RuntimeTrackerSchema = z.object({
   elementId: z.string(),
   componentName: z.string(),
-  responsibleFile: z.string().optional(),
+  responsibleFile: z.string(),
   isPopup: z.boolean(),
-  zIndex: z.number().default(0),
+  zIndex: z.number(),
   state: RuntimeElementStateEnum,
   timestamp: z.string(),
-  childComponents: z.array(z.string()).default([]),
+  childComponents: z.array(z.string()),
+  metrics: UIMetricsSchema.optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
-export type RuntimeTracker = z.infer<typeof RuntimeTrackerSchema>;
 export type RuntimeElementState = z.infer<typeof RuntimeElementStateEnum>;
-
-export const RuntimeSessionSchema = z.object({
-  activeElements: z.array(RuntimeTrackerSchema),
-  currentPopupId: z.string().nullable(),
-});
-
-export type RuntimeSession = z.infer<typeof RuntimeSessionSchema>;
+export type RuntimeTracker = z.infer<typeof RuntimeTrackerSchema>;
+export type UIMetrics = z.infer<typeof UIMetricsSchema>;

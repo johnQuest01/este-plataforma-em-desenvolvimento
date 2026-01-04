@@ -1,23 +1,33 @@
 // path: src/components/builder/blocks/master/RexRuntimePixel.tsx
 "use client";
 
-import React, { useEffect, useCallback } from "react";
-import { usePathname } from "next/navigation";
-import { useGuardianStore } from "@/hooks/use-guardian-store";
-import { RuntimeTracker, RuntimeElementStateEnum, ComponentNode } from "@/schemas/guardian-runtime-schema";
 
-// --- TIPAGEM ESTRITA DO REACT FIBER ---
+import React, { useEffect } from "react";
+import { useGuardianStore } from "@/hooks/use-guardian-store";
+import { RuntimeTracker, RuntimeElementStateEnum } from "@/schemas/guardian-runtime-schema";
+
+
+// --- TIPAGEM ESTRITA PARA REACT FIBER (INTERNALS) ---
+// Define a estrutura mínima necessária dos nós internos do React para evitar 'any'
 interface FiberSource {
   fileName: string;
   lineNumber?: number;
 }
+
 
 interface FiberTypeObject {
   displayName?: string;
   name?: string;
 }
 
-type FiberType = string | FiberTypeObject | ((...args: unknown[]) => unknown) | null;
+
+// União de tipos possíveis para 'type' em um nó Fiber
+type FiberType =
+  | string
+  | FiberTypeObject
+  | ((...args: unknown[]) => unknown)
+  | null;
+
 
 interface ReactFiberNode {
   return: ReactFiberNode | null;
@@ -28,11 +38,19 @@ interface ReactFiberNode {
   stateNode?: Element | null;
 }
 
-// --- 1. GUARDIAN TRACKER ---
+
+// --- 1. GUARDIAN TRACKER (A ETIQUETA) ---
 export function GuardianTracker({ file }: { file: string }) {
   if (process.env.NODE_ENV !== 'development') return null;
-  return <span data-guardian-file={file} style={{ display: 'none' }} aria-hidden="true" />;
+  return (
+    <span
+      data-guardian-file={file}
+      style={{ display: 'none' }}
+      aria-hidden="true"
+    />
+  );
 }
+
 
 interface RexRuntimePixelProps {
   elementId: string;
@@ -41,6 +59,7 @@ interface RexRuntimePixelProps {
   responsibleFile?: string;
   children: React.ReactNode;
 }
+
 
 export function RexRuntimePixel({
   elementId,
@@ -52,8 +71,11 @@ export function RexRuntimePixel({
   const registerElement = useGuardianStore((state) => state.registerElement);
   const unregisterElement = useGuardianStore((state) => state.unregisterElement);
 
+
   useEffect(() => {
     const inferredFile = responsibleFile || `components/builder/blocks/${componentName}.tsx`;
+
+
     const trackerData: RuntimeTracker = {
       elementId,
       componentName,
@@ -62,104 +84,120 @@ export function RexRuntimePixel({
       zIndex: isPopup ? 50 : 0,
       state: RuntimeElementStateEnum.enum.MOUNTED,
       timestamp: new Date().toISOString(),
+      childComponents: [], // Pixel padrão não escaneia filhos por enquanto para performance
       metadata: {},
     };
+
+
     registerElement(trackerData);
-    return () => unregisterElement(elementId);
+
+
+    return () => {
+      unregisterElement(elementId);
+    };
   }, [elementId, componentName, isPopup, responsibleFile, registerElement, unregisterElement]);
+
 
   return <>{children}</>;
 }
 
-// --- ALGORITMOS DE INTELIGÊNCIA (DEEP SCAN) ---
 
-function getFiberFromDom(domNode: HTMLElement): ReactFiberNode | null {
-  const key = Object.keys(domNode).find((k) => k.startsWith("__reactFiber$"));
-  // @ts-expect-error - Acesso seguro via string dinâmica
-  return key ? domNode[key] : null;
-}
+// --- ALGORITMOS DE INTELIGÊNCIA ---
 
-function cleanFilePath(fullPath: string): string {
-  if (fullPath.includes("src/")) return "src/" + fullPath.split("src/")[1];
-  if (fullPath.includes("app/")) return "app/" + fullPath.split("app/")[1];
-  return fullPath;
-}
 
-function getComponentName(fiber: ReactFiberNode): string | null {
-  if (!fiber.type) return null;
-  if (typeof fiber.type === 'string') return null; // Ignora divs, spans
-  if (typeof fiber.type === 'function') return fiber.type.name || (fiber.type as any).displayName;
-  if (typeof fiber.type === 'object') return (fiber.type as any).displayName || (fiber.type as any).name;
+// 1. Descobre o arquivo pai (React Fiber)
+function getReactComponentInfo(domNode: HTMLElement): { name: string; fileName: string; fiber: ReactFiberNode } | null {
+  try {
+    const key = Object.keys(domNode).find((k) => k.startsWith("__reactFiber$"));
+    if (!key) return null;
+
+
+    // Casting seguro para acessar a propriedade dinâmica
+    const nodeWithFiber = domNode as unknown as Record<string, ReactFiberNode>;
+    let fiber: ReactFiberNode | null = nodeWithFiber[key];
+
+
+    while (fiber) {
+      if (fiber._debugSource) {
+        const fullPath = fiber._debugSource.fileName;
+        let relativePath = fullPath;
+        if (fullPath.includes("src/")) relativePath = "src/" + fullPath.split("src/")[1];
+        else if (fullPath.includes("app/")) relativePath = "app/" + fullPath.split("app/")[1];
+
+
+        let componentName = "Anonymous";
+       
+        // Verificação de tipo estrita para extrair o nome
+        if (fiber.type) {
+            if (typeof fiber.type === 'function') {
+                componentName = fiber.type.name || (fiber.type as unknown as { displayName?: string }).displayName || componentName;
+            } else if (typeof fiber.type === 'object') {
+                componentName = (fiber.type as FiberTypeObject).displayName || (fiber.type as FiberTypeObject).name || componentName;
+            }
+        }
+
+
+        if (componentName && relativePath) return { name: componentName, fileName: relativePath, fiber };
+      }
+      fiber = fiber.return;
+    }
+  } catch (error) { console.warn(error); }
   return null;
 }
 
-// 🧠 ALGORITMO RECURSIVO DE MAPEAMENTO DE TELA
-function buildComponentTree(fiber: ReactFiberNode, depth: number = 0): ComponentNode | null {
-  if (depth > 20) return null; // Limite de segurança
 
-  const name = getComponentName(fiber);
-  const file = fiber._debugSource ? cleanFilePath(fiber._debugSource.fileName) : undefined;
+// 2. ✅ NOVO: Escaneia a árvore de componentes filhos (Deep Scan)
+// Agora tipado corretamente com ReactFiberNode
+function scanComponentTree(fiberNode: ReactFiberNode): string[] {
+    const components = new Set<string>();
+    const maxDepth = 10; // Limite de profundidade para evitar loops infinitos
 
-  // Se não for um componente React customizado (ex: div), continuamos descendo mas não criamos nó
-  if (!name || name === "GuardianTracker" || name.startsWith("Next")) {
-    if (fiber.child) return buildComponentTree(fiber.child, depth);
-    return null;
-  }
 
-  const node: ComponentNode = {
-    name,
-    file,
-    depth,
-    children: []
-  };
+    function walk(node: ReactFiberNode | null, depth: number) {
+        if (!node || depth > maxDepth) return;
 
-  // Varre os filhos (Child) e irmãos (Sibling)
-  let child = fiber.child;
-  while (child) {
-    const childNode = buildComponentTree(child, depth + 1);
-    if (childNode) {
-      node.children.push(childNode);
+
+        // Tenta pegar o nome do componente
+        let name = "";
+        if (node.type) {
+            if (typeof node.type === 'function') {
+                name = node.type.name || (node.type as unknown as { displayName?: string }).displayName || "";
+            } else if (typeof node.type === 'object') {
+                name = (node.type as FiberTypeObject).displayName || (node.type as FiberTypeObject).name || "";
+            }
+        }
+
+
+        // Filtra apenas componentes React customizados (Começam com Maiúscula)
+        // Ignora divs, spans, e componentes internos do Next.js
+        if (name && /^[A-Z]/.test(name) && !name.startsWith("Next") && name !== "GuardianTracker") {
+            components.add(name);
+        }
+
+
+        // Recursão para filhos e irmãos
+        if (node.child) walk(node.child, depth + 1);
+        if (node.sibling) walk(node.sibling, depth);
     }
-    // Otimização: Se o filho for apenas HTML (div), pegamos os netos dele e subimos
-    else if (child.child) {
-       // Lógica simplificada para não poluir a árvore com nós vazios
-       // Em uma implementação real completa, faríamos um "flatten" aqui
-    }
-    child = child.sibling;
-  }
 
-  return node;
+
+    if (fiberNode && fiberNode.child) {
+        walk(fiberNode.child, 0);
+    }
+
+
+    return Array.from(components).slice(0, 15); // Retorna no máximo 15 componentes para não poluir
 }
 
+
 /**
- * GlobalObserver Atualizado:
- * 1. Detecta Popups (como antes).
- * 2. Escaneia a Rota Ativa inteira quando o pathname muda.
+ * GlobalObserver Atualizado
  */
 export function GlobalGuardianObserver() {
-  const pathname = usePathname();
   const registerElement = useGuardianStore((state) => state.registerElement);
   const unregisterElement = useGuardianStore((state) => state.unregisterElement);
-  const setRouteStructure = useGuardianStore((state) => state.setRouteStructure);
 
-  // 1. Scanner de Rota (Executa ao navegar)
-  useEffect(() => {
-    // Pequeno delay para garantir que o React montou a nova página
-    const timer = setTimeout(() => {
-      const rootElement = document.getElementById('main-content') || document.body;
-      const rootFiber = getFiberFromDom(rootElement);
-      
-      if (rootFiber) {
-        // Começa a varredura a partir do root
-        const tree = buildComponentTree(rootFiber);
-        setRouteStructure(tree);
-      }
-    }, 1000);
 
-    return () => clearTimeout(timer);
-  }, [pathname, setRouteStructure]);
-
-  // 2. Scanner de Popups (Mutation Observer)
   useEffect(() => {
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
@@ -169,26 +207,43 @@ export function GlobalGuardianObserver() {
             const zIndex = parseInt(style.zIndex, 10);
            
             if ((style.position === 'fixed' || style.position === 'absolute') && zIndex >= 40) {
+             
+              // 1. Busca Explícita (Guardian Tracker)
               const trackerNode = node.querySelector('[data-guardian-file]');
               const explicitFile = trackerNode?.getAttribute('data-guardian-file');
-              
+
+
               let detectedName = "External Popup/Overlay";
               let detectedFile = "Unknown (External/Library)";
               let detectionMethod = "Unknown";
+              let detectedChildren: string[] = [];
+
+
+              // Tenta obter informações do React Fiber para escaneamento profundo
+              const reactInfo = getReactComponentInfo(node);
+
 
               if (explicitFile) {
                 detectedFile = explicitFile;
                 detectedName = explicitFile.split('/').pop() || "Identified Popup";
                 detectionMethod = "ExplicitTracker";
+               
+                // ✅ Se temos o Fiber, escaneamos os filhos mesmo com a etiqueta manual
+                if (reactInfo?.fiber) {
+                    detectedChildren = scanComponentTree(reactInfo.fiber);
+                }
+
+
               } else {
-                // Tenta descobrir via Fiber se não tiver etiqueta
-                const fiber = getFiberFromDom(node);
-                if (fiber && fiber._debugSource) {
-                    detectedFile = cleanFilePath(fiber._debugSource.fileName);
-                    detectedName = getComponentName(fiber) || "Unknown Component";
+                if (reactInfo) {
+                    detectedName = reactInfo.name;
+                    detectedFile = reactInfo.fileName;
                     detectionMethod = "ReactFiberTraversal";
+                    // ✅ Escaneia filhos
+                    detectedChildren = scanComponentTree(reactInfo.fiber);
                 }
               }
+
 
               registerElement({
                 elementId: node.id || `popup-${Math.random().toString(36).substr(2, 9)}`,
@@ -198,11 +253,13 @@ export function GlobalGuardianObserver() {
                 zIndex: zIndex,
                 state: RuntimeElementStateEnum.enum.VISIBLE,
                 timestamp: new Date().toISOString(),
+                childComponents: detectedChildren, // ✅ Salva a lista de componentes
                 metadata: { origin: "GlobalObserver", method: detectionMethod }
               });
             }
           }
         });
+
 
         mutation.removedNodes.forEach((node) => {
             if (node instanceof HTMLElement && node.id) {
@@ -212,9 +269,12 @@ export function GlobalGuardianObserver() {
       });
     });
 
+
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
   }, [registerElement, unregisterElement]);
 
+
   return null;
 }
+

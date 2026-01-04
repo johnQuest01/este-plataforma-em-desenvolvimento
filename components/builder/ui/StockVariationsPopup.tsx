@@ -1,7 +1,12 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { GuardianTracker } from "@/components/builder/blocks/master/RexRuntimePixel";
+
+// 📚 ESTUDO: 1. Importação do HOC (Higher Order Component)
+// Em vez de importar o componente visual 'GuardianTracker', importamos a função 'withGuardian'.
+// Ela serve como uma "embalagem" inteligente para o seu componente.
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
+
 import { cn } from '@/lib/utils';
 import { 
   ChevronLeft, 
@@ -16,7 +21,7 @@ import {
   Sparkles, 
   Factory,
   Box,
-  Layers // Icone para o botão Adicionar
+  Layers 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -67,8 +72,8 @@ interface DraftState {
   category: string;
   keyword: string;
   color: string;
-  type: string; // Usado como input temporário
-  types: string[]; // Lista de tipos adicionados
+  type: string; 
+  types: string[]; 
   images: string[];
   stockLocations: string[];
 }
@@ -133,7 +138,6 @@ const MiniPreviewCard = ({ draft, sizePreview }: { draft: DraftState, sizePrevie
           </span>
         </div>
 
-        {/* Categoria e Palavra Chave Formatadas */}
         {(hasCategory || hasKeyword) && (
             <div className="flex items-center gap-1.5 mt-0.5 overflow-hidden">
                 {hasCategory && (
@@ -187,7 +191,11 @@ function SortablePhotoItem({ id, url, onRemove }: { id: string, url: string, onR
 
 // --- Main Component ---
 
-export const StockVariationsPopup = ({ isOpen, onClose, onSave, initialItems = [] }: StockVariationsPopupProps) => {
+// 📚 ESTUDO: 2. Renomeação do Componente Base
+// O componente principal NÃO é mais exportado diretamente com 'export const'.
+// Nós o definimos como uma constante local (ex: StockVariationsPopupBase).
+// Isso mantém a lógica pura e isolada.
+const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }: StockVariationsPopupProps) => {
   const [variations, setVariations] = useState<VariationItem[]>(initialItems);
   
   const [draft, setDraft] = useState<DraftState>(() => {
@@ -198,7 +206,7 @@ export const StockVariationsPopup = ({ isOpen, onClose, onSave, initialItems = [
       keyword: lastItem?.keyword || "",
       color: lastItem?.color || "",
       type: lastItem?.variation || lastItem?.type || "",
-      types: [], // Inicializa lista de tipos
+      types: [], 
       images: lastItem?.images || [],
       stockLocations: lastItem?.stockLocations || ['Loja Principal']
     };
@@ -252,7 +260,6 @@ export const StockVariationsPopup = ({ isOpen, onClose, onSave, initialItems = [
       })));
     }
 
-    // Lógica de imagens mantida: só atualiza se for da mesma cor
     if (field === 'images') {
        setVariations(prev => prev.map(item => {
            if (item.color === draft.color) {
@@ -266,7 +273,7 @@ export const StockVariationsPopup = ({ isOpen, onClose, onSave, initialItems = [
   const handleAddType = () => {
     if (draft.type.trim() && !draft.types.includes(draft.type.trim())) {
         updateDraft('types', [...draft.types, draft.type.trim()]);
-        updateDraft('type', ''); // Limpa o input
+        updateDraft('type', ''); 
     }
   };
 
@@ -345,8 +352,6 @@ export const StockVariationsPopup = ({ isOpen, onClose, onSave, initialItems = [
     const qty = parseInt(tempQty);
     
     if (editingSize && !isNaN(qty) && qty > 0) {
-      // Se houver tipos múltiplos, cria uma variação para cada tipo OU usa o tipo único se a lista estiver vazia
-      // Se a lista de tipos estiver vazia, usa o valor atual do input 'type' ou string vazia
       const typesToUse = draft.types.length > 0 ? draft.types : [draft.type];
 
       const newItems: VariationItem[] = typesToUse.map(typeVal => ({
@@ -370,13 +375,12 @@ export const StockVariationsPopup = ({ isOpen, onClose, onSave, initialItems = [
   };
 
   const handleAddNew = () => {
-    // Reset parcial inteligente
     setDraft(prev => ({
       ...prev,
-      color: "", // Limpa cor
-      type: "", // Limpa tipo input
-      types: [], // Limpa lista de tipos
-      images: [] // Limpa imagens
+      color: "", 
+      type: "", 
+      types: [], 
+      images: [] 
     }));
   };
 
@@ -438,7 +442,13 @@ export const StockVariationsPopup = ({ isOpen, onClose, onSave, initialItems = [
 
   return (
     <div className="flex flex-col h-full bg-[#eeeeee] relative overflow-hidden">
-      <GuardianTracker file="components/builder/ui/StockVariationsPopup.tsx" />
+      
+      {/* 📚 ESTUDO: 3. Remoção do Tracker Manual
+          Removemos a linha <GuardianTracker file="..." />.
+          Não precisamos mais "sujar" o JSX com componentes de monitoramento.
+          O 'withGuardian' cuidará disso automaticamente na exportação.
+      */}
+
       <div className="bg-white px-4 py-3 shadow-sm z-10 flex items-center justify-between shrink-0">
         <div>
            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Editor de Variações</span>
@@ -499,7 +509,6 @@ export const StockVariationsPopup = ({ isOpen, onClose, onSave, initialItems = [
                       <input type="text" value={draft.color} onChange={(e) => updateDraft('color', e.target.value)} placeholder="Cor (Ex: Azul Marinho)" className="w-full h-11 bg-blue-50/30 border border-blue-100 rounded-xl pl-10 pr-4 text-sm font-bold text-gray-900 placeholder:text-gray-400 outline-none focus:border-[#5874f6] focus:bg-white transition-all" />
                   </div>
                   
-                  {/* --- NOVA LÓGICA DE TIPOS MÚLTIPLOS --- */}
                   <div className="flex flex-col gap-2">
                       <div className="flex gap-2">
                           <div className="relative flex-1">
@@ -518,7 +527,6 @@ export const StockVariationsPopup = ({ isOpen, onClose, onSave, initialItems = [
                           </button>
                       </div>
                       
-                      {/* Lista de Tipos Adicionados */}
                       {draft.types.length > 0 && (
                           <div className="flex flex-wrap gap-2">
                               {draft.types.map((type, idx) => (
@@ -608,7 +616,6 @@ export const StockVariationsPopup = ({ isOpen, onClose, onSave, initialItems = [
           </div>
         </div>
 
-        {/* --- LISTA DE ITENS PRONTOS --- */}
         {variations.length > 0 && (
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 flex flex-col gap-3">
             <span className="text-xs font-black text-gray-900 uppercase tracking-wide">Itens Prontos ({variations.length})</span>
@@ -697,3 +704,15 @@ export const StockVariationsPopup = ({ isOpen, onClose, onSave, initialItems = [
     </div>
   );
 };
+
+// 📚 ESTUDO: 4. Exportação com a "Etiqueta Inteligente"
+// Aqui é onde a mágica acontece. Envolvemos o componente base com 'withGuardian'.
+// Parâmetros:
+// 1. O Componente (StockVariationsPopupBase)
+// 2. O Caminho do Arquivo (para o Rex saber onde está no código)
+// 3. O Tipo (POPUP, UI_COMPONENT, etc - ajuda a organizar no painel)
+export const StockVariationsPopup = withGuardian(
+  StockVariationsPopupBase, 
+  "components/builder/ui/StockVariationsPopup.tsx", 
+  "POPUP"
+);

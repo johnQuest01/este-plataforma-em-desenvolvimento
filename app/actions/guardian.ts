@@ -7,51 +7,68 @@ import {
   DiagnosticIssue,
   ScreenMetadata,
   ProjectFile,
-  FileType
+  CodeSnippet
 } from "@/schemas/guardian-schema";
 
-const IGNORED_DIRS = new Set([
-  "node_modules", ".next", ".git", ".vercel", "dist", "build", "coverage", ".vscode", ".idea"
-]);
+/**
+ * Rex Intelligence: Deep Code Extractor (X-Ray Mode)
+ * Captura a implementação real de elementos UI sem placeholders.
+ */
+function extractCodeSnippets(content: string): CodeSnippet[] {
+  const snippets: CodeSnippet[] = [];
 
-const IGNORED_FILES = new Set([
-  "package-lock.json", "yarn.lock", "pnpm-lock.yaml", ".DS_Store", ".eslintrc.json"
-]);
-
-function resolveImportPath(root: string, currentFile: string, importPath: string): string | null {
-  let targetPath = "";
-  if (importPath.startsWith("@/")) {
-    targetPath = path.join(root, importPath.replace("@/", ""));
-    if (!fs.existsSync(targetPath) && fs.existsSync(path.join(root, "src", importPath.replace("@/", "")))) {
-        targetPath = path.join(root, "src", importPath.replace("@/", ""));
-    }
-  } else if (importPath.startsWith(".")) {
-    targetPath = path.resolve(path.dirname(path.join(root, currentFile)), importPath);
-  } else {
-    return null;
-  }
-  const extensions = [".tsx", ".ts", ".jsx", ".js", "/index.tsx", "/index.ts"];
-  if (fs.existsSync(targetPath) && fs.statSync(targetPath).isFile()) return targetPath;
-  for (const ext of extensions) {
-    if (fs.existsSync(targetPath + ext)) return targetPath + ext;
-  }
-  return null;
-}
-
-function extractImports(root: string, filePath: string): string[] {
-  const absPath = path.join(root, filePath);
-  if (!fs.existsSync(absPath)) return [];
-  const content = fs.readFileSync(absPath, "utf8");
-  const imports: string[] = [];
-  const importRegex = /import\s+.*?\s+from\s+['"]([^'"]+)['"]/g;
+  // 1. Captura de Botões (Bloco Completo)
+  const buttonRegex = /<(button|motion\.button)[\s\S]*?>([\s\S]*?)<\/\1>/g;
   let match;
-  while ((match = importRegex.exec(content)) !== null) {
-    const resolved = resolveImportPath(root, filePath, match[1]);
-    if (resolved) {
-      imports.push(path.relative(root, resolved).split(path.sep).join("/"));
-    }
+  while ((match = buttonRegex.exec(content)) !== null) {
+    const fullTag = match[0];
+    const innerText = match[2].replace(/<[^>]*>/g, "").trim().slice(0, 40);
+    snippets.push({
+      type: "BUTTON",
+      content: fullTag.trim(),
+      preview: innerText || "Botão de Ação",
+    });
   }
-  return imports;
+
+  // 2. Captura de Layouts de Proporção (Containers principais com flex/grid)
+  const proportionRegex = /<div[^>]*className="[^"]*?(flex flex-col h-full|fixed inset-0|absolute bottom-0)[^"]*?"[\s\S]*?>/g;
+  while ((match = proportionRegex.exec(content)) !== null) {
+    const fullTag = match[0];
+    snippets.push({
+      type: "LAYOUT_PROPORTION",
+      content: fullTag.trim() + "\n  {...}\n</div>",
+      preview: "Estrutura de Proporção de Tela",
+    });
+  }
+
+  // 3. Captura de Cards Reais (Baseado em classes de design)
+  const cardRegex = /<div[^>]*className="[^"]*?(bg-white rounded-2xl p-4 shadow-sm|border border-gray-200)[^"]*?"[\s\S]*?>([\s\S]*?)<\/div>/g;
+  while ((match = cardRegex.exec(content)) !== null) {
+    const fullTag = match[0];
+    // Tenta extrair um título do card se houver um span ou h3 dentro
+    const titleMatch = fullTag.match(/<span[^>]*>(.*?)<\/span>/);
+    const cardTitle = titleMatch ? titleMatch[1].replace(/<[^>]*>/g, "").trim() : "Container de UI";
+    
+    snippets.push({
+      type: "LAYOUT_CARD",
+      content: fullTag.trim(),
+      preview: `Card: ${cardTitle}`,
+    });
+  }
+
+  // 4. Captura de Inputs
+  const inputRegex = /<(input|textarea|select)[\s\S]*?\/>/g;
+  while ((match = inputRegex.exec(content)) !== null) {
+    const fullTag = match[0];
+    const placeholder = fullTag.match(/placeholder="([^"]*)"/)?.[1] || "Campo de Entrada";
+    snippets.push({
+      type: "INPUT",
+      content: fullTag.trim(),
+      preview: placeholder,
+    });
+  }
+
+  return snippets.slice(0, 30);
 }
 
 export async function runFullProjectAuditAction(
@@ -68,127 +85,44 @@ export async function runFullProjectAuditAction(
   const allProjectFiles: ProjectFile[] = [];
   const rootDirectory = process.cwd();
 
-  // 1. SCANNER GLOBAL
   const scanDirectory = (dir: string) => {
     try {
       const entries = fs.readdirSync(dir, { withFileTypes: true });
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
         if (entry.isDirectory()) {
-          if (!IGNORED_DIRS.has(entry.name)) scanDirectory(fullPath);
-        } else if (entry.isFile()) {
-          if (IGNORED_FILES.has(entry.name)) continue;
-          if (/\.(ts|tsx|js|jsx|mjs|cjs|prisma|css|json|svg|md|env.*)$/.test(entry.name)) {
-            const relativePath = path.relative(rootDirectory, fullPath).split(path.sep).join("/");
-            const fileName = entry.name;
-            const lowerPath = relativePath.toLowerCase();
-            let fileType: FileType = "OTHER";
-           
-            if (lowerPath.startsWith("app/") && (fileName.includes("page") || fileName.includes("layout"))) fileType = "PAGE";
-            else if (lowerPath.includes("/components/")) fileType = "COMPONENT";
-            else if (lowerPath.includes("/actions/")) fileType = "ACTION";
-            else if (lowerPath.includes("/hooks/")) fileType = "HOOK";
-            else if (lowerPath.includes("/schemas/")) fileType = "SCHEMA";
-            else if (fileName.includes("prisma")) fileType = "PRISMA";
-            else if (fileName.endsWith(".css")) fileType = "STYLE";
-            else if (fileName.endsWith(".svg")) fileType = "ASSET";
-            else if (fileName.endsWith(".md")) fileType = "MARKDOWN";
-
-            const stats = fs.statSync(fullPath);
-            allProjectFiles.push({
-              path: relativePath,
-              name: fileName,
-              type: fileType,
-              size: stats.size,
-              lastModified: stats.mtime.toISOString(),
-              linesOfCode: 0,
-            });
-
-            if (["COMPONENT", "PAGE"].includes(fileType)) uiFiles.push(relativePath);
-            if (["ACTION", "HOOK", "PRISMA", "UTIL", "SCHEMA"].includes(fileType)) logicFiles.push(relativePath);
-          }
+          if (!["node_modules", ".next", ".git"].includes(entry.name)) scanDirectory(fullPath);
+        } else if (entry.isFile() && /\.(ts|tsx)$/.test(entry.name)) {
+          const relativePath = path.relative(rootDirectory, fullPath).split(path.sep).join("/");
+          const stats = fs.statSync(fullPath);
+          allProjectFiles.push({
+            path: relativePath,
+            name: entry.name,
+            type: relativePath.includes("components") ? "COMPONENT" : "PAGE",
+            size: stats.size,
+            lastModified: stats.mtime.toISOString(),
+            linesOfCode: 0,
+          });
         }
       }
-    } catch (error) { console.error(error); }
+    } catch (e) {}
   };
   scanDirectory(rootDirectory);
 
-  // 2. PRISMA
-  const prismaPath = path.join(rootDirectory, "prisma", "schema.prisma");
-  const dbModels: string[] = [];
-  let dbProvider = "unknown";
-  if (fs.existsSync(prismaPath)) {
-    const prismaContent = fs.readFileSync(prismaPath, "utf8");
-    const modelMatches = prismaContent.match(/model\s+(\w+)\s+{/g);
-    if (modelMatches) modelMatches.forEach(m => dbModels.push(m.split(" ")[1]));
-    const providerMatch = prismaContent.match(/provider\s+=\s+"([^"]+)"/);
-    if (providerMatch) dbProvider = providerMatch[1];
-  }
-
-  // 3. CONTEXTO INTELIGENTE
   let activeFile = focusFile;
   if (!activeFile) {
     const normalizedPath = currentPathname === "/" ? "/page" : currentPathname;
-    const activePageFileObj = allProjectFiles.find(f => {
-      return f.path.includes(`app${normalizedPath}/page.tsx`) || f.path.includes(`app${normalizedPath}/layout.tsx`);
-    });
-    activeFile = activePageFileObj ? activePageFileObj.path : "app/page.tsx";
+    activeFile = allProjectFiles.find(f => f.path.includes(`app${normalizedPath}/page.tsx`))?.path || "app/page.tsx";
   }
 
-  const directImports = extractImports(rootDirectory, activeFile);
-  const relatedUIReal = directImports.filter(f => f.includes("components") || f.endsWith(".tsx") || f.endsWith(".jsx"));
-  const relatedLogicReal = directImports.filter(f => !relatedUIReal.includes(f));
-
-  // 4. ANÁLISE PROFUNDA & CONECTIVIDADE
-  let totalButtons = 0;
-  let totalInputs = 0;
-  let totalLogic = 0;
-  let totalActions = 0;
- 
-  const connectedFiles: string[] = [];
-  const disconnectedFiles: string[] = [];
-
-  const scopeFiles = [activeFile, ...relatedUIReal];
-  const uniqueScopeFiles = Array.from(new Set(scopeFiles));
-
-  uniqueScopeFiles.forEach(filePath => {
-    const absPath = path.join(rootDirectory, filePath);
+  const codeMap: Record<string, CodeSnippet[]> = {};
+  const uiScope = allProjectFiles.filter(f => f.type === "COMPONENT" || f.path === activeFile);
+  
+  uiScope.forEach(file => {
+    const absPath = path.join(rootDirectory, file.path);
     if (fs.existsSync(absPath)) {
-        const content = fs.readFileSync(absPath, "utf8");
-
-        // Métricas
-        const btnMatches = content.match(/<button|<motion\.button|<[A-Z]\w*Button|onClick=/g);
-        if (btnMatches) totalButtons += btnMatches.length;
-        const inpMatches = content.match(/<input|<textarea|<[A-Z]\w*Input|<[A-Z]\w*Field/g);
-        if (inpMatches) totalInputs += inpMatches.length;
-        const logMatches = content.match(/useEffect\(|useCallback\(|useState\(|useMemo\(/g);
-        if (logMatches) totalLogic += logMatches.length;
-        const actMatches = content.match(/Action\(/g);
-        if (actMatches) totalActions += actMatches.length;
-
-        // ✅ DETECÇÃO DE CONECTIVIDADE (REX INTELLIGENCE)
-        const hasPrisma = content.includes("prisma.") || content.includes("db.");
-        const hasServerAction = content.includes("use server") || content.includes("@/actions");
-        const hasDataFetching = content.includes("useQuery") || content.includes("fetch(") || content.includes("useSWR");
-       
-        if (hasPrisma || hasServerAction || hasDataFetching) {
-            connectedFiles.push(filePath);
-        } else {
-            disconnectedFiles.push(filePath);
-        }
-
-        // Diagnósticos
-        if (content.includes("fixed") && !content.includes("overflow") && !content.includes("max-h")) {
-             issues.push({
-                id: `ovf-${filePath}`,
-                layer: "UI_PROPORTION",
-                file: filePath,
-                message: "Container fixo sem controle de scroll explícito.",
-                severity: "MEDIUM",
-                suggestion: "Verifique se este modal tem 'overflow-y-auto' para telas pequenas.",
-                timestamp: new Date().toISOString(),
-            });
-        }
+      const content = fs.readFileSync(absPath, "utf8");
+      codeMap[file.path] = extractCodeSnippets(content);
     }
   });
 
@@ -197,23 +131,13 @@ export async function runFullProjectAuditAction(
     responsibleFile: activeFile,
     focusMode: !!focusFile,
     lastModified: new Date().toISOString(),
-    elements: {
-      buttons: totalButtons,
-      inputs: totalInputs,
-      logicHooks: totalLogic,
-      serverActions: totalActions,
-    },
-    relatedFiles: {
-      ui: relatedUIReal,
-      logic: relatedLogicReal
-    },
-    potentialPopups: [], // ✅ Limpo: Agora usamos apenas detecção em tempo real
-    connectivity: {
-        connected: connectedFiles,
-        disconnected: disconnectedFiles
-    },
-    database: { models: dbModels, connection: dbProvider },
-    projectStructure: allProjectFiles
+    elements: { buttons: 0, inputs: 0, logicHooks: 0, serverActions: 0 },
+    relatedFiles: { ui: [], logic: [] },
+    potentialPopups: [],
+    connectivity: { connected: [], disconnected: [] },
+    database: { models: [] },
+    projectStructure: allProjectFiles,
+    codeMap: codeMap
   };
 
   return { issues, categorizedFiles: { ui: uiFiles, logic: logicFiles }, screenMetadata };
