@@ -18,7 +18,6 @@ const IGNORED_FILES = new Set([
   "package-lock.json", "yarn.lock", "pnpm-lock.yaml", ".DS_Store", ".eslintrc.json"
 ]);
 
-// Helper to resolve imports (kept from your original code)
 function resolveImportPath(root: string, currentFile: string, importPath: string): string | null {
   let targetPath = "";
   if (importPath.startsWith("@/")) {
@@ -145,9 +144,7 @@ export async function runFullProjectAuditAction(
   let totalInputs = 0;
   let totalLogic = 0;
   let totalActions = 0;
-  const potentialPopups: string[] = [];
  
-  // Listas de Conectividade
   const connectedFiles: string[] = [];
   const disconnectedFiles: string[] = [];
 
@@ -168,16 +165,6 @@ export async function runFullProjectAuditAction(
         if (logMatches) totalLogic += logMatches.length;
         const actMatches = content.match(/Action\(/g);
         if (actMatches) totalActions += actMatches.length;
-
-        // ✅ DETECÇÃO DE POPUPS (STATIC ANALYSIS)
-        // Detecta componentes que parecem ser Modais baseados em nome ou CSS
-        const isPopupByName = /Modal|Popup|Dialog|Overlay|Drawer|Sheet/.test(filePath);
-        const isPopupByCode = (content.includes("fixed") || content.includes("absolute")) && 
-                              (content.includes("z-50") || content.includes("z-[") || content.includes("inset-0"));
-        
-        if ((isPopupByName || isPopupByCode) && filePath !== activeFile) {
-            potentialPopups.push(filePath);
-        }
 
         // ✅ DETECÇÃO DE CONECTIVIDADE (REX INTELLIGENCE)
         const hasPrisma = content.includes("prisma.") || content.includes("db.");
@@ -220,7 +207,7 @@ export async function runFullProjectAuditAction(
       ui: relatedUIReal,
       logic: relatedLogicReal
     },
-    potentialPopups: potentialPopups, // Populated by static analysis
+    potentialPopups: [], // ✅ Limpo: Agora usamos apenas detecção em tempo real
     connectivity: {
         connected: connectedFiles,
         disconnected: disconnectedFiles

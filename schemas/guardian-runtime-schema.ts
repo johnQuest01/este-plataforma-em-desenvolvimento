@@ -3,16 +3,25 @@ import { z } from "zod";
 
 export const RuntimeElementStateEnum = z.enum(["MOUNTED", "VISIBLE", "HIDDEN", "UNMOUNTED"]);
 
+// Estrutura de um nó da árvore de componentes
+export const ComponentNodeSchema: z.ZodType<any> = z.lazy(() => z.object({
+  name: z.string(),
+  file: z.string().optional(),
+  depth: z.number(),
+  children: z.array(ComponentNodeSchema).default([]),
+}));
+
+export type ComponentNode = z.infer<typeof ComponentNodeSchema>;
+
 export const RuntimeTrackerSchema = z.object({
   elementId: z.string(),
   componentName: z.string(),
-  // ✅ NEW: Stores the physical file path responsible for this element
-  responsibleFile: z.string().optional(), 
+  responsibleFile: z.string().optional(),
   isPopup: z.boolean(),
   zIndex: z.number().default(0),
   state: RuntimeElementStateEnum,
   timestamp: z.string(),
-  // ✅ CORREÇÃO: Definição explícita de chave (string) e valor (unknown)
+  childComponents: z.array(z.string()).default([]),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 

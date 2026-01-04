@@ -14,29 +14,28 @@ import { GuardianTrigger } from "./master/GuardianTrigger";
 import { GuardianHeader, DashboardView } from "./master/GuardianHeader";
 import { GuardianSidebar } from "./master/GuardianSidebar";
 import { GuardianViewManager } from "./master/GuardianViewManager";
-import { GuardianFileDetail } from "./master/GuardianFileDetail";
 
 export function MasterGuardianDashboard() {
   const pathname = usePathname();
   const { isOpen } = useGuardianStore();
-  
+ 
   // Local State
   const [view, setView] = useState<DashboardView>('SCANNER');
   const [loading, setLoading] = useState<boolean>(false);
-  
-  // ✅ NOVO: Estado de Foco (Qual arquivo estamos analisando especificamente?)
+ 
+  // Estado de Foco (Qual arquivo estamos analisando especificamente?)
   const [focusedFile, setFocusedFile] = useState<string | undefined>(undefined);
-  
-  // Estado de Inspeção Visual (Overlay de código)
+ 
+  // Estado de Inspeção Visual (Mantido para uso futuro na Sidebar, mas sem overlay por enquanto)
   const [inspectingFile, setInspectingFile] = useState<{ name: string, type: 'UI' | 'LOGIC' } | null>(null);
-  
+ 
   const [data, setData] = useState<GuardianAuditResponse | null>(null);
 
   // Data Fetching Inteligente
   const performOmniscientScan = useCallback(async () => {
     setLoading(true);
     try {
-      // ✅ Passamos o focusedFile para o servidor recalcular as métricas
+      // Passamos o focusedFile para o servidor recalcular as métricas
       const result = await runFullProjectAuditAction(pathname, focusedFile);
       setData(result);
     } finally {
@@ -49,7 +48,7 @@ export function MasterGuardianDashboard() {
     if (isOpen) performOmniscientScan();
   }, [isOpen, performOmniscientScan]);
 
-  // Resetar foco ao mudar de rota (para não ficar preso em um componente de outra página)
+  // Resetar foco ao mudar de rota
   useEffect(() => {
     setFocusedFile(undefined);
   }, [pathname]);
@@ -65,14 +64,14 @@ export function MasterGuardianDashboard() {
       {/* 2. Main Dashboard Modal */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
             className="fixed inset-0 bg-[#050505] z-[9999] flex flex-col p-6 overflow-hidden font-sans"
           >
             {/* Header Block */}
-            <GuardianHeader 
+            <GuardianHeader
               pathname={pathname}
               currentView={view}
               onViewChange={setView}
@@ -82,33 +81,22 @@ export function MasterGuardianDashboard() {
 
             {/* Main Workspace */}
             <div className="flex-1 flex gap-6 overflow-hidden relative">
-              
-              {/* Sidebar Block - Agora controla Foco e Inspeção */}
-              <GuardianSidebar 
-                data={data} 
+             
+              {/* Sidebar Block */}
+              <GuardianSidebar
+                data={data}
                 activeFile={focusedFile}
                 onFocusFile={(file) => setFocusedFile(file)}
-                onInspectFile={(name, type) => setInspectingFile({ name, type })} 
+                onInspectFile={(name, type) => setInspectingFile({ name, type })}
                 onClearFocus={() => setFocusedFile(undefined)}
               />
 
               {/* Dynamic Content Area */}
               <div className="flex-1 bg-zinc-900/20 rounded-[3rem] border border-zinc-800/50 relative overflow-hidden flex flex-col">
-                
-                {/* File Detail Overlay Block */}
-                <AnimatePresence>
-                  {inspectingFile && (
-                    <GuardianFileDetail 
-                      file={inspectingFile.name} 
-                      type={inspectingFile.type} 
-                      onClose={() => setInspectingFile(null)} 
-                    />
-                  )}
-                </AnimatePresence>
-
+               
                 {/* View Manager Block */}
                 <GuardianViewManager view={view} data={data} />
-                
+               
               </div>
             </div>
           </motion.div>
