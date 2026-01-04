@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { GuardianTracker } from "@/components/builder/blocks/master/RexRuntimePixel";
 import { cn } from '@/lib/utils';
 import { 
   ChevronLeft, 
@@ -437,7 +438,7 @@ export const StockVariationsPopup = ({ isOpen, onClose, onSave, initialItems = [
 
   return (
     <div className="flex flex-col h-full bg-[#eeeeee] relative overflow-hidden">
-      
+      <GuardianTracker file="components/builder/ui/StockVariationsPopup.tsx" />
       <div className="bg-white px-4 py-3 shadow-sm z-10 flex items-center justify-between shrink-0">
         <div>
            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Editor de Variações</span>

@@ -1,17 +1,19 @@
+// src/components/builder/blocks/master/GuardianHeader.tsx
 "use client";
 
 import React from "react";
-import { ShieldAlert, RefreshCw, X, Eye, Database, Activity, History, FolderOpen } from "lucide-react";
+import { ShieldAlert, RefreshCw, X, Eye, Database, Activity, History, FolderOpen, Link as LinkIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGuardianStore } from "@/hooks/use-guardian-store";
 
-// Adicionado 'FILES' ao tipo
-export type DashboardView = 'SCANNER' | 'AUDIT' | 'HISTORY' | 'DATABASE' | 'FILES';
+// Adicionado 'CONNECTIONS' ao tipo
+export type DashboardView = 'SCANNER' | 'AUDIT' | 'HISTORY' | 'DATABASE' | 'FILES' | 'CONNECTIONS';
 
 // Adicionado o botão na configuração
 const DASHBOARD_TABS: { id: DashboardView; icon: React.ElementType; label: string }[] = [
   { id: 'SCANNER', icon: Eye, label: 'Tela Ativa' },
-  { id: 'FILES', icon: FolderOpen, label: 'Arquivos' }, // NOVO
+  { id: 'CONNECTIONS', icon: LinkIcon, label: 'Conexão' }, // ✅ NOVO
+  { id: 'FILES', icon: FolderOpen, label: 'Arquivos' },
   { id: 'DATABASE', icon: Database, label: 'Dados' },
   { id: 'AUDIT', icon: Activity, label: 'Diagnóstico' },
   { id: 'HISTORY', icon: History, label: 'Histórico' }

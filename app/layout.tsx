@@ -1,13 +1,12 @@
+// path: src/app/layout.tsx
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-// ADMIN & PWA
 import { GlobalAdmin } from '@/components/admin/GlobalAdmin';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
-
-// GUARDIAN SYSTEM (LEGO BLOCKS)
 import { MasterGuardianDashboard } from "@/components/builder/blocks/MasterGuardianDashboard";
+import { GlobalGuardianObserver } from "@/components/builder/blocks/master/RexRuntimePixel";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,26 +38,21 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Logic to ensure Guardian only runs in Dev
-  const isDev = process.env.NODE_ENV === 'development';
+  const isDevelopmentEnvironment = process.env.NODE_ENV === 'development';
 
   return (
     <html lang="pt-BR" className="selection:bg-indigo-500/30">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-950 text-zinc-200`}>
-        {/* Camada de Conteúdo Principal */}
         <main className="relative z-0">
           {children}
         </main>
         
-        {/* Camada de Utilidades de Admin (Production Ready) */}
         <GlobalAdmin />
         <InstallPrompt />
 
-        {/* GUARDIAN ARCHITECTURE (DEV ONLY)
-            Protects production bundle size and performance.
-        */}
-        {isDev && (
+        {isDevelopmentEnvironment && (
           <>
+            <GlobalGuardianObserver />
             <MasterGuardianDashboard />
           </>
         )}

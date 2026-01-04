@@ -1,14 +1,16 @@
+// src/components/builder/blocks/master/GuardianViewManager.tsx
 "use client";
 
 import React, { useState, useMemo } from "react";
 import {
   Smartphone, CheckCircle2, AlertCircle, Database, Server, Cpu, History, FileCode,
   FolderOpen, Box, Layout, Zap, Code, FileJson, Braces, Wrench, Image as ImageIcon, FileText,
-  Maximize, AlertTriangle
+  Maximize, AlertTriangle, Link as LinkIcon, Unplug, Layers, Eye, FileEdit
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GuardianAuditResponse, ProjectFile } from "@/schemas/guardian-schema";
 import { DashboardView } from "./GuardianHeader";
+import { useGuardianStore } from "@/hooks/use-guardian-store";
 
 interface GuardianViewManagerProps {
   view: DashboardView;
@@ -17,10 +19,12 @@ interface GuardianViewManagerProps {
 
 export function GuardianViewManager({ view, data }: GuardianViewManagerProps) {
   const [fileSearch, setFileSearch] = useState("");
+ 
+  // ✅ ACCESS LIVE RUNTIME DATA
+  const { activeRuntimeElements } = useGuardianStore();
 
-  // Hooks no topo
-  const files = data?.screenMetadata.projectStructure || [];
-  
+  const files = useMemo(() => data?.screenMetadata.projectStructure || [], [data]);
+ 
   const filteredFiles = useMemo(() => {
     const searchLower = fileSearch.toLowerCase();
     return files.filter(f =>
@@ -29,7 +33,65 @@ export function GuardianViewManager({ view, data }: GuardianViewManagerProps) {
     );
   }, [files, fileSearch]);
 
-  // --- VIEW: FILES ---
+  // ... (CONNECTIONS VIEW - Mantém igual) ...
+  if (view === 'CONNECTIONS') {
+    // ... (Código existente da view CONNECTIONS) ...
+    const connected = data?.screenMetadata.connectivity.connected || [];
+    const disconnected = data?.screenMetadata.connectivity.disconnected || [];
+    return (
+      <div className="h-full p-8 overflow-y-auto custom-scrollbar">
+        <div className="mb-8">
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 mb-4">
+                <LinkIcon size={16} /> Status de Conectividade (Backend)
+            </h3>
+            <p className="text-xs text-zinc-400 mb-6 bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
+                O sistema Rex analisa se os componentes desta tela possuem vínculo direto com
+                <span className="text-emerald-400 font-bold"> Prisma/Neon</span> ou
+                <span className="text-amber-400 font-bold"> Server Actions</span>.
+            </p>
+            <div className="grid grid-cols-2 gap-8">
+                <div>
+                    <div className="flex items-center justify-between mb-4">
+                        <span className="text-xs font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2">
+                            <CheckCircle2 size={14} /> Conectados ({connected.length})
+                        </span>
+                    </div>
+                    <div className="space-y-2">
+                        {connected.map(file => (
+                            <div key={file} className="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl flex items-center gap-3">
+                                <Database size={14} className="text-emerald-500 shrink-0" />
+                                <span className="text-[10px] font-mono text-emerald-200 truncate">{file.split('/').pop()}</span>
+                            </div>
+                        ))}
+                        {connected.length === 0 && <p className="text-[10px] text-zinc-600 italic">Nenhum arquivo conectado detectado.</p>}
+                    </div>
+                </div>
+                <div>
+                    <div className="flex items-center justify-between mb-4">
+                        <span className="text-xs font-black text-red-500 uppercase tracking-widest flex items-center gap-2">
+                            <Unplug size={14} /> Desconectados / UI Pura ({disconnected.length})
+                        </span>
+                    </div>
+                    <div className="space-y-2">
+                        {disconnected.map(file => (
+                            <div key={file} className="p-3 bg-red-500/5 border border-red-500/20 rounded-xl flex items-center gap-3 group hover:bg-red-500/10 transition-colors cursor-help" title="Este arquivo não possui imports explícitos de dados.">
+                                <Box size={14} className="text-red-400 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <span className="text-[10px] font-mono text-red-200 truncate block">{file.split('/').pop()}</span>
+                                </div>
+                                <AlertTriangle size={12} className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                        ))}
+                         {disconnected.length === 0 && <p className="text-[10px] text-zinc-600 italic">Todos os arquivos parecem conectados.</p>}
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ... (FILES VIEW - Mantém igual) ...
   if (view === 'FILES') {
     return (
       <div className="h-full flex flex-col p-8">
@@ -45,7 +107,6 @@ export function GuardianViewManager({ view, data }: GuardianViewManagerProps) {
             className="bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 w-64 placeholder:text-zinc-600"
           />
         </div>
-
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
           <div className="grid grid-cols-1 gap-2">
             {filteredFiles.map((file) => (
@@ -53,8 +114,8 @@ export function GuardianViewManager({ view, data }: GuardianViewManagerProps) {
             ))}
             {filteredFiles.length === 0 && (
               <div className="text-center py-10 text-zinc-500 text-xs">
-                {files.length === 0 
-                  ? "Nenhum arquivo indexado. Verifique se o servidor está rodando." 
+                {files.length === 0
+                  ? "Nenhum arquivo indexado. Verifique se o servidor está rodando."
                   : "Nenhum arquivo encontrado com este filtro."}
               </div>
             )}
@@ -64,9 +125,14 @@ export function GuardianViewManager({ view, data }: GuardianViewManagerProps) {
     );
   }
 
-  // --- VIEW: SCANNER (COM DETECÇÃO DE PROPORÇÃO) ---
+  // --- VIEW: SCANNER (ATUALIZADO PARA EXIBIR O NOME DO ARQUIVO CORRETAMENTE) ---
   if (view === 'SCANNER') {
     const proportionIssues = data?.issues.filter(i => i.layer === 'UI_PROPORTION') || [];
+    
+    // Filter active popups from Runtime Store
+    const activePopups = activeRuntimeElements.filter(el => el.isPopup);
+    // Get potential popups from Static Analysis
+    const potentialPopups = data?.screenMetadata.potentialPopups || [];
 
     return (
       <div className="h-full p-8 overflow-y-auto custom-scrollbar">
@@ -77,6 +143,95 @@ export function GuardianViewManager({ view, data }: GuardianViewManagerProps) {
           <StatCard label="Actions" value={data?.screenMetadata.elements.serverActions || 0} />
         </div>
 
+        {/* ✅ SECTION: ACTIVE RUNTIME LAYERS */}
+        <div className="mb-8">
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 mb-4">
+              <Layers size={16} /> Camadas Ativas (Runtime)
+            </h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+                {/* LIVE POPUPS - SMART DISPLAY */}
+                <div className={cn(
+                    "p-4 border rounded-2xl transition-all duration-500",
+                    activePopups.length > 0 
+                        ? "bg-indigo-950/30 border-indigo-500/50 shadow-lg shadow-indigo-900/20" 
+                        : "bg-zinc-900/50 border-zinc-800"
+                )}>
+                    <div className="flex items-center justify-between mb-3">
+                        <span className={cn(
+                            "text-[10px] font-black uppercase tracking-wider",
+                            activePopups.length > 0 ? "text-indigo-300" : "text-zinc-400"
+                        )}>
+                            Popups Abertos (Live)
+                        </span>
+                        <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1", activePopups.length > 0 ? "bg-emerald-500 text-zinc-950 animate-pulse" : "bg-zinc-800 text-zinc-500")}>
+                            {activePopups.length > 0 && <span className="w-1.5 h-1.5 bg-zinc-950 rounded-full animate-ping" />}
+                            {activePopups.length} ATIVOS
+                        </span>
+                    </div>
+                    
+                    {activePopups.length > 0 ? (
+                        <div className="space-y-2">
+                            {activePopups.map(popup => {
+                                // ✅ LÓGICA DE FORMATAÇÃO DE NOME
+                                // Se tiver responsibleFile, extrai o nome do arquivo. Se não, usa o componentName.
+                                const displayName = popup.responsibleFile 
+                                    ? popup.responsibleFile.split('/').pop() // Pega "StockModal.tsx" de "src/components/StockModal.tsx"
+                                    : popup.componentName.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+                                return (
+                                    <div key={popup.elementId} className="flex flex-col gap-1 p-3 bg-indigo-500/10 border border-indigo-500/30 rounded-xl relative overflow-hidden group">
+                                        {/* Active Indicator Strip */}
+                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500" />
+                                        
+                                        <div className="flex items-center gap-2">
+                                            <Maximize size={14} className="text-indigo-400" />
+                                            <span className="text-xs font-bold text-indigo-100 truncate">
+                                                {displayName}
+                                            </span>
+                                        </div>
+                                        
+                                        {/* ✅ SMART FILE PATH DISPLAY */}
+                                        <div className="flex items-center gap-1.5 pl-6">
+                                            <FileEdit size={10} className="text-indigo-400/60" />
+                                            <span className="text-[10px] font-mono text-indigo-300/70 truncate">
+                                                {popup.responsibleFile || "Arquivo desconhecido"}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <p className="text-[10px] text-zinc-600 italic py-2">Nenhum modal detectado no DOM agora.</p>
+                    )}
+                </div>
+
+                {/* STATIC POTENTIAL POPUPS */}
+                <div className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-2xl">
+                    <div className="flex items-center justify-between mb-3">
+                        <span className="text-[10px] font-black text-zinc-400 uppercase">Detectados no Código</span>
+                        <span className="text-[10px] bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded-full font-bold">
+                            {potentialPopups.length} STATIC
+                        </span>
+                    </div>
+                    {potentialPopups.length > 0 ? (
+                        <div className="space-y-2">
+                            {potentialPopups.map(path => (
+                                <div key={path} className="flex items-center gap-2 p-2 bg-zinc-800/30 border border-zinc-800 rounded-lg opacity-60 hover:opacity-100 transition-opacity">
+                                    <FileCode size={12} className="text-zinc-500" />
+                                    <span className="text-xs text-zinc-400 font-mono truncate">{path.split('/').pop()}</span>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-[10px] text-zinc-600 italic">Nenhum arquivo de modal encontrado.</p>
+                    )}
+                </div>
+            </div>
+        </div>
+
+        {/* SECTION: PROPORTION ISSUES */}
         <div className="space-y-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
@@ -123,8 +278,9 @@ export function GuardianViewManager({ view, data }: GuardianViewManagerProps) {
     );
   }
 
-  // --- VIEW: DATABASE ---
+  // ... (DATABASE, AUDIT, HISTORY VIEWS - Mantém igual) ...
   if (view === 'DATABASE') {
+    // ... (Código existente da view DATABASE) ...
     return (
       <div className="h-full p-8 overflow-y-auto custom-scrollbar">
         <div className="flex items-center justify-between mb-8">
@@ -135,7 +291,6 @@ export function GuardianViewManager({ view, data }: GuardianViewManagerProps) {
             Provider: {data?.screenMetadata.database.connection}
           </span>
         </div>
-
         <div className="grid grid-cols-2 gap-4">
           {data?.screenMetadata.database.models.map((model) => (
             <div key={model} className="p-6 bg-zinc-900/40 border border-zinc-800 rounded-2xl hover:border-indigo-500/50 transition-colors group">
@@ -156,8 +311,8 @@ export function GuardianViewManager({ view, data }: GuardianViewManagerProps) {
     );
   }
 
-  // --- VIEW: AUDIT ---
   if (view === 'AUDIT') {
+    // ... (Código existente da view AUDIT) ...
     return (
       <div className="h-full p-8 overflow-y-auto custom-scrollbar space-y-4">
         {data?.issues.filter(i => i.layer !== 'DISCOVERY' && i.layer !== 'UI_PROPORTION').map((issue) => (
@@ -184,8 +339,8 @@ export function GuardianViewManager({ view, data }: GuardianViewManagerProps) {
     );
   }
 
-  // --- VIEW: HISTORY ---
   if (view === 'HISTORY') {
+    // ... (Código existente da view HISTORY) ...
     return (
       <div className="h-full p-8 overflow-y-auto custom-scrollbar">
         <h3 className="text-sm font-bold text-zinc-300 mb-6 uppercase tracking-wider flex items-center gap-2">
@@ -214,7 +369,7 @@ export function GuardianViewManager({ view, data }: GuardianViewManagerProps) {
   return null;
 }
 
-// --- SUB-COMPONENTE: Stat Card ---
+// ... (Keep StatCard and FileRow components) ...
 function StatCard({ label, value, icon: Icon }: { label: string, value: number, icon?: React.ElementType }) {
   return (
     <div className="p-6 bg-zinc-900/60 rounded-3xl border border-zinc-800 flex flex-col items-center justify-center text-center">
@@ -226,7 +381,6 @@ function StatCard({ label, value, icon: Icon }: { label: string, value: number, 
   );
 }
 
-// --- SUB-COMPONENTE: Linha de Arquivo (Otimizado) ---
 const FileRow = React.memo(function FileRow({ file }: { file: ProjectFile }) {
   const getIcon = () => {
     switch (file.type) {
@@ -269,7 +423,7 @@ const FileRow = React.memo(function FileRow({ file }: { file: ProjectFile }) {
           <p className="text-[9px] text-zinc-500 font-mono truncate">{file.path}</p>
         </div>
       </div>
-      
+     
       <div className="flex items-center gap-3 shrink-0">
         <span className="text-[9px] text-zinc-600 font-mono">{(file.size / 1024).toFixed(1)} KB</span>
         <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase w-16 text-center", getBadgeColor())}>

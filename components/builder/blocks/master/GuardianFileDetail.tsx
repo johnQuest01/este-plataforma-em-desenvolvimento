@@ -32,8 +32,11 @@ export function GuardianFileDetail({ file, type, onClose }: GuardianFileDetailPr
         </div>
         <button onClick={onClose} className="p-2 hover:bg-zinc-800 rounded-xl text-zinc-400 transition-colors"><X size={20} /></button>
       </div>
-      <div className="flex-1 flex items-center justify-center text-zinc-600 text-sm">
-          Visualização detalhada do código em breve.
+      
+      {/* Placeholder para conteúdo futuro (ex: visualização de código) */}
+      <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-sm border border-dashed border-zinc-800 rounded-xl bg-zinc-900/20">
+          <p>Visualização detalhada do código em breve.</p>
+          <span className="text-xs text-zinc-700 mt-2 font-mono">Feature: Code Inspector</span>
       </div>
     </motion.div>
   );

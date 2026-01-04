@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import Image from 'next/image'; // ✅ CORREÇÃO: Import do componente Image
 import {
-  Heart, Eye, Truck, Tag, Type, Sparkles, ArrowRight, ShoppingBag, Check, Layers, Hash
+  Heart, Eye, Truck, Tag, Type, Sparkles, ArrowRight, ShoppingBag, Check
 } from 'lucide-react';
 import { ProductData } from '@/app/actions/product';
 import { cn } from '@/lib/utils';
@@ -39,7 +40,6 @@ const ProductDetailInner = () => {
   // --- EXTRAÇÃO DE METADADOS ---
   const metadata = useMemo(() => {
     if (!product || !product.variants || product.variants.length === 0) return { category: null, keyword: null };
-    // Como não temos category/keyword no schema, usamos valores padrão ou extraímos do nome se necessário
     return {
         category: 'Geral', 
         keyword: 'Novo'
@@ -54,7 +54,6 @@ const ProductDetailInner = () => {
     const sizes = new Set<string>();
 
     product.variants.forEach(v => {
-      // Agora acessamos diretamente as propriedades virtuais injetadas pelo Server Action
       if (v.color) colors.add(v.color.trim());
       if (v.type) types.add(v.type.trim());
       if (v.size) sizes.add(v.size.trim());
@@ -143,10 +142,14 @@ const ProductDetailInner = () => {
 
         {/* Imagem Principal */}
         <div className="w-full aspect-[4/5] bg-gray-100 relative group">
-          <img
+          {/* ✅ CORREÇÃO: Substituído <img> por <Image /> do Next.js */}
+          <Image
             src={product.imageUrl || 'https://placehold.co/600x800/png'} 
-            className="w-full h-full object-cover"
             alt={product.name}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 50vw"
+            priority
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
             <p className="text-white text-xs font-bold uppercase tracking-widest">Visualizar Zoom</p>
@@ -183,7 +186,7 @@ const ProductDetailInner = () => {
           {/* --- SELETORES DE VARIAÇÃO --- */}
           <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4 duration-500 delay-100">
             
-            {/* 1. SELEÇÃO DE CORES (LAYOUT MELHORADO) */}
+            {/* 1. SELEÇÃO DE CORES */}
             {options.colors.length > 0 && (
               <div className={cn("rounded-xl p-2 transition-colors", errors.color && "bg-red-50 border border-red-200 animate-pulse")}>
                 <h3 className={cn("font-bold text-sm uppercase tracking-wide mb-3 flex items-center gap-2", errors.color ? "text-red-500" : "text-gray-500")}>
@@ -201,8 +204,9 @@ const ProductDetailInner = () => {
                         disabled={!available}
                         className={cn(
                           "group transition-all flex items-center gap-3 px-2 py-2 rounded-xl border-2",
+                          // ✅ CORREÇÃO: Mantém bg-white mesmo selecionado para não ofuscar o texto
                           isSelected 
-                            ? "border-gray-900 bg-gray-50 ring-1 ring-gray-900 scale-105" 
+                            ? "border-gray-900 bg-white ring-1 ring-gray-900 scale-105" 
                             : "border-gray-100 bg-white hover:border-gray-300",
                           !available && "opacity-50 grayscale cursor-not-allowed"
                         )}
@@ -214,8 +218,11 @@ const ProductDetailInner = () => {
                            <Check size={14} strokeWidth={4} />
                         </div>
                         <div className="flex flex-col items-start min-w-[60px]">
-                          <span className="text-xs font-black uppercase break-words text-left leading-tight">{color}</span>
-                          <span className="text-[9px] font-bold opacity-70 mt-0.5">
+                          {/* ✅ CORREÇÃO: Texto forçado para preto (text-gray-900) */}
+                          <span className="text-xs font-black uppercase break-words text-left leading-tight text-gray-900">
+                            {color}
+                          </span>
+                          <span className="text-[9px] font-bold text-gray-500 mt-0.5">
                             {available ? `${qty} disp.` : 'Esgotado'}
                           </span>
                         </div>
@@ -226,7 +233,7 @@ const ProductDetailInner = () => {
               </div>
             )}
 
-            {/* 2. SELEÇÃO DE TIPO / VARIAÇÃO (LAYOUT MELHORADO) */}
+            {/* 2. SELEÇÃO DE TIPO / VARIAÇÃO */}
             {options.types.length > 0 && (
               <div className={cn("rounded-xl p-2 transition-colors", errors.model && "bg-red-50 border border-red-200 animate-pulse")}>
                 <h3 className={cn("font-bold text-sm uppercase tracking-wide mb-3 flex items-center gap-2", errors.model ? "text-red-500" : "text-gray-500")}>
@@ -260,7 +267,7 @@ const ProductDetailInner = () => {
               </div>
             )}
 
-            {/* 3. SELEÇÃO DE TAMANHOS (LAYOUT MELHORADO) */}
+            {/* 3. SELEÇÃO DE TAMANHOS */}
             {options.sizes.length > 0 && (
               <div className={cn("rounded-xl p-2 transition-colors", errors.size && "bg-red-50 border border-red-200 animate-pulse")}>
                 <h3 className={cn("font-bold text-sm uppercase tracking-wide mb-3 flex items-center gap-2", errors.size ? "text-red-500" : "text-gray-500")}>

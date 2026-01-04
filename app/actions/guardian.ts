@@ -10,17 +10,55 @@ import {
   FileType
 } from "@/schemas/guardian-schema";
 
-// Pastas ignoradas (Mantendo node_modules fora para performance)
 const IGNORED_DIRS = new Set([
   "node_modules", ".next", ".git", ".vercel", "dist", "build", "coverage", ".vscode", ".idea"
 ]);
 
-// Arquivos de sistema estritamente irrelevantes
 const IGNORED_FILES = new Set([
   "package-lock.json", "yarn.lock", "pnpm-lock.yaml", ".DS_Store", ".eslintrc.json"
 ]);
 
-export async function runFullProjectAuditAction(currentPathname: string = "/"): Promise<{
+// Helper to resolve imports (kept from your original code)
+function resolveImportPath(root: string, currentFile: string, importPath: string): string | null {
+  let targetPath = "";
+  if (importPath.startsWith("@/")) {
+    targetPath = path.join(root, importPath.replace("@/", ""));
+    if (!fs.existsSync(targetPath) && fs.existsSync(path.join(root, "src", importPath.replace("@/", "")))) {
+        targetPath = path.join(root, "src", importPath.replace("@/", ""));
+    }
+  } else if (importPath.startsWith(".")) {
+    targetPath = path.resolve(path.dirname(path.join(root, currentFile)), importPath);
+  } else {
+    return null;
+  }
+  const extensions = [".tsx", ".ts", ".jsx", ".js", "/index.tsx", "/index.ts"];
+  if (fs.existsSync(targetPath) && fs.statSync(targetPath).isFile()) return targetPath;
+  for (const ext of extensions) {
+    if (fs.existsSync(targetPath + ext)) return targetPath + ext;
+  }
+  return null;
+}
+
+function extractImports(root: string, filePath: string): string[] {
+  const absPath = path.join(root, filePath);
+  if (!fs.existsSync(absPath)) return [];
+  const content = fs.readFileSync(absPath, "utf8");
+  const imports: string[] = [];
+  const importRegex = /import\s+.*?\s+from\s+['"]([^'"]+)['"]/g;
+  let match;
+  while ((match = importRegex.exec(content)) !== null) {
+    const resolved = resolveImportPath(root, filePath, match[1]);
+    if (resolved) {
+      imports.push(path.relative(root, resolved).split(path.sep).join("/"));
+    }
+  }
+  return imports;
+}
+
+export async function runFullProjectAuditAction(
+  currentPathname: string = "/",
+  focusFile?: string
+): Promise<{
   issues: DiagnosticIssue[];
   categorizedFiles: { ui: string[]; logic: string[] };
   screenMetadata: ScreenMetadata;
@@ -31,66 +69,40 @@ export async function runFullProjectAuditAction(currentPathname: string = "/"): 
   const allProjectFiles: ProjectFile[] = [];
   const rootDirectory = process.cwd();
 
-  // --- 1. ROBUST RECURSIVE SCANNER ---
+  // 1. SCANNER GLOBAL
   const scanDirectory = (dir: string) => {
     try {
       const entries = fs.readdirSync(dir, { withFileTypes: true });
-
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
-        
         if (entry.isDirectory()) {
-          if (!IGNORED_DIRS.has(entry.name)) {
-            scanDirectory(fullPath);
-          }
+          if (!IGNORED_DIRS.has(entry.name)) scanDirectory(fullPath);
         } else if (entry.isFile()) {
           if (IGNORED_FILES.has(entry.name)) continue;
-          
           if (/\.(ts|tsx|js|jsx|mjs|cjs|prisma|css|json|svg|md|env.*)$/.test(entry.name)) {
-            
-            const relativePathRaw = path.relative(rootDirectory, fullPath);
-            const relativePath = relativePathRaw.split(path.sep).join("/");
+            const relativePath = path.relative(rootDirectory, fullPath).split(path.sep).join("/");
             const fileName = entry.name;
             const lowerPath = relativePath.toLowerCase();
-
-            // --- CLASSIFICAÇÃO ONISCIENTE ---
             let fileType: FileType = "OTHER";
-
-            if (lowerPath.startsWith("app/") && (fileName.includes("page") || fileName.includes("layout"))) {
-              fileType = "PAGE";
-            } else if (lowerPath.includes("/components/") || lowerPath.startsWith("components/")) {
-              fileType = "COMPONENT";
-            } else if (lowerPath.includes("/actions/") || lowerPath.startsWith("actions/")) {
-              fileType = "ACTION";
-            } else if (lowerPath.includes("/hooks/") || lowerPath.startsWith("hooks/") || fileName.startsWith("use-")) {
-              fileType = "HOOK";
-            } else if (lowerPath.includes("/schemas/") || lowerPath.startsWith("schemas/")) {
-              fileType = "SCHEMA";
-            } else if (lowerPath.includes("/types/") || lowerPath.startsWith("types/") || lowerPath.includes("/interfaces/") || fileName.endsWith(".d.ts")) {
-              fileType = "TYPE";
-            } else if (lowerPath.includes("/lib/") || lowerPath.startsWith("lib/") || lowerPath.includes("/utils/")) {
-              fileType = "UTIL";
-            } else if (fileName.includes("prisma")) {
-              fileType = "PRISMA";
-            } else if (fileName.endsWith(".css")) {
-              fileType = "STYLE";
-            } else if (fileName.endsWith(".svg") || fileName.endsWith(".png") || fileName.endsWith(".jpg")) {
-              fileType = "ASSET";
-            } else if (fileName.endsWith(".md")) {
-              fileType = "MARKDOWN";
-            } else if (fileName.includes("config") || fileName.includes(".env") || fileName.startsWith(".")) {
-              fileType = "CONFIG";
-            }
+           
+            if (lowerPath.startsWith("app/") && (fileName.includes("page") || fileName.includes("layout"))) fileType = "PAGE";
+            else if (lowerPath.includes("/components/")) fileType = "COMPONENT";
+            else if (lowerPath.includes("/actions/")) fileType = "ACTION";
+            else if (lowerPath.includes("/hooks/")) fileType = "HOOK";
+            else if (lowerPath.includes("/schemas/")) fileType = "SCHEMA";
+            else if (fileName.includes("prisma")) fileType = "PRISMA";
+            else if (fileName.endsWith(".css")) fileType = "STYLE";
+            else if (fileName.endsWith(".svg")) fileType = "ASSET";
+            else if (fileName.endsWith(".md")) fileType = "MARKDOWN";
 
             const stats = fs.statSync(fullPath);
-
             allProjectFiles.push({
               path: relativePath,
               name: fileName,
               type: fileType,
               size: stats.size,
               lastModified: stats.mtime.toISOString(),
-              linesOfCode: 0, 
+              linesOfCode: 0,
             });
 
             if (["COMPONENT", "PAGE"].includes(fileType)) uiFiles.push(relativePath);
@@ -98,18 +110,14 @@ export async function runFullProjectAuditAction(currentPathname: string = "/"): 
           }
         }
       }
-    } catch (error) {
-      console.error(`Guardian Scan Error:`, error);
-    }
+    } catch (error) { console.error(error); }
   };
-
   scanDirectory(rootDirectory);
 
-  // --- 2. PRISMA INTROSPECTOR ---
+  // 2. PRISMA
   const prismaPath = path.join(rootDirectory, "prisma", "schema.prisma");
   const dbModels: string[] = [];
   let dbProvider = "unknown";
-
   if (fs.existsSync(prismaPath)) {
     const prismaContent = fs.readFileSync(prismaPath, "utf8");
     const modelMatches = prismaContent.match(/model\s+(\w+)\s+{/g);
@@ -118,90 +126,105 @@ export async function runFullProjectAuditAction(currentPathname: string = "/"): 
     if (providerMatch) dbProvider = providerMatch[1];
   }
 
-  // --- 3. CONTEXT AWARENESS (Active Screen) ---
-  const normalizedPath = currentPathname === "/" ? "/page" : currentPathname;
-  
-  const activePageFileObj = allProjectFiles.find(f => {
-    return f.path.includes(`app${normalizedPath}/page.tsx`) || f.path.includes(`app${normalizedPath}/layout.tsx`);
+  // 3. CONTEXTO INTELIGENTE
+  let activeFile = focusFile;
+  if (!activeFile) {
+    const normalizedPath = currentPathname === "/" ? "/page" : currentPathname;
+    const activePageFileObj = allProjectFiles.find(f => {
+      return f.path.includes(`app${normalizedPath}/page.tsx`) || f.path.includes(`app${normalizedPath}/layout.tsx`);
+    });
+    activeFile = activePageFileObj ? activePageFileObj.path : "app/page.tsx";
+  }
+
+  const directImports = extractImports(rootDirectory, activeFile);
+  const relatedUIReal = directImports.filter(f => f.includes("components") || f.endsWith(".tsx") || f.endsWith(".jsx"));
+  const relatedLogicReal = directImports.filter(f => !relatedUIReal.includes(f));
+
+  // 4. ANÁLISE PROFUNDA & CONECTIVIDADE
+  let totalButtons = 0;
+  let totalInputs = 0;
+  let totalLogic = 0;
+  let totalActions = 0;
+  const potentialPopups: string[] = [];
+ 
+  // Listas de Conectividade
+  const connectedFiles: string[] = [];
+  const disconnectedFiles: string[] = [];
+
+  const scopeFiles = [activeFile, ...relatedUIReal];
+  const uniqueScopeFiles = Array.from(new Set(scopeFiles));
+
+  uniqueScopeFiles.forEach(filePath => {
+    const absPath = path.join(rootDirectory, filePath);
+    if (fs.existsSync(absPath)) {
+        const content = fs.readFileSync(absPath, "utf8");
+
+        // Métricas
+        const btnMatches = content.match(/<button|<motion\.button|<[A-Z]\w*Button|onClick=/g);
+        if (btnMatches) totalButtons += btnMatches.length;
+        const inpMatches = content.match(/<input|<textarea|<[A-Z]\w*Input|<[A-Z]\w*Field/g);
+        if (inpMatches) totalInputs += inpMatches.length;
+        const logMatches = content.match(/useEffect\(|useCallback\(|useState\(|useMemo\(/g);
+        if (logMatches) totalLogic += logMatches.length;
+        const actMatches = content.match(/Action\(/g);
+        if (actMatches) totalActions += actMatches.length;
+
+        // ✅ DETECÇÃO DE POPUPS (STATIC ANALYSIS)
+        // Detecta componentes que parecem ser Modais baseados em nome ou CSS
+        const isPopupByName = /Modal|Popup|Dialog|Overlay|Drawer|Sheet/.test(filePath);
+        const isPopupByCode = (content.includes("fixed") || content.includes("absolute")) && 
+                              (content.includes("z-50") || content.includes("z-[") || content.includes("inset-0"));
+        
+        if ((isPopupByName || isPopupByCode) && filePath !== activeFile) {
+            potentialPopups.push(filePath);
+        }
+
+        // ✅ DETECÇÃO DE CONECTIVIDADE (REX INTELLIGENCE)
+        const hasPrisma = content.includes("prisma.") || content.includes("db.");
+        const hasServerAction = content.includes("use server") || content.includes("@/actions");
+        const hasDataFetching = content.includes("useQuery") || content.includes("fetch(") || content.includes("useSWR");
+       
+        if (hasPrisma || hasServerAction || hasDataFetching) {
+            connectedFiles.push(filePath);
+        } else {
+            disconnectedFiles.push(filePath);
+        }
+
+        // Diagnósticos
+        if (content.includes("fixed") && !content.includes("overflow") && !content.includes("max-h")) {
+             issues.push({
+                id: `ovf-${filePath}`,
+                layer: "UI_PROPORTION",
+                file: filePath,
+                message: "Container fixo sem controle de scroll explícito.",
+                severity: "MEDIUM",
+                suggestion: "Verifique se este modal tem 'overflow-y-auto' para telas pequenas.",
+                timestamp: new Date().toISOString(),
+            });
+        }
+    }
   });
-  
-  const activePagePath = activePageFileObj ? activePageFileObj.path : "app/page.tsx";
-  const absoluteActivePath = path.join(rootDirectory, activePagePath);
-  
-  let activeContent = "";
-  if (fs.existsSync(absoluteActivePath)) {
-    activeContent = fs.readFileSync(absoluteActivePath, "utf8");
-  }
-
-  // Filtros
-  const routeKeywords = currentPathname.split('/').filter(p => p.length > 2);
-  const relatedUI = uiFiles.filter(f => routeKeywords.some(k => f.toLowerCase().includes(k)));
-  const relatedLogic = logicFiles.filter(f => routeKeywords.some(k => f.toLowerCase().includes(k)));
-
-  // Elementos
-  const buttonMatches = activeContent.match(/<button|<StandardButton|<ActionButtonsBlock/g);
-  const inputMatches = activeContent.match(/<input|<textarea|<AuthInputField|<DynamicInput/g);
-  const logicMatches = activeContent.match(/useEffect\(|useCallback\(|useState\(/g);
-  const serverActionMatches = activeContent.match(/Action\(/g);
-
-  // --- 4. DIAGNÓSTICO DE PROPORÇÃO E LAYOUT (INTELIGÊNCIA) ---
-  
-  // [RULE 1] Largura Fixa Perigosa (ex: w-[500px]) sem breakpoint
-  // Detecta w-[...px] que não seja precedido por md:, lg:, xl:
-  const fixedWidthRegex = /(?<!(md|lg|xl|2xl):)w-\[\d{3,}px\]/g;
-  if (fixedWidthRegex.test(activeContent)) {
-      issues.push({
-        id: `prop-fixed-width-${Date.now()}`,
-        layer: "UI_PROPORTION",
-        file: activePagePath,
-        message: "Largura fixa rígida detectada (Risco Mobile).",
-        severity: "HIGH",
-        suggestion: "Use 'w-full max-w-md' ou adicione prefixos responsivos (md:w-[...]).",
-        timestamp: new Date().toISOString(),
-      });
-  }
-
-  // [RULE 2] Popups/Modais sem Scroll (Risco de corte em telas pequenas)
-  // Se tem 'fixed' e 'z-50' (provável modal) mas não tem 'overflow-y-auto' ou 'max-h'
-  if (activeContent.includes("fixed") && activeContent.includes("z-50")) {
-      if (!activeContent.includes("overflow-y-auto") && !activeContent.includes("max-h-")) {
-        issues.push({
-            id: `prop-modal-overflow-${Date.now()}`,
-            layer: "UI_PROPORTION",
-            file: activePagePath,
-            message: "Popup/Modal sem controle de rolagem.",
-            severity: "CRITICAL",
-            suggestion: "Adicione 'max-h-[85vh]' e 'overflow-y-auto' para evitar que o conteúdo seja cortado em celulares.",
-            timestamp: new Date().toISOString(),
-        });
-      }
-  }
-
-  // [RULE 3] Inputs Fixos no Rodapé (Risco Teclado Virtual)
-  // Se tem input dentro de um container fixed bottom-0
-  if (activeContent.includes("fixed") && activeContent.includes("bottom-0") && (activeContent.includes("<input") || activeContent.includes("Input"))) {
-      issues.push({
-        id: `prop-keyboard-risk-${Date.now()}`,
-        layer: "UI_PROPORTION",
-        file: activePagePath,
-        message: "Input fixo no rodapé (Conflito com Teclado).",
-        severity: "MEDIUM",
-        suggestion: "O teclado virtual pode cobrir este input. Use 'pb-safe' ou verifique o comportamento do viewport.",
-        timestamp: new Date().toISOString(),
-      });
-  }
 
   const screenMetadata: ScreenMetadata = {
     pathname: currentPathname,
-    responsibleFile: activePagePath,
+    responsibleFile: activeFile,
+    focusMode: !!focusFile,
     lastModified: new Date().toISOString(),
     elements: {
-      buttons: buttonMatches ? buttonMatches.length : 0,
-      inputs: inputMatches ? inputMatches.length : 0,
-      logicHooks: logicMatches ? logicMatches.length : 0,
-      serverActions: serverActionMatches ? serverActionMatches.length : 0,
+      buttons: totalButtons,
+      inputs: totalInputs,
+      logicHooks: totalLogic,
+      serverActions: totalActions,
     },
-    relatedFiles: { ui: relatedUI, logic: relatedLogic },
+    relatedFiles: {
+      ui: relatedUIReal,
+      logic: relatedLogicReal
+    },
+    potentialPopups: potentialPopups, // Populated by static analysis
+    connectivity: {
+        connected: connectedFiles,
+        disconnected: disconnectedFiles
+    },
     database: { models: dbModels, connection: dbProvider },
     projectStructure: allProjectFiles
   };

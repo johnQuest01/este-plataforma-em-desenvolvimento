@@ -23,24 +23,36 @@ export function MasterGuardianDashboard() {
   // Local State
   const [view, setView] = useState<DashboardView>('SCANNER');
   const [loading, setLoading] = useState<boolean>(false);
-  const [selectedFile, setSelectedFile] = useState<{ name: string, type: 'UI' | 'LOGIC' } | null>(null);
+  
+  // ✅ NOVO: Estado de Foco (Qual arquivo estamos analisando especificamente?)
+  const [focusedFile, setFocusedFile] = useState<string | undefined>(undefined);
+  
+  // Estado de Inspeção Visual (Overlay de código)
+  const [inspectingFile, setInspectingFile] = useState<{ name: string, type: 'UI' | 'LOGIC' } | null>(null);
+  
   const [data, setData] = useState<GuardianAuditResponse | null>(null);
 
-  // Data Fetching
+  // Data Fetching Inteligente
   const performOmniscientScan = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await runFullProjectAuditAction(pathname);
+      // ✅ Passamos o focusedFile para o servidor recalcular as métricas
+      const result = await runFullProjectAuditAction(pathname, focusedFile);
       setData(result);
     } finally {
       setLoading(false);
     }
-  }, [pathname]);
+  }, [pathname, focusedFile]);
 
-  // Auto-scan on open
+  // Auto-scan ao abrir ou mudar o foco
   useEffect(() => {
     if (isOpen) performOmniscientScan();
   }, [isOpen, performOmniscientScan]);
+
+  // Resetar foco ao mudar de rota (para não ficar preso em um componente de outra página)
+  useEffect(() => {
+    setFocusedFile(undefined);
+  }, [pathname]);
 
   // Safety check: Only render in Dev
   if (process.env.NODE_ENV !== "development") return null;
@@ -71,10 +83,13 @@ export function MasterGuardianDashboard() {
             {/* Main Workspace */}
             <div className="flex-1 flex gap-6 overflow-hidden relative">
               
-              {/* Sidebar Block */}
+              {/* Sidebar Block - Agora controla Foco e Inspeção */}
               <GuardianSidebar 
                 data={data} 
-                onSelectFile={(name, type) => setSelectedFile({ name, type })} 
+                activeFile={focusedFile}
+                onFocusFile={(file) => setFocusedFile(file)}
+                onInspectFile={(name, type) => setInspectingFile({ name, type })} 
+                onClearFocus={() => setFocusedFile(undefined)}
               />
 
               {/* Dynamic Content Area */}
@@ -82,11 +97,11 @@ export function MasterGuardianDashboard() {
                 
                 {/* File Detail Overlay Block */}
                 <AnimatePresence>
-                  {selectedFile && (
+                  {inspectingFile && (
                     <GuardianFileDetail 
-                      file={selectedFile.name} 
-                      type={selectedFile.type} 
-                      onClose={() => setSelectedFile(null)} 
+                      file={inspectingFile.name} 
+                      type={inspectingFile.type} 
+                      onClose={() => setInspectingFile(null)} 
                     />
                   )}
                 </AnimatePresence>

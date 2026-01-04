@@ -81,9 +81,40 @@ export async function saveProductAction(inputData: CreateProductInput) {
     const decimalPrice = new Prisma.Decimal(numericPrice);
 
     let targetStoreId = validatedInput.storeId;
+
+    // --- LÓGICA DE AUTO-CURA (SELF-HEALING) ---
+    // Se não houver ID de loja, busca a primeira. Se não existir, CRIA uma.
     if (!targetStoreId) {
-      const store = await prisma.store.findFirst();
-      if (!store) throw new Error("Nenhuma loja encontrada.");
+      let store = await prisma.store.findFirst();
+      
+      if (!store) {
+        console.log("⚠️ Nenhuma loja encontrada. Iniciando criação automática de Loja Padrão...");
+        
+        // 1. Garante que existe um usuário dono (Admin)
+        let owner = await prisma.user.findFirst();
+        if (!owner) {
+            owner = await prisma.user.create({
+                data: {
+                    email: "admin@sistema.com",
+                    name: "Admin Sistema",
+                    // CORREÇÃO: Adicionado campo 'document' obrigatório (CPF fictício para admin)
+                    document: "000.000.000-00", 
+                    // Adicione outros campos obrigatórios do seu User aqui se houver (ex: password, role)
+                }
+            });
+        }
+
+        // 2. Cria a loja vinculada ao dono
+        store = await prisma.store.create({
+            data: {
+                name: "Minha Loja Principal",
+                slug: "loja-principal",
+                ownerId: owner.id
+            }
+        });
+        console.log("✅ Loja Padrão criada com sucesso:", store.id);
+      }
+      
       targetStoreId = store.id;
     }
 
@@ -137,7 +168,6 @@ export async function saveProductAction(inputData: CreateProductInput) {
   } catch (error) {
     console.error("❌ Erro ao salvar produto:", error);
     
-    // CORREÇÃO: Uso de .issues em vez de .errors para compatibilidade de tipos
     if (error instanceof z.ZodError) {
         return { success: false, error: error.issues };
     }
