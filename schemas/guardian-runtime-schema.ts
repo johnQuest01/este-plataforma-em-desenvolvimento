@@ -43,6 +43,22 @@ export const RuntimeTrackerSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
+// ✅ NOVO: Definição recursiva para ComponentNode
+export const ComponentNodeSchema: z.ZodType<ComponentNode> = z.lazy(() =>
+  z.object({
+    name: z.string(),
+    file: z.string().optional(),
+    children: z.array(ComponentNodeSchema),
+  })
+);
+
+// Definição do tipo TypeScript para ComponentNode
+export type ComponentNode = {
+  name: string;
+  file?: string;
+  children: ComponentNode[];
+};
+
 export type RuntimeElementState = z.infer<typeof RuntimeElementStateEnum>;
 export type RuntimeTracker = z.infer<typeof RuntimeTrackerSchema>;
 export type UIMetrics = z.infer<typeof UIMetricsSchema>;

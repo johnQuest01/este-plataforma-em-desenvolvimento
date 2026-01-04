@@ -1,10 +1,12 @@
+// path: src/hooks/use-guardian-store.ts
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { ThemePreference } from '@/schemas/user-preferences-schema';
 import { DiagnosticLayer } from '@/schemas/guardian-schema';
 import { RuntimeTracker, ComponentNode } from '@/schemas/guardian-runtime-schema';
 
-export type GuardianTab = 'SCANNER' | 'DATABASE' | 'AUDIT' | 'HISTORY' | 'CONNECTIONS' | 'FILES';
+// ✅ ATUALIZAÇÃO: Adicionado 'CODE_MAP' explicitamente ao tipo
+export type GuardianTab = 'SCANNER' | 'CODE_MAP' | 'DATABASE' | 'AUDIT' | 'HISTORY' | 'CONNECTIONS' | 'FILES';
 export type GuardianFilter = DiagnosticLayer | 'ALL';
 
 export interface SelectedFileState {
@@ -18,10 +20,10 @@ interface GuardianStore {
   activeTab: GuardianTab;
   activeFilter: GuardianFilter;
   selectedFile: SelectedFileState | null;
-  
-  // ✅ NOVO: Estado da Rota Ativa
+ 
+  // Estado da Rota Ativa
   activeRuntimeElements: RuntimeTracker[];
-  currentRouteStructure: ComponentNode | null; // Árvore completa da página
+  currentRouteStructure: ComponentNode | null;
 
   toggle: () => void;
   close: () => void;
@@ -32,8 +34,7 @@ interface GuardianStore {
   clearSelectedFile: () => void;
   registerElement: (element: RuntimeTracker) => void;
   unregisterElement: (elementId: string) => void;
-  
-  // ✅ NOVO: Action para atualizar a estrutura da rota
+ 
   setRouteStructure: (structure: ComponentNode | null) => void;
 }
 
@@ -57,6 +58,7 @@ export const useGuardianStore = create<GuardianStore>()(
       clearSelectedFile: () => set({ selectedFile: null }),
 
       registerElement: (element) => set((state) => {
+        // Evita duplicatas
         const exists = state.activeRuntimeElements.find(e => e.elementId === element.elementId);
         if (exists) return state;
         return { activeRuntimeElements: [...state.activeRuntimeElements, element] };

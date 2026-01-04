@@ -1,3 +1,4 @@
+// path: src/components/builder/ui/MenuPopup.tsx
 'use client';
 
 import React, { useSyncExternalStore } from 'react';
@@ -8,6 +9,10 @@ import {
   ShoppingCart, Store, UserCircle, DoorOpen, Share2, User, 
   Heart, Package, HelpCircle, Calculator, LogOut 
 } from 'lucide-react';
+
+// 📚 Rex Intelligence: Importação do HOC para monitoramento
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
+
 import { MenuItem, MenuStyle } from '@/types/builder';
 import { cn } from '@/lib/utils';
 
@@ -49,7 +54,11 @@ interface MenuPopupProps {
   onItemClick?: (item: MenuItem) => void;
 }
 
-export const MenuPopup = ({ 
+/**
+ * MenuPopupBase: Implementação pura do componente de Menu.
+ * Este componente é renderizado via Portal para garantir que fique acima de qualquer camada.
+ */
+const MenuPopupBase = ({ 
   isOpen, 
   onClose, 
   items, 
@@ -65,18 +74,14 @@ export const MenuPopup = ({
     icon: { color: theme?.iconColor || '#000000' }
   };
 
-  // Se não estiver no cliente, não renderiza o Portal (evita erro de SSR)
   if (!isClient) return null;
 
   return createPortal(
-    /* A div container deve estar sempre presente para o AnimatePresence 
-       poder gerenciar os filhos que entram e saem.
-    */
     <div className="fixed inset-0 z-[99999] pointer-events-none flex flex-col justify-start items-center">
       <AnimatePresence>
         {isOpen && (
           <React.Fragment key="menu-wrapper">
-            {/* Overlay - Adicionado 'key' e pointer-events-auto */}
+            {/* Overlay de Fundo com Blur */}
             <motion.div
               key="menu-overlay"
               initial={{ opacity: 0 }}
@@ -87,15 +92,16 @@ export const MenuPopup = ({
               style={styles.overlay}
             />
 
-            {/* Modal - Adicionado 'key' e pointer-events-auto */}
+            {/* Container do Modal (Layout Card detectável pelo Rex) */}
             <motion.div
               key="menu-modal"
               initial={{ opacity: 0, scale: 0.9, y: -20 }}
               animate={{ opacity: 1, scale: 1, y: 100 }}
               exit={{ opacity: 0, scale: 0.9, y: -20 }}
-              className="relative z-[100000] w-[90%] max-w-[380px] rounded-3xl shadow-2xl overflow-hidden pointer-events-auto"
+              className="relative z-[100000] w-[90%] max-w-[380px] rounded-[2.5rem] bg-white shadow-2xl overflow-hidden pointer-events-auto border border-gray-100"
               style={styles.modal}
             >
+              {/* Botão de Fechar */}
               <div className="flex justify-end p-4">
                 <button 
                   onClick={onClose} 
@@ -106,6 +112,7 @@ export const MenuPopup = ({
                 </button>
               </div>
 
+              {/* Grade de Itens (Botões detectáveis pelo Rex) */}
               <div className="grid grid-cols-3 gap-y-8 gap-x-2 p-6 pb-10">
                 {items.map((item) => {
                   const IconComponent = ICON_MAP[item.icon] || ICON_MAP.default;
@@ -150,3 +157,13 @@ export const MenuPopup = ({
     document.body
   );
 };
+
+/**
+ * ✅ EXPORTAÇÃO COM GUARDIAN OS
+ * O Rex Intelligence agora mapeia este arquivo físico e monitora instâncias de POPUP.
+ */
+export const MenuPopup = withGuardian(
+  MenuPopupBase, 
+  "components/builder/ui/MenuPopup.tsx", 
+  "POPUP"
+);

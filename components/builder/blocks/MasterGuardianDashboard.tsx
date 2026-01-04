@@ -11,31 +11,29 @@ import { useGuardianStore } from "@/hooks/use-guardian-store";
 
 // Import Lego Blocks
 import { GuardianTrigger } from "./master/GuardianTrigger";
-import { GuardianHeader, DashboardView } from "./master/GuardianHeader";
+import { GuardianHeader } from "./master/GuardianHeader";
 import { GuardianSidebar } from "./master/GuardianSidebar";
 import { GuardianViewManager } from "./master/GuardianViewManager";
 
 export function MasterGuardianDashboard() {
   const pathname = usePathname();
-  const { isOpen } = useGuardianStore();
- 
-  // Local State
-  const [view, setView] = useState<DashboardView>('SCANNER');
+  const { isOpen, activeTab, setTab } = useGuardianStore();
+  
+  // Loading State
   const [loading, setLoading] = useState<boolean>(false);
- 
-  // Estado de Foco (Qual arquivo estamos analisando especificamente?)
+  
+  // Focus State (Specific File Analysis)
   const [focusedFile, setFocusedFile] = useState<string | undefined>(undefined);
- 
-  // Estado de Inspeção Visual (Mantido para uso futuro na Sidebar, mas sem overlay por enquanto)
+  
+  // Visual Inspection State
   const [inspectingFile, setInspectingFile] = useState<{ name: string, type: 'UI' | 'LOGIC' } | null>(null);
- 
+  
   const [data, setData] = useState<GuardianAuditResponse | null>(null);
 
-  // Data Fetching Inteligente
+  // Intelligent Data Fetching
   const performOmniscientScan = useCallback(async () => {
     setLoading(true);
     try {
-      // Passamos o focusedFile para o servidor recalcular as métricas
       const result = await runFullProjectAuditAction(pathname, focusedFile);
       setData(result);
     } finally {
@@ -43,12 +41,12 @@ export function MasterGuardianDashboard() {
     }
   }, [pathname, focusedFile]);
 
-  // Auto-scan ao abrir ou mudar o foco
+  // Auto-scan on open or focus change
   useEffect(() => {
     if (isOpen) performOmniscientScan();
   }, [isOpen, performOmniscientScan]);
 
-  // Resetar foco ao mudar de rota
+  // Reset focus on route change
   useEffect(() => {
     setFocusedFile(undefined);
   }, [pathname]);
@@ -73,15 +71,15 @@ export function MasterGuardianDashboard() {
             {/* Header Block */}
             <GuardianHeader
               pathname={pathname}
-              currentView={view}
-              onViewChange={setView}
+              currentView={activeTab}
+              onViewChange={setTab}
               onRefresh={performOmniscientScan}
               loading={loading}
             />
 
             {/* Main Workspace */}
             <div className="flex-1 flex gap-6 overflow-hidden relative">
-             
+              
               {/* Sidebar Block */}
               <GuardianSidebar
                 data={data}
@@ -93,10 +91,10 @@ export function MasterGuardianDashboard() {
 
               {/* Dynamic Content Area */}
               <div className="flex-1 bg-zinc-900/20 rounded-[3rem] border border-zinc-800/50 relative overflow-hidden flex flex-col">
-               
+                
                 {/* View Manager Block */}
-                <GuardianViewManager view={view} data={data} />
-               
+                <GuardianViewManager view={activeTab} data={data} />
+                
               </div>
             </div>
           </motion.div>

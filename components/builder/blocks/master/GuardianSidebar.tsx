@@ -2,9 +2,10 @@
 "use client";
 
 import React from "react";
-import { Layers, Eye, Box, Target, RotateCcw, Maximize } from "lucide-react";
+import { Layers, Eye, Box, Target, RotateCcw, Maximize, ArrowRight } from "lucide-react";
 import { GuardianAuditResponse } from "@/schemas/guardian-schema";
 import { cn } from "@/lib/utils";
+import { useGuardianStore } from "@/hooks/use-guardian-store";
 
 interface GuardianSidebarProps {
   data: GuardianAuditResponse | null;
@@ -15,8 +16,18 @@ interface GuardianSidebarProps {
 }
 
 export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, onClearFocus }: GuardianSidebarProps) {
+  // ✅ Hook para navegação
+  const { setTab } = useGuardianStore();
+  
   const isFocusMode = !!activeFile;
   const popups = data?.screenMetadata.potentialPopups || [];
+
+  // ✅ Função de Navegação Inteligente
+  const handleNavigateToCodeMap = (file: string) => {
+    onFocusFile(file); // Define o foco no arquivo
+    onInspectFile(file, 'UI'); // Prepara a inspeção
+    setTab('CODE_MAP'); // Troca a aba
+  };
 
   return (
     <div className="w-80 flex flex-col gap-4 shrink-0">
@@ -29,14 +40,14 @@ export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, 
             "text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-colors",
             isFocusMode ? "text-indigo-400" : "text-zinc-500"
           )}>
-            {isFocusMode ? <Target className="w-4 h-4" /> : <Layers className="w-4 h-4" />} 
+            {isFocusMode ? <Target className="w-4 h-4" /> : <Layers className="w-4 h-4" />}
             {isFocusMode ? "Modo Foco Ativo" : "Arquivos da Rota"}
           </h3>
           
           {isFocusMode && (
-            <button 
-              onClick={onClearFocus} 
-              className="p-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-full text-zinc-400 hover:text-white transition-colors" 
+            <button
+              onClick={onClearFocus}
+              className="p-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-full text-zinc-400 hover:text-white transition-colors"
               title="Voltar para visão geral da rota"
             >
               <RotateCcw size={12} />
@@ -46,7 +57,7 @@ export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, 
 
         <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2">
           
-          {/* ✅ LISTA DE POPUPS DETECTADOS (Atalho para Foco) */}
+          {/* ✅ LISTA DE POPUPS DETECTADOS (Clicável) */}
           {!isFocusMode && popups.length > 0 && (
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-2 px-1">
@@ -59,8 +70,8 @@ export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, 
                 {popups.map(popupFile => (
                   <button
                     key={popupFile}
-                    onClick={() => onFocusFile(popupFile)}
-                    className="w-full p-3 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 rounded-xl text-left transition-all group flex items-center justify-between"
+                    onClick={() => handleNavigateToCodeMap(popupFile)}
+                    className="w-full p-3 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 rounded-xl text-left transition-all group flex items-center justify-between cursor-pointer"
                   >
                     <div className="flex items-center gap-2 overflow-hidden">
                       <Box size={14} className="text-amber-400 shrink-0" />
@@ -68,14 +79,14 @@ export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, 
                         {popupFile.split('/').pop()}
                       </span>
                     </div>
-                    <Target size={12} className="text-amber-400 opacity-50 group-hover:opacity-100" />
+                    <ArrowRight size={12} className="text-amber-400 opacity-50 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* ✅ ARQUIVO RESPONSÁVEL (Onde a mágica acontece) */}
+          {/* ✅ ARQUIVO RESPONSÁVEL (Clicável) */}
           {data?.screenMetadata.responsibleFile && (
             <div className="mb-6">
               <div className="flex justify-between items-center mb-2 px-1">
@@ -83,22 +94,25 @@ export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, 
                   "text-[9px] font-black uppercase tracking-wider",
                   isFocusMode ? "text-indigo-400" : "text-zinc-500"
                 )}>
-                  {isFocusMode ? "ARQUIVO ATIVO (POPUP/COMPONENTE)" : "PÁGINA PRINCIPAL"}
+                  {isFocusMode ? "ARQUIVO ATIVO" : "PÁGINA PRINCIPAL"}
                 </span>
               </div>
-              <div className={cn(
-                "w-full p-4 rounded-2xl text-left group relative transition-all border",
-                isFocusMode 
-                  ? "bg-indigo-600/20 border-indigo-500/50 shadow-md shadow-indigo-500/10" 
-                  : "bg-zinc-800/30 border-zinc-700/50"
+              <div 
+                onClick={() => handleNavigateToCodeMap(data.screenMetadata.responsibleFile)}
+                className={cn(
+                  "w-full p-4 rounded-2xl text-left group relative transition-all border cursor-pointer hover:scale-[1.02]",
+                  isFocusMode
+                    ? "bg-indigo-600/20 border-indigo-500/50 shadow-md shadow-indigo-500/10"
+                    : "bg-zinc-800/30 border-zinc-700/50 hover:bg-zinc-800/50 hover:border-zinc-600"
               )}>
                 <div className="flex justify-between items-center mb-1">
                   <div className="flex items-center gap-2">
-                    <Eye size={14} className={cn("cursor-pointer hover:text-white", isFocusMode ? "text-indigo-300" : "text-zinc-400")} onClick={() => onInspectFile(data.screenMetadata.responsibleFile, 'UI')} />
+                    <Eye size={14} className={cn("transition-colors", isFocusMode ? "text-indigo-300" : "text-zinc-400 group-hover:text-white")} />
                     <span className={cn("text-xs font-bold truncate", isFocusMode ? "text-white" : "text-zinc-200")}>
                       {data.screenMetadata.responsibleFile.split('/').pop()}
                     </span>
                   </div>
+                  <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-all text-zinc-400" />
                 </div>
                 <p className={cn("text-[9px] truncate font-mono mt-1", isFocusMode ? "text-indigo-300" : "text-zinc-500")}>
                   {data.screenMetadata.responsibleFile}
@@ -107,11 +121,11 @@ export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, 
             </div>
           )}
 
-          {/* Lista de Dependências (Filhos do Arquivo Responsável) */}
+          {/* Lista de Dependências */}
           <div className="space-y-2">
             <div className="flex items-center justify-between px-1 mb-2">
               <span className="text-[9px] font-black text-zinc-600 uppercase tracking-wider">
-                {isFocusMode ? "Dependências do Popup" : "Componentes da Página"}
+                {isFocusMode ? "Dependências" : "Componentes"}
               </span>
               <span className="text-[9px] bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded">
                 {data?.screenMetadata.relatedFiles.ui.length || 0}
@@ -119,14 +133,12 @@ export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, 
             </div>
 
             {data?.screenMetadata.relatedFiles.ui.map((file) => (
-              <div 
+              <div
                 key={file}
-                className="w-full text-left p-3 bg-zinc-800/30 hover:bg-zinc-800 border border-zinc-800/50 rounded-xl transition-all group flex items-center justify-between"
+                onClick={() => handleNavigateToCodeMap(file)}
+                className="w-full text-left p-3 bg-zinc-800/30 hover:bg-zinc-800 border border-zinc-800/50 rounded-xl transition-all group flex items-center justify-between cursor-pointer"
               >
-                <div 
-                  className="flex items-center gap-3 overflow-hidden cursor-pointer flex-1" 
-                  onClick={() => onInspectFile(file, 'UI')}
-                >
+                <div className="flex items-center gap-3 overflow-hidden flex-1">
                   <Box size={14} className="text-zinc-600 group-hover:text-blue-400 transition-colors shrink-0" />
                   <div className="min-w-0">
                     <p className="text-[10px] font-mono text-zinc-400 group-hover:text-zinc-200 truncate transition-colors">
@@ -134,21 +146,13 @@ export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, 
                     </p>
                   </div>
                 </div>
-                
-                {/* Botão de Foco: Permite navegar para dentro deste componente também */}
-                <button 
-                  onClick={() => onFocusFile(file)}
-                  className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-indigo-500/20 rounded-md text-zinc-500 hover:text-indigo-400 transition-all ml-2"
-                  title="Focar neste componente"
-                >
-                  <Target size={14} />
-                </button>
+                <ArrowRight size={12} className="text-zinc-500 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
               </div>
             ))}
             
             {data?.screenMetadata.relatedFiles.ui.length === 0 && (
               <div className="p-4 border border-dashed border-zinc-800 rounded-xl text-center">
-                <p className="text-[10px] text-zinc-600 italic">Este arquivo não possui dependências de UI diretas.</p>
+                <p className="text-[10px] text-zinc-600 italic">Sem dependências de UI diretas.</p>
               </div>
             )}
           </div>

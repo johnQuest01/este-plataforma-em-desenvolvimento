@@ -26,7 +26,6 @@ import {
   Link as LinkIcon,
   Unplug,
   Layers,
-  Eye,
   FileEdit,
   Map,
   MousePointerClick,
@@ -34,10 +33,17 @@ import {
   LayoutDashboard,
   ScanSearch,
   Scaling,
-  Terminal
+  Terminal,
+  Filter,
+  ArrowRight,
+  Star,
+  Palette,   // ✅ Novo ícone para Estilos
+  Settings,  // ✅ Novo ícone para Configurações
+  GitCommit, // ✅ Novo ícone para nós de conexão (Source)
+  ArrowDownRight // ✅ Novo ícone para fluxo de dependência (Target)
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { GuardianAuditResponse, ProjectFile, CodeSnippet } from "@/schemas/guardian-schema";
+import { GuardianAuditResponse, ProjectFile, CodeSnippet, DependencyLink } from "@/schemas/guardian-schema";
 import { DashboardView } from "./GuardianHeader";
 import { useGuardianStore } from "@/hooks/use-guardian-store";
 
@@ -46,13 +52,13 @@ interface GuardianViewManagerProps {
   data: GuardianAuditResponse | null;
 }
 
-/**
- * GuardianViewManager: Orquestrador de visualizações do Guardian OS.
- * Implementa a arquitetura Rex Code X-Ray para auditoria de código vivo.
- */
+type CodeMapFilter = 'LIVE_TRACKED' | 'ALL_SCANNED';
+
 export function GuardianViewManager({ view, data }: GuardianViewManagerProps) {
   const [fileSearch, setFileSearch] = useState("");
-  const { activeRuntimeElements } = useGuardianStore();
+  const [codeMapFilter, setCodeMapFilter] = useState<CodeMapFilter>('LIVE_TRACKED');
+ 
+  const { activeRuntimeElements, setTab } = useGuardianStore();
 
   const projectFiles = useMemo(() => data?.screenMetadata.projectStructure || [], [data]);
 
@@ -64,9 +70,18 @@ export function GuardianViewManager({ view, data }: GuardianViewManagerProps) {
     );
   }, [projectFiles, fileSearch]);
 
-  // ✅ VIEW: CODE_MAP (Mapeamento Estrutural do DOM + Código Fonte Real)
+  // ✅ VIEW: CODE_MAP
   if (view === "CODE_MAP") {
     const mappedElements = activeRuntimeElements.filter((element) => element.metrics);
+
+    const sortedElements = [...mappedElements].sort((a, b) => {
+        const responsibleFile = data?.screenMetadata.responsibleFile;
+        if (a.responsibleFile === responsibleFile) return -1;
+        if (b.responsibleFile === responsibleFile) return 1;
+        if (a.isPopup && !b.isPopup) return -1;
+        if (!a.isPopup && b.isPopup) return 1;
+        return 0;
+    });
 
     return (
       <div className="h-full p-8 overflow-y-auto custom-scrollbar bg-[#050505]">
@@ -79,231 +94,314 @@ export function GuardianViewManager({ view, data }: GuardianViewManagerProps) {
               Mapeamento em tempo real de instâncias e código fonte detectado
             </p>
           </div>
-          <span className="text-[10px] bg-indigo-500/10 text-indigo-400 px-3 py-1.5 rounded-xl border border-indigo-500/20 font-black">
-            {mappedElements.length} COMPONENTES MAPEADOS
-          </span>
+         
+          <div className="flex bg-zinc-900 p-1 rounded-xl border border-zinc-800">
+            <button
+              onClick={() => setCodeMapFilter('LIVE_TRACKED')}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-bold uppercase transition-all",
+                codeMapFilter === 'LIVE_TRACKED'
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-900/20"
+                  : "text-zinc-500 hover:text-zinc-300"
+              )}
+            >
+              <ScanSearch size={14} />
+              Arquivos com Rastreio (Live)
+            </button>
+            <button
+              onClick={() => setCodeMapFilter('ALL_SCANNED')}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-bold uppercase transition-all",
+                codeMapFilter === 'ALL_SCANNED'
+                  ? "bg-zinc-800 text-white"
+                  : "text-zinc-500 hover:text-zinc-300"
+              )}
+            >
+              <Filter size={14} />
+              Todos (Estático)
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6">
-          {mappedElements.map((element) => {
-            const metrics = element.metrics;
-            if (!metrics) return null;
+        {codeMapFilter === 'LIVE_TRACKED' ? (
+          <div className="grid grid-cols-1 gap-6">
+            {sortedElements.map((element) => {
+              const metrics = element.metrics;
+              if (!metrics) return null;
 
-            // ✅ RESOLVIDO: Busca snippets no codeMap usando o arquivo responsável
-            const snippets: CodeSnippet[] = data?.screenMetadata.codeMap?.[element.responsibleFile || ""] || [];
+              const snippets: CodeSnippet[] = data?.screenMetadata.codeMap?.[element.responsibleFile || ""] || [];
+              const isMainFile = element.responsibleFile === data?.screenMetadata.responsibleFile;
 
-            return (
-              <div
-                key={element.elementId}
-                className="bg-zinc-900/40 border border-zinc-800/50 rounded-[2.5rem] overflow-hidden hover:border-indigo-500/30 transition-all group"
-              >
-                {/* Header da Instância */}
-                <div className="p-6 border-b border-zinc-800/50 bg-zinc-900/20 flex justify-between items-center">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-600/10 flex items-center justify-center text-indigo-500 border border-indigo-500/20">
-                      <Braces size={20} />
+              // 🧠 INTELIGÊNCIA HÍBRIDA:
+              // Calculamos os totais baseados no CÓDIGO FONTE (Estático) para mostrar o potencial total do arquivo,
+              // mas usamos as dimensões do RUNTIME (Beacon) para mostrar o tamanho real na tela.
+              const staticButtonCount = snippets.filter(s => s.type === 'BUTTON').length;
+              const staticInputCount = snippets.filter(s => s.type === 'INPUT').length;
+              const staticTextCount = snippets.filter(s => s.type === 'TEXT').length;
+             
+              // Se não houver snippets (erro de leitura), fallback para métricas de runtime
+              const displayButtons = staticButtonCount > 0 ? staticButtonCount : metrics.elementCount.buttons;
+              const displayInputs = staticInputCount > 0 ? staticInputCount : metrics.elementCount.inputs;
+              const displayText = staticTextCount > 0 ? staticTextCount : metrics.elementCount.textNodes;
+
+              return (
+                <div
+                  key={element.elementId}
+                  className={cn(
+                    "bg-zinc-900/40 border rounded-[2.5rem] overflow-hidden transition-all group",
+                    isMainFile ? "border-indigo-500/50 shadow-lg shadow-indigo-900/10" : "border-zinc-800/50 hover:border-indigo-500/30"
+                  )}
+                >
+                  <div className={cn(
+                      "p-6 border-b flex justify-between items-center",
+                      isMainFile ? "bg-indigo-900/10 border-indigo-500/20" : "bg-zinc-900/20 border-zinc-800/50"
+                  )}>
+                    <div className="flex items-center gap-4">
+                      <div className={cn(
+                          "w-12 h-12 rounded-2xl flex items-center justify-center border",
+                          isMainFile ? "bg-indigo-600 text-white border-indigo-400 shadow-lg shadow-indigo-600/20" : "bg-zinc-800/50 text-zinc-500 border-zinc-700"
+                      )}>
+                        {isMainFile ? <Star size={20} fill="currentColor" /> : <Braces size={20} />}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                            <h4 className="text-base font-black text-white tracking-tight">
+                            {element.componentName}
+                            </h4>
+                            {isMainFile && (
+                                <span className="text-[9px] bg-indigo-500 text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                                    Main Controller
+                                </span>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <FileCode size={12} className="text-zinc-500" />
+                          <span className="text-[10px] font-mono text-zinc-500">
+                            {element.responsibleFile}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-base font-black text-white tracking-tight">
-                        {element.componentName}
-                      </h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <FileCode size={12} className="text-zinc-500" />
-                        <span className="text-[10px] font-mono text-zinc-500">
-                          {element.responsibleFile}
-                        </span>
+
+                    <div className="text-right">
+                      <span className="text-[10px] font-black text-zinc-500 uppercase block mb-1">
+                        Dimensões Reais
+                      </span>
+                      <div className="flex items-center gap-2 text-white font-mono text-xs bg-black/40 px-3 py-1 rounded-lg border border-white/5">
+                        <Scaling size={12} className="text-indigo-400" />
+                        {metrics.width}x{metrics.height}px
                       </div>
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <span className="text-[10px] font-black text-zinc-500 uppercase block mb-1">
-                      Dimensões Reais
-                    </span>
-                    <div className="flex items-center gap-2 text-white font-mono text-xs bg-black/40 px-3 py-1 rounded-lg border border-white/5">
-                      <Scaling size={12} className="text-indigo-400" />
-                      {Math.round(metrics.width)}x{Math.round(metrics.height)}px
-                    </div>
+                  <div className="grid grid-cols-4 gap-px bg-zinc-800/50 border-b border-zinc-800/50">
+                    <StatItem
+                      icon={MousePointerClick}
+                      value={displayButtons}
+                      label="Botões (Total)"
+                    />
+                    <StatItem icon={Type} value={displayInputs} label="Inputs (Total)" />
+                    <StatItem icon={ImageIcon} value={metrics.elementCount.images} label="Imagens (Visíveis)" />
+                    <StatItem
+                      icon={LayoutDashboard}
+                      value={displayText}
+                      label="Blocos Texto"
+                    />
                   </div>
-                </div>
 
-                {/* Grid de Métricas de UI */}
-                <div className="grid grid-cols-4 gap-px bg-zinc-800/50 border-b border-zinc-800/50">
-                  <StatItem
-                    icon={MousePointerClick}
-                    value={metrics.elementCount.buttons}
-                    label="Botões"
-                  />
-                  <StatItem icon={Type} value={metrics.elementCount.inputs} label="Inputs" />
-                  <StatItem icon={ImageIcon} value={metrics.elementCount.images} label="Imagens" />
-                  <StatItem
-                    icon={LayoutDashboard}
-                    value={metrics.elementCount.textNodes}
-                    label="Blocos Texto"
-                  />
-                </div>
+                  <div className="p-6 bg-black/20">
+                    <div className="flex items-center justify-between mb-4">
+                      <h5 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+                        <Terminal size={14} className="text-indigo-500" /> Implementação Detectada
+                      </h5>
+                      {element.isPopup && (
+                        <span className="text-[9px] bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-md font-bold border border-purple-500/20">
+                          POPUP ENGINE
+                        </span>
+                      )}
+                    </div>
 
-                {/* Área de Código Fonte (O Raio-X Real) */}
-                <div className="p-6 bg-black/20">
-                  <div className="flex items-center justify-between mb-4">
-                    <h5 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-                      <Terminal size={14} className="text-indigo-500" /> Implementação Detectada no
-                      Arquivo
-                    </h5>
-                    {element.isPopup && (
-                      <span className="text-[9px] bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-md font-bold border border-purple-500/20">
-                        POPUP ENGINE
-                      </span>
+                    {snippets.length > 0 ? (
+                      <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                        {snippets.map((snippet: CodeSnippet, index: number) => (
+                          <div
+                            key={`${element.elementId}-snippet-${index}`}
+                            className="rounded-2xl border border-zinc-800 bg-[#0a0a0a] overflow-hidden group/snippet"
+                          >
+                            <div className="px-4 py-2 border-b border-zinc-800 bg-zinc-900/50 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className={cn(
+                                    "w-2 h-2 rounded-full",
+                                    snippet.type === "BUTTON"
+                                      ? "bg-blue-500"
+                                      : snippet.type === "INPUT"
+                                      ? "bg-emerald-500"
+                                      : snippet.type === "TEXT"
+                                      ? "bg-gray-500"
+                                      : "bg-zinc-600"
+                                  )}
+                                />
+                                <span className="text-[9px] font-black text-zinc-300 uppercase">
+                                  {snippet.type}
+                                </span>
+                              </div>
+                              <span className="text-[9px] font-mono text-zinc-600 group-hover/snippet:text-indigo-400 transition-colors">
+                                {snippet.preview}
+                              </span>
+                            </div>
+                            <pre className="p-4 text-[11px] font-mono text-indigo-300/80 overflow-x-auto leading-relaxed selection:bg-indigo-500/30">
+                              {snippet.content}
+                            </pre>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="py-8 text-center border-2 border-dashed border-zinc-800 rounded-[2rem]">
+                        <Code size={24} className="mx-auto text-zinc-700 mb-2" />
+                        <p className="text-xs text-zinc-600 font-medium">
+                          Nenhum snippet JSX detectado neste componente.
+                        </p>
+                      </div>
                     )}
                   </div>
 
-                  {snippets.length > 0 ? (
-                    <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
-                      {snippets.map((snippet: CodeSnippet, index: number) => (
-                        <div
-                          key={`${element.elementId}-snippet-${index}`}
-                          className="rounded-2xl border border-zinc-800 bg-[#0a0a0a] overflow-hidden group/snippet"
-                        >
-                          <div className="px-4 py-2 border-b border-zinc-800 bg-zinc-900/50 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className={cn(
-                                  "w-2 h-2 rounded-full",
-                                  snippet.type === "BUTTON"
-                                    ? "bg-blue-500"
-                                    : snippet.type === "INPUT"
-                                    ? "bg-emerald-500"
-                                    : "bg-zinc-600"
-                                )}
-                              />
-                              <span className="text-[9px] font-black text-zinc-300 uppercase">
-                                {snippet.type}
-                              </span>
-                            </div>
-                            <span className="text-[9px] font-mono text-zinc-600 group-hover/snippet:text-indigo-400 transition-colors">
-                              {snippet.preview}
-                            </span>
-                          </div>
-                          <pre className="p-4 text-[11px] font-mono text-indigo-300/80 overflow-x-auto leading-relaxed selection:bg-indigo-500/30">
-                            {snippet.content}
-                          </pre>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="py-8 text-center border-2 border-dashed border-zinc-800 rounded-[2rem]">
-                      <Code size={24} className="mx-auto text-zinc-700 mb-2" />
-                      <p className="text-xs text-zinc-600 font-medium">
-                        Nenhum snippet JSX detectado neste componente.
-                      </p>
+                  {metrics.isResponsiveIssue && (
+                    <div className="m-6 p-4 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-center gap-4 animate-pulse">
+                      <AlertTriangle size={20} className="text-red-500" />
+                      <div>
+                        <p className="text-xs font-black text-red-200 uppercase">
+                          Aviso de Proporção
+                        </p>
+                        <p className="text-[10px] text-red-400/80 font-medium">
+                          Este componente apresenta overflow horizontal. Verifique as larguras fixas.
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>
+              );
+            })}
 
-                {metrics.isResponsiveIssue && (
-                  <div className="m-6 p-4 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-center gap-4 animate-pulse">
-                    <AlertTriangle size={20} className="text-red-500" />
-                    <div>
-                      <p className="text-xs font-black text-red-200 uppercase">
-                        Aviso de Proporção
-                      </p>
-                      <p className="text-[10px] text-red-400/80 font-medium">
-                        Este componente apresenta overflow horizontal. Verifique as larguras fixas.
-                      </p>
-                    </div>
-                  </div>
-                )}
+            {mappedElements.length === 0 && (
+              <div className="text-center py-32 text-zinc-500">
+                <ScanSearch size={48} className="mx-auto mb-4 opacity-20" />
+                <p className="text-sm font-bold">Nenhum componente monitorado na tela ativa.</p>
+                <p className="text-[10px] uppercase tracking-widest mt-2">
+                  Certifique-se de usar o HOC withGuardian nos seus arquivos UI.
+                </p>
               </div>
-            );
-          })}
-
-          {mappedElements.length === 0 && (
-            <div className="text-center py-32 text-zinc-500">
-              <ScanSearch size={48} className="mx-auto mb-4 opacity-20" />
-              <p className="text-sm font-bold">Nenhum componente monitorado na tela ativa.</p>
-              <p className="text-[10px] uppercase tracking-widest mt-2">
-                Certifique-se de usar o HOC withGuardian nos seus arquivos UI.
-              </p>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-2">
+             {filteredFiles.map((file: ProjectFile) => (
+               <FileRow key={file.path} file={file} />
+             ))}
+             {filteredFiles.length === 0 && (
+              <div className="text-center py-10 text-zinc-500 text-xs">
+                {projectFiles.length === 0
+                  ? "Nenhum arquivo indexado. Verifique se o servidor está rodando."
+                  : "Nenhum arquivo encontrado com este filtro."}
+              </div>
+            )}
+           </div>
+        )}
       </div>
     );
   }
 
-  // --- VIEW: CONNECTIONS ---
+  // --- VIEW: CONNECTIONS (ATUALIZADO: MAPA INTELIGENTE) ---
   if (view === "CONNECTIONS") {
-    const connectedFiles = data?.screenMetadata.connectivity.connected || [];
-    const disconnectedFiles = data?.screenMetadata.connectivity.disconnected || [];
+    const dependencies = data?.screenMetadata.dependencies || [];
+    const responsibleFile = data?.screenMetadata.responsibleFile;
+
+    // Agrupar dependências por arquivo de origem (Source)
+    const groupedDependencies = dependencies.reduce((acc, link) => {
+        if (!acc[link.source]) acc[link.source] = [];
+        acc[link.source].push(link);
+        return acc;
+    }, {} as Record<string, DependencyLink[]>);
+
     return (
       <div className="h-full p-8 overflow-y-auto custom-scrollbar">
         <div className="mb-8">
           <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 mb-4">
-            <LinkIcon size={16} /> Status de Conectividade (Backend)
+            <LinkIcon size={16} /> Mapa de Conexões Inteligente
           </h3>
           <p className="text-xs text-zinc-400 mb-6 bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
-            O sistema Rex analisa se os componentes desta tela possuem vínculo direto com
-            <span className="text-emerald-400 font-bold"> Prisma/Neon</span> ou
-            <span className="text-amber-400 font-bold"> Server Actions</span>.
+            O sistema Rex analisou os <span className="text-indigo-400 font-bold">imports</span> dos arquivos desta rota.
+            Abaixo estão listadas as conexões diretas detectadas entre os componentes e suas dependências.
           </p>
-          <div className="grid grid-cols-2 gap-8">
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2">
-                  <CheckCircle2 size={14} /> Conectados ({connectedFiles.length})
-                </span>
-              </div>
-              <div className="space-y-2">
-                {connectedFiles.map((file: string) => (
-                  <div
-                    key={file}
-                    className="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl flex items-center gap-3"
-                  >
-                    <Database size={14} className="text-emerald-500 shrink-0" />
-                    <span className="text-[10px] font-mono text-emerald-200 truncate">
-                      {file.split("/").pop()}
-                    </span>
-                  </div>
-                ))}
-                {connectedFiles.length === 0 && (
-                  <p className="text-[10px] text-zinc-600 italic">
-                    Nenhum arquivo conectado detectado.
-                  </p>
-                )}
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-black text-red-500 uppercase tracking-widest flex items-center gap-2">
-                  <Unplug size={14} /> Desconectados / UI Pura ({disconnectedFiles.length})
-                </span>
-              </div>
-              <div className="space-y-2">
-                {disconnectedFiles.map((file: string) => (
-                  <div
-                    key={file}
-                    className="p-3 bg-red-500/5 border border-red-500/20 rounded-xl flex items-center gap-3 group hover:bg-red-500/10 transition-colors cursor-help"
-                    title="Este arquivo não possui imports explícitos de dados."
-                  >
-                    <Box size={14} className="text-red-400 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <span className="text-[10px] font-mono text-red-200 truncate block">
-                        {file.split("/").pop()}
-                      </span>
+
+          <div className="space-y-8">
+            {Object.entries(groupedDependencies).map(([source, links]) => {
+                const isMainFile = source === responsibleFile;
+                
+                return (
+                    <div key={source} className="relative pl-4 border-l-2 border-zinc-800 hover:border-indigo-500/50 transition-colors">
+                        {/* Nó Principal (Quem Importa) */}
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className={cn(
+                                "w-8 h-8 rounded-lg flex items-center justify-center border shrink-0",
+                                isMainFile ? "bg-indigo-600 text-white border-indigo-400" : "bg-zinc-800 text-zinc-400 border-zinc-700"
+                            )}>
+                                <GitCommit size={16} />
+                            </div>
+                            <div>
+                                <p className={cn("text-xs font-bold", isMainFile ? "text-white" : "text-zinc-300")}>
+                                    {source.split('/').pop()}
+                                </p>
+                                <p className="text-[9px] font-mono text-zinc-500">{source}</p>
+                            </div>
+                            {isMainFile && (
+                                <span className="ml-2 text-[8px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30 uppercase font-bold">
+                                    Root
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Lista de Conexões (Quem é Importado) */}
+                        <div className="space-y-2 pl-6">
+                            {links.map((link, idx) => (
+                                <div key={`${source}-${link.target}-${idx}`} className="flex items-center gap-3 group">
+                                    <ArrowDownRight size={14} className="text-zinc-600 group-hover:text-indigo-500 transition-colors" />
+                                    
+                                    <div className="flex-1 p-2.5 bg-zinc-900/40 border border-zinc-800/50 rounded-lg flex items-center justify-between hover:bg-zinc-800 hover:border-zinc-700 transition-all">
+                                        <div className="flex items-center gap-2 overflow-hidden">
+                                            <FileCode size={12} className="text-zinc-500 shrink-0" />
+                                            <span className="text-[10px] font-mono text-zinc-300 truncate">
+                                                {link.target}
+                                            </span>
+                                        </div>
+                                        
+                                        {/* Badge do Tipo de Arquivo (Inferido) */}
+                                        <span className={cn(
+                                            "text-[8px] font-bold px-1.5 py-0.5 rounded uppercase",
+                                            link.target.includes("type") ? "bg-orange-500/10 text-orange-400" :
+                                            link.target.includes("component") ? "bg-blue-500/10 text-blue-400" :
+                                            link.target.includes("hook") ? "bg-emerald-500/10 text-emerald-400" :
+                                            "bg-zinc-800 text-zinc-500"
+                                        )}>
+                                            {link.target.includes("type") ? "TYPE" : 
+                                             link.target.includes("component") ? "COMP" : 
+                                             link.target.includes("hook") ? "HOOK" : "FILE"}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                    <AlertTriangle
-                      size={12}
-                      className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                    />
-                  </div>
-                ))}
-                {disconnectedFiles.length === 0 && (
-                  <p className="text-[10px] text-zinc-600 italic">
-                    Todos os arquivos parecem conectados.
-                  </p>
-                )}
-              </div>
-            </div>
+                );
+            })}
+
+            {dependencies.length === 0 && (
+                <div className="text-center py-12 border-2 border-dashed border-zinc-800 rounded-2xl">
+                    <Unplug size={32} className="mx-auto text-zinc-600 mb-3" />
+                    <p className="text-xs text-zinc-500 font-bold">Nenhuma conexão de importação detectada.</p>
+                    <p className="text-[9px] text-zinc-600 mt-1">Verifique se os arquivos estão dentro de /src ou /app.</p>
+                </div>
+            )}
           </div>
         </div>
       </div>
@@ -416,7 +514,8 @@ export function GuardianViewManager({ view, data }: GuardianViewManagerProps) {
                   return (
                     <div
                       key={popup.elementId}
-                      className="flex flex-col gap-2 p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-xl relative overflow-hidden group"
+                      onClick={() => setTab('CODE_MAP')} // ✅ AGORA CLICÁVEL
+                      className="flex flex-col gap-2 p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-xl relative overflow-hidden group cursor-pointer hover:bg-indigo-500/20 transition-all"
                     >
                       <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500" />
                       <div className="flex items-center justify-between">
@@ -431,6 +530,7 @@ export function GuardianViewManager({ view, data }: GuardianViewManagerProps) {
                           <span className="text-[10px] font-mono text-indigo-300/70 truncate max-w-[200px]">
                             {popup.responsibleFile || "Arquivo desconhecido"}
                           </span>
+                          <ArrowRight size={14} className="text-indigo-400 opacity-0 group-hover:opacity-100 transition-all" />
                         </div>
                       </div>
                     </div>
@@ -668,55 +768,40 @@ function StatCard({
 
 /**
  * FileRow: Linha de arquivo para o explorador onisciente.
+ * Atualizado com ícones para novos tipos de arquivo.
  */
 const FileRow = React.memo(function FileRow({ file }: { file: ProjectFile }) {
   const getIcon = () => {
     switch (file.type) {
-      case "COMPONENT":
-        return <Box size={14} className="text-blue-400" />;
-      case "PAGE":
-        return <Layout size={14} className="text-purple-400" />;
-      case "ACTION":
-        return <Zap size={14} className="text-amber-400" />;
-      case "HOOK":
-        return <Code size={14} className="text-emerald-400" />;
-      case "PRISMA":
-        return <Database size={14} className="text-cyan-400" />;
-      case "SCHEMA":
-        return <FileJson size={14} className="text-pink-400" />;
-      case "TYPE":
-        return <Braces size={14} className="text-orange-400" />;
-      case "UTIL":
-        return <Wrench size={14} className="text-slate-400" />;
-      case "ASSET":
-        return <ImageIcon size={14} className="text-teal-400" />;
-      case "MARKDOWN":
-        return <FileText size={14} className="text-gray-400" />;
-      default:
-        return <FileCode size={14} className="text-zinc-500" />;
+      case "COMPONENT": return <Box size={14} className="text-blue-400" />;
+      case "PAGE": return <Layout size={14} className="text-purple-400" />;
+      case "ACTION": return <Zap size={14} className="text-amber-400" />;
+      case "HOOK": return <Code size={14} className="text-emerald-400" />;
+      case "PRISMA": return <Database size={14} className="text-cyan-400" />;
+      case "SCHEMA": return <FileJson size={14} className="text-pink-400" />;
+      case "TYPE": return <Braces size={14} className="text-orange-400" />;
+      case "UTIL": return <Wrench size={14} className="text-slate-400" />;
+      case "ASSET": return <ImageIcon size={14} className="text-teal-400" />;
+      case "MARKDOWN": return <FileText size={14} className="text-gray-400" />;
+      case "STYLE": return <Palette size={14} className="text-pink-300" />;
+      case "CONFIG": return <Settings size={14} className="text-yellow-200" />;
+      default: return <FileCode size={14} className="text-zinc-500" />;
     }
   };
 
   const getBadgeColor = () => {
     switch (file.type) {
-      case "COMPONENT":
-        return "bg-blue-500/10 text-blue-400 border-blue-500/20";
-      case "PAGE":
-        return "bg-purple-500/10 text-purple-400 border-purple-500/20";
-      case "ACTION":
-        return "bg-amber-500/10 text-amber-400 border-amber-500/20";
-      case "HOOK":
-        return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-      case "TYPE":
-        return "bg-orange-500/10 text-orange-400 border-orange-500/20";
-      case "UTIL":
-        return "bg-slate-500/10 text-slate-400 border-slate-500/20";
-      case "ASSET":
-        return "bg-teal-500/10 text-teal-400 border-teal-500/20";
-      case "MARKDOWN":
-        return "bg-gray-500/10 text-gray-400 border-gray-500/20";
-      default:
-        return "bg-zinc-800 text-zinc-500 border-zinc-700";
+      case "COMPONENT": return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+      case "PAGE": return "bg-purple-500/10 text-purple-400 border-purple-500/20";
+      case "ACTION": return "bg-amber-500/10 text-amber-400 border-amber-500/20";
+      case "HOOK": return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+      case "TYPE": return "bg-orange-500/10 text-orange-400 border-orange-500/20";
+      case "UTIL": return "bg-slate-500/10 text-slate-400 border-slate-500/20";
+      case "ASSET": return "bg-teal-500/10 text-teal-400 border-teal-500/20";
+      case "MARKDOWN": return "bg-gray-500/10 text-gray-400 border-gray-500/20";
+      case "STYLE": return "bg-pink-500/10 text-pink-400 border-pink-500/20";
+      case "CONFIG": return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
+      default: return "bg-zinc-800 text-zinc-500 border-zinc-700";
     }
   };
 
