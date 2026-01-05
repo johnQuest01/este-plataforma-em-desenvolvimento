@@ -16,6 +16,8 @@ import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { LocalDB } from '@/lib/local-db';
 import { AuthInputField } from '@/components/auth/AuthInputField';
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
+
 
 // --- Utilitários de Máscara (Sem Abreviações) ---
 const masks = {
@@ -35,7 +37,7 @@ const masks = {
 
 type PersonType = 'fisica' | 'juridica' | 'vendedor';
 
-export default function EntryPage() {
+function EntryPageBase() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [personType, setPersonType] = useState<PersonType>('fisica');
@@ -240,3 +242,8 @@ export default function EntryPage() {
     </div>
   );
 }
+export default withGuardian(
+  EntryPageBase,                        // O Componente
+  "app/page.tsx",        // O Caminho Exato (aparecerá no Card)
+  "PAGE"                          // O Tipo (Define o ícone e a cor)
+);

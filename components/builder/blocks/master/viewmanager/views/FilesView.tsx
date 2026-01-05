@@ -1,7 +1,7 @@
 import React from "react";
 import { FolderOpen } from "lucide-react";
-import { FilesViewProps } from "components/builder/blocks/master/viewmanager/types";
-import { FileRow } from "components/builder/blocks/master/viewmanager/components/FileRow";
+import { FilesViewProps } from "../types";
+import { FileRow } from "../components/FileRow";
 import { ProjectFile } from "@/schemas/guardian-schema";
 
 export function FilesView({ fileSearch, setFileSearch, filteredFiles, projectFilesCount }: FilesViewProps) {

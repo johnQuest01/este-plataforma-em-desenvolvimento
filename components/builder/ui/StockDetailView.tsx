@@ -5,6 +5,7 @@ import React from 'react';
 import { ChevronLeft, Box, Layers, AlertCircle, Sparkles } from 'lucide-react';
 import { ProductVariationData } from '@/types/builder';
 import { cn } from '@/lib/utils';
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
 // Definimos a interface do produto que esta tela espera receber
 interface ProductDetailViewProps {
@@ -145,4 +146,9 @@ export const StockDetailView = ({ product, onBack }: ProductDetailViewProps) => 
 
     </div>
   );
-};
+}
+export const StockDetailViewBase = withGuardian(
+  StockDetailView,                        // O Componente
+  "components/ui/StocDetailView.tsx",        // O Caminho Exato (aparecerá no Card)
+  "UI_COMPONENT"                          // O Tipo (Define o ícone e a cor)
+);

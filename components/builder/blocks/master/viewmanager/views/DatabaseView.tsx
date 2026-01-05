@@ -1,6 +1,6 @@
 import React from "react";
 import { Database, Server } from "lucide-react";
-import { ViewProps } from "components/builder/blocks/master/viewmanager/types";
+import { ViewProps } from "../types";
 
 export function DatabaseView({ data }: ViewProps) {
   return (

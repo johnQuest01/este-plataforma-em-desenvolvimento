@@ -25,6 +25,9 @@ import { saveProductAction } from '@/app/actions/product';
 import { PRODUCT_UPDATE_EVENT } from '@/components/builder/blocks/ProductGrid';
 import { fileToBase64 } from '@/utils/image-helper';
 
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
+
+
 interface StockRegisterViewProperties {
   onBack: () => void;
   onRegister?: (productData: { image?: string }) => void;
@@ -223,3 +226,8 @@ export const StockRegisterView = ({ onBack, onRegister }: StockRegisterViewPrope
     </div>
   );
 };
+export const StockRegisterViewBase = withGuardian(
+  StockRegisterView, 
+  "components/builder/ui/StockRegisterView.tsx", 
+  "UI_COMPONENT"
+);

@@ -6,13 +6,13 @@ import { ProjectFile } from "@/schemas/guardian-schema";
 import { GuardianViewManagerProps } from "./types";
 
 // Views
-import { CodeMapView } from "components/builder/blocks/master/viewmanager/components/views/CodeMapView";
-import { ConnectionsView } from "components/builder/blocks/master/viewmanager/components/views/ConnectionsView";
-import { FilesView } from "components/builder/blocks/master/viewmanager/components/views/FilesView";
-import { ScannerView } from "components/builder/blocks/master/viewmanager/components/views/ScannerView";
-import { DatabaseView } from "components/builder/blocks/master/viewmanager/components/views/DatabaseView";
-import { AuditView } from "components/builder/blocks/master/viewmanager/components/views/AuditView";
-import { HistoryView } from "components/builder/blocks/master/viewmanager/components/views/HistoryView";
+import { CodeMapView } from "./views/CodeMapView";
+import { ConnectionsView } from "./views/ConnectionsView";
+import { FilesView } from "./views/FilesView";
+import { ScannerView } from "./views/ScannerView";
+import { DatabaseView } from "./views/DatabaseView";
+import { AuditView } from "./views/AuditView";
+import { HistoryView } from "./views/HistoryView";
 
 export function GuardianViewManager({ view, data }: GuardianViewManagerProps) {
   const [fileSearch, setFileSearch] = useState("");

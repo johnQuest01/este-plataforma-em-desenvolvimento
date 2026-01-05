@@ -3,7 +3,11 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useGuardianStore } from "@/hooks/use-guardian-store";
-import { RuntimeElementStateEnum, UIMetrics } from "@/schemas/guardian-runtime-schema";
+import { 
+  RuntimeElementStateEnum, 
+  UIMetrics, 
+  GuardianSmartMetadata 
+} from "@/schemas/guardian-runtime-schema";
 
 // Tipos de arquivos que podemos rastrear
 type GuardianFileType = "UI_COMPONENT" | "POPUP" | "HOOK" | "LAYOUT" | "FORM";
@@ -12,14 +16,22 @@ interface GuardianBeaconProps {
   file: string;
   type: GuardianFileType;
   id?: string;
+  // ✅ NOVO: Propriedade de Inteligência
+  smartMetadata?: GuardianSmartMetadata;
   children?: React.ReactNode;
 }
 
 /**
  * BEACON 2.0: Scanner de UI Profundo
- * Agora capaz de ler conteúdo textual e estrutura de layout.
+ * Agora capaz de ler conteúdo textual, estrutura de layout e metadados semânticos.
  */
-export const GuardianBeacon = ({ file, type, id, children }: GuardianBeaconProps) => {
+export const GuardianBeacon = ({ 
+  file, 
+  type, 
+  id, 
+  smartMetadata, 
+  children 
+}: GuardianBeaconProps) => {
   const registerElement = useGuardianStore((state) => state.registerElement);
   const unregisterElement = useGuardianStore((state) => state.unregisterElement);
  
@@ -27,7 +39,6 @@ export const GuardianBeacon = ({ file, type, id, children }: GuardianBeaconProps
 
   // ✅ CORREÇÃO DE PUREZA:
   // Usamos useState com inicializador preguiçoso para gerar o sufixo aleatório apenas uma vez.
-  // Isso evita o erro "Cannot call impure function during render".
   const [randomSuffix] = useState(() => Math.random().toString(36).substr(2, 9));
 
   const elementId = useMemo(() => {
@@ -42,12 +53,11 @@ export const GuardianBeacon = ({ file, type, id, children }: GuardianBeaconProps
      
       // Tenta pegar o primeiro filho direto (o componente real)
       let targetElement = containerRef.current.firstElementChild as HTMLElement;
-      
+     
       // Se não houver filho (ex: renderização condicional retornando null), não faz nada
       if (!targetElement) return;
 
       // 1. Análise de Dimensões Inteligente
-      // Se o target tiver altura 0 (comum em wrappers ou fragments), tenta pegar o próximo elemento visível
       let rect = targetElement.getBoundingClientRect();
       if (rect.height === 0 && rect.width === 0 && targetElement.nextElementSibling) {
           const nextSibling = targetElement.nextElementSibling as HTMLElement;
@@ -59,7 +69,7 @@ export const GuardianBeacon = ({ file, type, id, children }: GuardianBeaconProps
 
       const style = window.getComputedStyle(targetElement);
      
-      // 2. Deep Scan de Elementos (QuerySelectorAll é muito rápido)
+      // 2. Deep Scan de Elementos
       const buttonNodes = targetElement.querySelectorAll('button, a[role="button"], [role="button"], input[type="button"], input[type="submit"]');
       const inputNodes = targetElement.querySelectorAll('input:not([type="button"]):not([type="submit"]), textarea, select');
       const imageNodes = targetElement.querySelectorAll('img, svg image');
@@ -80,12 +90,11 @@ export const GuardianBeacon = ({ file, type, id, children }: GuardianBeaconProps
         .filter(t => t && t.length > 0)
         .slice(0, 8);
 
-      // Contagem de Nós de Texto (Ignorando espaços em branco)
+      // Contagem de Nós de Texto
       let textNodes = 0;
       const walker = document.createTreeWalker(targetElement, NodeFilter.SHOW_TEXT, null);
       while (walker.nextNode()) {
         const val = walker.currentNode.nodeValue;
-        // Regex para verificar se tem pelo menos uma letra ou número
         if (val && /[a-zA-Z0-9]/.test(val)) {
           textNodes++;
         }
@@ -118,7 +127,7 @@ export const GuardianBeacon = ({ file, type, id, children }: GuardianBeaconProps
 
       registerElement({
         elementId,
-        componentName: file.split('/').pop()?.replace('.tsx', '') || "Unknown",
+        componentName: smartMetadata?.label || file.split('/').pop()?.replace('.tsx', '') || "Unknown",
         responsibleFile: file,
         isPopup: type === "POPUP",
         zIndex: type === "POPUP" ? parseInt(style.zIndex) || 50 : 0,
@@ -126,6 +135,8 @@ export const GuardianBeacon = ({ file, type, id, children }: GuardianBeaconProps
         timestamp: new Date().toISOString(),
         childComponents: [],
         metrics: metrics,
+        // ✅ INJETANDO A INTELIGÊNCIA NO STORE
+        semanticMetadata: smartMetadata,
         metadata: { type, origin: "GuardianBeacon" }
       });
     };
@@ -145,14 +156,14 @@ export const GuardianBeacon = ({ file, type, id, children }: GuardianBeaconProps
         });
     }
 
-    setTimeout(scanDOM, 200); // Delay levemente maior para garantir renderização
+    setTimeout(scanDOM, 200); 
 
     return () => {
       resizeObserver.disconnect();
       mutationObserver.disconnect();
       unregisterElement(elementId);
     };
-  }, [file, type, elementId, registerElement, unregisterElement]);
+  }, [file, type, elementId, registerElement, unregisterElement, smartMetadata]);
 
   if (process.env.NODE_ENV !== 'development') return <>{children}</>;
 
@@ -167,14 +178,17 @@ export const GuardianBeacon = ({ file, type, id, children }: GuardianBeaconProps
   );
 };
 
+// ✅ HOC ATUALIZADO COM SUPORTE A METADADOS
 export function withGuardian<P extends object>(
   Component: React.ComponentType<P>,
   filePath: string,
-  type: GuardianFileType = "UI_COMPONENT"
+  type: GuardianFileType = "UI_COMPONENT",
+  // ✅ Argumento Opcional de Inteligência
+  metadata?: GuardianSmartMetadata
 ) {
   const WrappedComponent = (props: P) => {
     return (
-      <GuardianBeacon file={filePath} type={type}>
+      <GuardianBeacon file={filePath} type={type} smartMetadata={metadata}>
         <Component {...props} />
       </GuardianBeacon>
     );

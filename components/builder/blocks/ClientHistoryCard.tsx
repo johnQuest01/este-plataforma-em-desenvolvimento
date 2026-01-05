@@ -5,6 +5,7 @@ import React from 'react';
 import { BlockConfig } from '@/types/builder';
 import { CheckCircle2 } from 'lucide-react';
 
+
 export const ClientHistoryCardBlock = ({ config }: { config: BlockConfig }) => {
   const name = config.data.name as string;
   const role = config.data.role as string;

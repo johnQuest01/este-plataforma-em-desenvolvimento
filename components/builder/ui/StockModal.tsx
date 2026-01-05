@@ -6,6 +6,9 @@ import { StockRegisterView } from '@/components/builder/ui/StockRegisterView';
 import { StockDefinePopup } from '@/components/builder/ui/StockDefinePopup';
 import { StockDetailView } from '@/components/builder/ui/StockDetailView'; 
 import { ProductData, getProductsAction } from '@/app/actions/product';
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
+
+
 
 // Imported Sub-components
 import { StockModalProps, ModalViewMode, mapToDisplayVariations } from './stock-modal/types';
@@ -145,3 +148,8 @@ export const StockModal = ({ isOpen, onClose, blocks, onProductRegister }: Stock
     </StockModalContainer>
   );
 };
+export const StockModalBase = withGuardian(
+  StockModal,                        // O Componente
+  "components/ui/StockModal.tsx",        // O Caminho Exato (aparecerá no Card)
+  "UI_COMPONENT"                          // O Tipo (Define o ícone e a cor)
+);

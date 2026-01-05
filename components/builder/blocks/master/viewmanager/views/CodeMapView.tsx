@@ -2,10 +2,12 @@ import React, { useState } from "react";
 import { Map, ScanSearch, Filter, ScanSearch as ScanSearchIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGuardianStore } from "@/hooks/use-guardian-store";
-import { CodeMapFilter, CodeMapViewProps } from "components/builder/blocks/master/viewmanager/types";
-import { CodeMapCard } from "components/builder/blocks/master/viewmanager/components/CodeMapCard";
-import { FileRow } from "components/builder/blocks/master/viewmanager/components/FileRow";
+import { CodeMapFilter, CodeMapViewProps } from "../types";
 import { ProjectFile } from "@/schemas/guardian-schema";
+
+// ✅ Imports corrigidos para relativos
+import { CodeMapCard } from "../components/CodeMapCard";
+import { FileRow } from "../components/FileRow";
 
 export function CodeMapView({ data, filteredFiles }: CodeMapViewProps) {
   const [codeMapFilter, setCodeMapFilter] = useState<CodeMapFilter>('LIVE_TRACKED');

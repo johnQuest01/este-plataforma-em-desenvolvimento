@@ -1,6 +1,6 @@
 import React from "react";
 import { History, FileCode } from "lucide-react";
-import { ViewProps } from "components/builder/blocks/master/viewmanager/types";
+import { ViewProps } from "../types";
 
 export function HistoryView({ data }: ViewProps) {
   return (

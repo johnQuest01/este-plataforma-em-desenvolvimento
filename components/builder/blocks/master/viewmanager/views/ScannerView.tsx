@@ -2,8 +2,8 @@ import React from "react";
 import { Layers, Maximize, FileEdit, ArrowRight, Smartphone, CheckCircle2, AlertTriangle, Cpu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGuardianStore } from "@/hooks/use-guardian-store";
-import { ViewProps } from "components/builder/blocks/master/viewmanager/types";
-import { StatCard } from "components/builder/blocks/master/viewmanager/components/StatCard";
+import { ViewProps } from "../types";
+import { StatCard } from "../components/StatCard";
 
 export function ScannerView({ data }: ViewProps) {
   const { activeRuntimeElements, setTab } = useGuardianStore();

@@ -7,6 +7,9 @@ import { BlockConfig, BlockComponentProps } from '@/types/builder';
 import { COMPONENT_MAP } from './BlockRegistry';
 import { RexRuntimePixel } from './blocks/master/RexRuntimePixel';
 
+// ✅ ATUALIZAÇÃO: Importação do HOC Guardian para o Neural Map
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
+
 const animationProperties = {
   initial: { opacity: 0, y: 15 },
   animate: { opacity: 1, y: 0 },
@@ -18,7 +21,8 @@ interface BlockRendererProperties extends BlockComponentProps {
   contextualProperties?: Record<string, unknown>;
 }
 
-export const BlockRenderer = memo(({
+// ✅ 1. Definimos o componente base (Memoized)
+const BlockRendererBase = memo(({
   config: configuration,
   onAction: onExecuteAction,
   contextualProperties
@@ -46,10 +50,10 @@ export const BlockRenderer = memo(({
 
   return (
     <RexRuntimePixel
-      elementId={configuration.id} // ✅ Fixed prop name from elementIdentification to elementId
+      elementId={configuration.id}
       componentName={configuration.type}
-      isPopup={isPopupElement} // ✅ Fixed prop name from isPopupElement to isPopup
-      // The Pixel will infer the file path from 'configuration.type'
+      isPopup={isPopupElement}
+      // O Pixel infere o arquivo baseado no tipo, mas o withGuardian abaixo rastreia o Renderizador em si.
     >
       <motion.div
         layout="position"
@@ -77,4 +81,12 @@ export const BlockRenderer = memo(({
   return dataHasNotChanged && styleHasNotChanged && contextHasNotChanged;
 });
 
-BlockRenderer.displayName = 'BlockRenderer';
+BlockRendererBase.displayName = 'BlockRendererBase';
+
+// ✅ 2. Exportamos o componente com a etiqueta inteligente
+// Isso fará o arquivo "components/builder/BlockRender.tsx" brilhar no mapa de conexões quando ativo.
+export const BlockRenderer = withGuardian(
+  BlockRendererBase,
+  "components/builder/BlockRender.tsx",
+  "UI_COMPONENT"
+);

@@ -1,7 +1,11 @@
+'use cliente'
+
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { X, Check } from 'lucide-react';
+
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
 export type ProductVisibility = 'all' | 'registered' | 'none';
 
@@ -14,13 +18,6 @@ interface StockPricePopupProps {
 }
 
 // 1. COMPONENTE WRAPPER
-export const StockPricePopup = (props: StockPricePopupProps) => {
-  return (
-    <AnimatePresence>
-      {props.isOpen && <StockPricePopupContent {...props} />}
-    </AnimatePresence>
-  );
-};
 
 // 2. COMPONENTE DE CONTEÚDO
 const StockPricePopupContent = ({
@@ -185,3 +182,17 @@ const StockPricePopupContent = ({
     </div>
   );
 };
+
+const StockPricePopupBase = (props: StockPricePopupProps) => {
+  return (
+    <AnimatePresence>
+      {props.isOpen && <StockPricePopupContent {...props} />}
+    </AnimatePresence>
+  );
+};
+
+export const StockPricePopup = withGuardian(
+  StockPricePopupBase, 
+  "components/builder/ui/StockPricePopup.tsx", 
+  "POPUP"
+);

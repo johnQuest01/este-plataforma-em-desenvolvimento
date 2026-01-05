@@ -1,11 +1,14 @@
+// path: src/app/test-lego/page.tsx
 'use client';
 
 import React from 'react';
 import { BlockRenderer } from "@/components/builder/BlockRender";
-import { BlockConfig } from "@/types/builder"; // Importar o tipo para validação estrita
+import { BlockConfig } from "@/types/builder";
+// ✅ Importação do HOC Guardian
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
-export default function LegoPlaygroundPage() {
-  // ✅ TIPAGEM ADICIONADA: Agora o TS exige todos os campos do contrato
+// 1. Definimos o componente base (sem export default)
+function LegoPlaygroundPageBase() {
   const demoConfig: BlockConfig = {
     id: "btn-demo-01",
     type: "standard-button",
@@ -17,7 +20,6 @@ export default function LegoPlaygroundPage() {
       actionType: "SUBMIT_ORDER",
       fullWidthMobile: true
     },
-    // ✅ PROPRIEDADE ADICIONADA: Resolve o erro ts(2741)
     style: {
       borderRadius: "1rem",
       padding: "1rem"
@@ -30,10 +32,10 @@ export default function LegoPlaygroundPage() {
         <h1 className="text-white text-center mb-8 font-black uppercase tracking-widest text-xl">
           Degustação Lego
         </h1>
-        
-        <BlockRenderer 
-          config={demoConfig} 
-          onAction={(type) => alert(`Ação disparada: ${type}`)} 
+       
+        <BlockRenderer
+          config={demoConfig}
+          onAction={(type) => alert(`Ação disparada: ${type}`)}
         />
 
         <p className="mt-6 text-[10px] text-zinc-500 text-center leading-relaxed">
@@ -44,3 +46,10 @@ export default function LegoPlaygroundPage() {
     </div>
   );
 }
+
+// 2. Exportamos o componente "embalado" com a etiqueta inteligente
+export default withGuardian(
+  LegoPlaygroundPageBase,
+  "app/test-lego/page.tsx",
+  "LAYOUT" // Tipo LAYOUT pois é uma página
+);

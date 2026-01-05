@@ -30,6 +30,30 @@ export const UIMetricsSchema = z.object({
   })
 });
 
+/**
+ * ✅ NOVO: Schema de Inteligência Semântica
+ * Permite ao desenvolvedor descrever o comportamento e conexões do componente.
+ */
+export const GuardianSmartMetadataSchema = z.object({
+  label: z.string().optional().describe("Nome amigável para exibição no mapa"),
+  description: z.string().optional().describe("O que este componente faz em 1 frase"),
+  
+  // Conexões Lógicas (Quem chama quem, ou quem depende de quem)
+  connectsTo: z.array(z.object({
+    target: z.string(), // Ex: "StockRegisterView", "ProductService"
+    type: z.enum(["ROUTE", "COMPONENT", "DATABASE", "EXTERNAL", "HOOK"]),
+    description: z.string().optional() // Ex: "Atualiza a lista após salvar"
+  })).optional(),
+
+  // Orientação para o time
+  orientationNotes: z.string().optional().describe("Notas técnicas, alertas de z-index, regras de negócio"),
+  
+  // Tags para filtragem rápida
+  tags: z.array(z.string()).optional() // Ex: ["Critical", "Inventory"]
+});
+
+export type GuardianSmartMetadata = z.infer<typeof GuardianSmartMetadataSchema>;
+
 export const RuntimeTrackerSchema = z.object({
   elementId: z.string(),
   componentName: z.string(),
@@ -40,10 +64,14 @@ export const RuntimeTrackerSchema = z.object({
   timestamp: z.string(),
   childComponents: z.array(z.string()),
   metrics: UIMetricsSchema.optional(),
+  
+  // ✅ Campo Novo: Metadados Semânticos injetados pelo HOC
+  semanticMetadata: GuardianSmartMetadataSchema.optional(),
+  
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
-// ✅ NOVO: Definição recursiva para ComponentNode
+// Definição recursiva para ComponentNode (Árvore de Arquivos)
 export const ComponentNodeSchema: z.ZodType<ComponentNode> = z.lazy(() =>
   z.object({
     name: z.string(),
@@ -52,7 +80,6 @@ export const ComponentNodeSchema: z.ZodType<ComponentNode> = z.lazy(() =>
   })
 );
 
-// Definição do tipo TypeScript para ComponentNode
 export type ComponentNode = {
   name: string;
   file?: string;

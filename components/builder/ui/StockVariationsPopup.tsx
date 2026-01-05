@@ -3,8 +3,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 // 📚 ESTUDO: 1. Importação do HOC (Higher Order Component)
-// Em vez de importar o componente visual 'GuardianTracker', importamos a função 'withGuardian'.
-// Ela serve como uma "embalagem" inteligente para o seu componente.
 import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
 import { cn } from '@/lib/utils';
@@ -191,10 +189,6 @@ function SortablePhotoItem({ id, url, onRemove }: { id: string, url: string, onR
 
 // --- Main Component ---
 
-// 📚 ESTUDO: 2. Renomeação do Componente Base
-// O componente principal NÃO é mais exportado diretamente com 'export const'.
-// Nós o definimos como uma constante local (ex: StockVariationsPopupBase).
-// Isso mantém a lógica pura e isolada.
 const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }: StockVariationsPopupProps) => {
   const [variations, setVariations] = useState<VariationItem[]>(initialItems);
   
@@ -443,12 +437,6 @@ const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }
   return (
     <div className="flex flex-col h-full bg-[#eeeeee] relative overflow-hidden">
       
-      {/* 📚 ESTUDO: 3. Remoção do Tracker Manual
-          Removemos a linha <GuardianTracker file="..." />.
-          Não precisamos mais "sujar" o JSX com componentes de monitoramento.
-          O 'withGuardian' cuidará disso automaticamente na exportação.
-      */}
-
       <div className="bg-white px-4 py-3 shadow-sm z-10 flex items-center justify-between shrink-0">
         <div>
            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Editor de Variações</span>
@@ -706,13 +694,32 @@ const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }
 };
 
 // 📚 ESTUDO: 4. Exportação com a "Etiqueta Inteligente"
-// Aqui é onde a mágica acontece. Envolvemos o componente base com 'withGuardian'.
-// Parâmetros:
-// 1. O Componente (StockVariationsPopupBase)
-// 2. O Caminho do Arquivo (para o Rex saber onde está no código)
-// 3. O Tipo (POPUP, UI_COMPONENT, etc - ajuda a organizar no painel)
+// Adicionamos o 4º argumento com os metadados para o Guardian OS.
 export const StockVariationsPopup = withGuardian(
   StockVariationsPopupBase, 
   "components/builder/ui/StockVariationsPopup.tsx", 
-  "POPUP"
+  "POPUP",
+  {
+    label: "Editor de Variações de Estoque",
+    description: "Modal crítico para gerenciamento de grade de cores, tamanhos e envio para produção.",
+    orientationNotes: `
+⚠️ **Pontos de Atenção**:
+- **Z-Index**: Deve sobrepor o Header (z-50).
+- **Dependências**: Utiliza 'createProductionOrderAction' para persistência.
+- **UX**:'.
+    `,
+    connectsTo: [
+      { 
+        target: "components/views/StockRegisterView.tsx", 
+        type: "COMPONENT", 
+        description: "Componente Pai (Invocador Principal)" 
+      },
+      { 
+        target: "app/actions/production.ts", 
+        type: "EXTERNAL", 
+        description: "Server Action: createProductionOrderAction" 
+      }
+    ],
+    tags: ["Inventory", "Production", "Complex Form"]
+  }
 );

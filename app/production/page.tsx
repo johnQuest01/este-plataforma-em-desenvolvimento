@@ -8,6 +8,7 @@ import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
 import { BlockRenderer } from '@/components/builder/BlockRender';
 import { BlockConfig, FooterItem } from '@/types/builder';
 
+
 // --- CONFIGURAÇÃO DA TELA (LEGO) ---
 // Define a ordem visual dos componentes
 const PRODUCTION_LAYOUT: BlockConfig[] = [
