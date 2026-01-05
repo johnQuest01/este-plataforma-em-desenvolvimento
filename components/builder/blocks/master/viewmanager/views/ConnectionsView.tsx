@@ -20,7 +20,8 @@ import {
   Info,
   Network,
   Link as LinkIcon,
-  ExternalLink // ✅ Adicionado para o botão de navegar
+  ExternalLink,
+  FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ViewProps } from "../types";
@@ -48,7 +49,7 @@ const FileIcon = ({ type, className }: { type: string, className?: string }) => 
   return <FileCode size={16} className={cn("text-zinc-500", className)} />;
 };
 
-// --- COMPONENTE DO CARD DE ARQUIVO ---
+// --- COMPONENTE DO CARD DE ARQUIVO (Compacto) ---
 const FileCard = ({
   node,
   isSelected,
@@ -64,17 +65,17 @@ const FileCard = ({
     <button
       onClick={onClick}
       className={cn(
-        "w-full flex items-center justify-between p-4 rounded-2xl border text-left transition-all group relative overflow-hidden mb-2",
+        "w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all group relative overflow-hidden mb-1.5",
         isSelected
-          ? "bg-indigo-600/20 border-indigo-500/50 shadow-lg shadow-indigo-900/20"
+          ? "bg-indigo-600/20 border-indigo-500/50 shadow-md shadow-indigo-900/20"
           : "bg-zinc-900/40 border-zinc-800/50 hover:bg-zinc-800 hover:border-zinc-700"
       )}
     >
       {isSelected && <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500" />}
      
-      <div className="flex items-center gap-4 overflow-hidden">
+      <div className="flex items-center gap-3 overflow-hidden">
         <div className={cn(
-          "w-10 h-10 rounded-xl flex items-center justify-center border shadow-inner shrink-0 transition-colors relative",
+          "w-8 h-8 rounded-lg flex items-center justify-center border shadow-inner shrink-0 transition-colors relative",
           isSelected
             ? "bg-indigo-500/20 border-indigo-400 text-indigo-300"
             : "bg-black/20 border-zinc-800 text-zinc-500 group-hover:text-zinc-300"
@@ -91,20 +92,20 @@ const FileCard = ({
        
         <div className="min-w-0 flex-1">
           <span className={cn(
-            "text-sm font-bold block truncate mb-0.5",
+            "text-xs font-bold block truncate mb-0.5",
             isSelected ? "text-white" : "text-zinc-300 group-hover:text-white"
           )}>
             {node.name}
           </span>
           <div className="flex items-center gap-2">
             <span className={cn(
-                "text-[10px] font-mono truncate block",
+                "text-[9px] font-mono truncate block",
                 isSelected ? "text-indigo-300" : "text-zinc-500"
             )}>
                 {node.path}
             </span>
             {node.hasMetadata && (
-                <span className="text-[9px] text-amber-400 flex items-center gap-1 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                <span className="text-[8px] text-amber-400 flex items-center gap-1 bg-amber-500/10 px-1.5 py-px rounded border border-amber-500/20 font-bold uppercase tracking-wider">
                     <Lightbulb size={8} /> Info
                 </span>
             )}
@@ -114,17 +115,17 @@ const FileCard = ({
 
       {hasChildren && (
         <div className={cn(
-            "w-6 h-6 rounded-full flex items-center justify-center transition-colors",
+            "w-5 h-5 rounded-full flex items-center justify-center transition-colors ml-1",
             isSelected ? "bg-indigo-500 text-white" : "bg-zinc-800 text-zinc-500 group-hover:text-zinc-300"
         )}>
-            <ChevronRight size={14} />
+            <ChevronRight size={12} />
         </div>
       )}
     </button>
   );
 };
 
-// ✅ PAINEL DE INTELIGÊNCIA ATUALIZADO (LARGURA E TEXTO)
+// ✅ PAINEL DE INTELIGÊNCIA (Tamanho Médio e Inteligente)
 const IntelligencePanel = ({ 
   element, 
   onNavigate 
@@ -137,97 +138,124 @@ const IntelligencePanel = ({
 
   return (
     <motion.div 
-      initial={{ opacity: 0, x: 20 }}
+      initial={{ opacity: 0, x: 50 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      // ✅ CORREÇÃO 1: Aumentado para w-[420px] para caber nomes longos
-      className="w-[420px] shrink-0 bg-zinc-900/80 border-l border-zinc-800/50 p-6 flex flex-col gap-6 overflow-y-auto backdrop-blur-xl"
+      exit={{ opacity: 0, x: 50 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      // ⚡ LARGURA AJUSTADA: 400px (Compacto mas funcional)
+      className="w-[400px] shrink-0 bg-[#0a0a0a] border-l border-zinc-800 shadow-2xl flex flex-col h-full z-20"
     >
-      <div>
-        <h4 className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-          <Lightbulb size={14} /> Orientação Tática
-        </h4>
-        <h2 className="text-xl font-bold text-white leading-tight">
-          {meta.label || element.componentName}
-        </h2>
-        {meta.description && (
-          <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
-            {meta.description}
-          </p>
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-5 flex flex-col gap-5">
+        
+        {/* Cabeçalho */}
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="bg-indigo-500/10 p-1.5 rounded-lg border border-indigo-500/20">
+               <Lightbulb size={14} className="text-indigo-400" />
+            </div>
+            <h4 className="text-indigo-400 text-[10px] font-black uppercase tracking-widest">
+              Orientação Tática
+            </h4>
+          </div>
+          <h2 className="text-xl font-black text-white leading-tight tracking-tight mb-2">
+            {meta.label || element.componentName}
+          </h2>
+          {meta.description && (
+            <p className="text-xs text-zinc-400 leading-relaxed font-medium">
+              {meta.description}
+            </p>
+          )}
+        </div>
+
+        {/* 
+            ✅ NOTA DO ENGENHEIRO (BLOCO INTELIGENTE COM SCROLL) 
+            - max-h-[200px]: Altura máxima controlada.
+            - overflow-y-auto: Scroll automático se passar da altura.
+        */}
+        {meta.orientationNotes && (
+          <div className="flex flex-col gap-1.5">
+             <div className="flex items-center gap-2 text-indigo-300 px-1">
+                <FileText size={12} />
+                <span className="text-[9px] font-black uppercase tracking-widest">Nota do Engenheiro</span>
+             </div>
+             
+             <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-3 shadow-inner relative group">
+                <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500/50 rounded-l-xl group-hover:bg-indigo-500 transition-colors" />
+                
+                <div className="text-[11px] text-zinc-300 font-mono whitespace-pre-wrap break-words leading-relaxed max-h-[200px] overflow-y-auto custom-scrollbar pr-2">
+                  {meta.orientationNotes.trim()}
+                </div>
+             </div>
+          </div>
+        )}
+
+        {/* Conexões Lógicas */}
+        {meta.connectsTo && meta.connectsTo.length > 0 && (
+          <div>
+            <h5 className="text-zinc-500 text-[9px] font-black uppercase tracking-widest mb-3 flex items-center gap-2 border-b border-zinc-800 pb-2">
+              <Network size={12} /> Conexões Lógicas ({meta.connectsTo.length})
+            </h5>
+            <div className="space-y-2">
+              {meta.connectsTo.map((conn, idx) => (
+                <div 
+                  key={idx} 
+                  className="flex gap-3 p-2.5 bg-zinc-900/30 rounded-xl border border-zinc-800/50 hover:border-indigo-500/40 hover:bg-zinc-900/60 transition-all group items-start"
+                >
+                  <div className={cn(
+                    "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border shadow-sm mt-0.5",
+                    conn.type === 'ROUTE' ? "bg-purple-500/10 text-purple-400 border-purple-500/20" :
+                    conn.type === 'DATABASE' ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/20" : 
+                    conn.type === 'EXTERNAL' ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                    "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                  )}>
+                      {conn.type === 'DATABASE' ? <Database size={12} /> : 
+                       conn.type === 'EXTERNAL' ? <Zap size={12} /> :
+                       <LinkIcon size={12} />}
+                  </div>
+
+                  <div className="flex-1 min-w-0 flex flex-col">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                         <p className="text-[11px] font-bold text-zinc-200 break-all leading-snug group-hover:text-white transition-colors">
+                           {conn.target}
+                         </p>
+                         <span className="text-[8px] font-black text-zinc-600 uppercase mt-0.5 block tracking-wider">
+                           {conn.type}
+                         </span>
+                      </div>
+
+                      <button 
+                        onClick={() => onNavigate(conn.target)}
+                        className="p-1 bg-zinc-800 hover:bg-indigo-600 text-zinc-400 hover:text-white rounded-lg transition-all shrink-0 shadow-md hover:scale-105 active:scale-95"
+                        title="Navegar para este arquivo"
+                      >
+                        <ExternalLink size={12} />
+                      </button>
+                    </div>
+
+                    {conn.description && (
+                      <p className="text-[9px] text-zinc-400 mt-1.5 pt-1.5 border-t border-zinc-800/50 leading-relaxed">
+                        {conn.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
-
-      {meta.orientationNotes && (
-        <div className="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl">
-          <div className="flex items-center gap-2 mb-2 text-indigo-300">
-            <Info size={14} />
-            <span className="text-[10px] font-bold uppercase">Nota do Engenheiro</span>
-          </div>
-          <p className="text-xs text-indigo-100 font-mono whitespace-pre-wrap leading-relaxed">
-            {meta.orientationNotes}
-          </p>
-        </div>
-      )}
-
-      {meta.connectsTo && meta.connectsTo.length > 0 && (
-        <div>
-          <h5 className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-3 flex items-center gap-2">
-            <Network size={12} /> Conexões Lógicas
-          </h5>
-          <div className="space-y-2">
-            {meta.connectsTo.map((conn, idx) => (
-              <div key={idx} className="flex items-start gap-3 p-3 bg-zinc-950/50 rounded-lg border border-zinc-800 group hover:border-indigo-500/30 transition-colors">
-                <div className={cn(
-                  "w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5",
-                  conn.type === 'ROUTE' ? "bg-purple-500/20 text-purple-400" :
-                  conn.type === 'DATABASE' ? "bg-cyan-500/20 text-cyan-400" : "bg-blue-500/20 text-blue-400"
-                )}>
-                    <LinkIcon size={10} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    {/* ✅ CORREÇÃO 2: break-words para não vazar */}
-                    <p className="text-xs font-bold text-zinc-200 break-words" title={conn.target}>
-                      {conn.target.split('/').pop()}
-                    </p>
-                    
-                    {/* Botão de Navegação */}
-                    <button 
-                      onClick={() => onNavigate(conn.target)}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white transition-all shrink-0"
-                      title="Focar neste arquivo"
-                    >
-                      <ExternalLink size={12} />
-                    </button>
-                  </div>
-                  
-                  {/* ✅ CORREÇÃO 3: break-all para caminhos longos */}
-                  <p className="text-[9px] text-zinc-500 font-mono break-all mb-1 leading-tight">
-                    {conn.target}
-                  </p>
-
-                  {conn.description && (
-                    <p className="text-[10px] text-zinc-400 mt-1 border-t border-zinc-800/50 pt-1">
-                      {conn.description}
-                    </p>
-                  )}
-                  <span className="text-[8px] font-mono text-zinc-600 uppercase mt-1 block">
-                    {conn.type}
-                  </span>
-                </div>
-              </div>
+      
+      {/* Rodapé com Tags */}
+      {meta.tags && (
+        <div className="p-5 border-t border-zinc-800 bg-zinc-900/20 backdrop-blur-sm">
+          <div className="flex flex-wrap gap-2">
+            {meta.tags.map(tag => (
+              <span key={tag} className="text-[9px] font-bold bg-zinc-800 text-zinc-300 px-2.5 py-1 rounded-lg border border-zinc-700 uppercase tracking-wide shadow-sm">
+                #{tag}
+              </span>
             ))}
           </div>
-        </div>
-      )}
-      
-      {meta.tags && (
-        <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-zinc-800">
-          {meta.tags.map(tag => (
-            <span key={tag} className="text-[9px] bg-zinc-800 text-zinc-400 px-2 py-1 rounded-md border border-zinc-700 font-mono">
-              #{tag}
-            </span>
-          ))}
         </div>
       )}
     </motion.div>
@@ -261,7 +289,7 @@ export function ConnectionsView({ data }: ViewProps) {
     if (rootFile && selectedPath.length === 0) {
       setSelectedPath([rootFile]);
     }
-  }, [rootFile]);
+  }, [rootFile, selectedPath.length]);
 
   useEffect(() => {
     if (scrollContainerRef.current) {
@@ -298,7 +326,6 @@ export function ConnectionsView({ data }: ViewProps) {
     setSelectedPath(newPath);
   };
 
-  // ✅ Função de Navegação Inteligente
   const handleSmartNavigate = (targetPath: string) => {
     if (selectedPath.includes(targetPath)) {
         const index = selectedPath.indexOf(targetPath);
@@ -366,7 +393,6 @@ export function ConnectionsView({ data }: ViewProps) {
                     isLive: activeRuntimeElements.some(el => el.responsibleFile === dep)
                 }));
 
-                // ✅ Se não houver dependências estáticas, verifica se há conexões semânticas (Inteligência)
                 if (itemsToShow.length === 0) {
                      const parentElement = activeRuntimeElements.find(el => el.responsibleFile === parentOfThisColumn);
                      if (parentElement?.semanticMetadata?.connectsTo) {

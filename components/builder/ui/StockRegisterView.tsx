@@ -25,15 +25,16 @@ import { saveProductAction } from '@/app/actions/product';
 import { PRODUCT_UPDATE_EVENT } from '@/components/builder/blocks/ProductGrid';
 import { fileToBase64 } from '@/utils/image-helper';
 
+// 🛡️ GUARDIAN: Importação do HOC
 import { withGuardian } from "@/components/guardian/GuardianBeacon";
-
 
 interface StockRegisterViewProperties {
   onBack: () => void;
   onRegister?: (productData: { image?: string }) => void;
 }
 
-export const StockRegisterView = ({ onBack, onRegister }: StockRegisterViewProperties) => {
+// 🏗️ COMPONENTE BASE (Local)
+const StockRegisterViewBase = ({ onBack, onRegister }: StockRegisterViewProperties) => {
   const [isToggleActive, setIsToggleActive] = useState(true);
   const [isVariationsOpen, setIsVariationsOpen] = useState(false);
   const [isPriceOpen, setIsPriceOpen] = useState(false);
@@ -124,7 +125,6 @@ export const StockRegisterView = ({ onBack, onRegister }: StockRegisterViewPrope
       if (result.success) {
         window.dispatchEvent(new Event(PRODUCT_UPDATE_EVENT));
         alert("✅ Produto Salvo com Sucesso!");
-        // CORREÇÃO: Acessa 'imageUrl' em vez de 'mainImage'
         if (onRegister && result.product) onRegister({ image: result.product.imageUrl || undefined });
         onBack();
       } else {
@@ -226,8 +226,38 @@ export const StockRegisterView = ({ onBack, onRegister }: StockRegisterViewPrope
     </div>
   );
 };
-export const StockRegisterViewBase = withGuardian(
-  StockRegisterView, 
+
+// 🚀 EXPORTAÇÃO INTELIGENTE
+export const StockRegisterView = withGuardian(
+  StockRegisterViewBase, 
   "components/builder/ui/StockRegisterView.tsx", 
-  "UI_COMPONENT"
+  "UI_COMPONENT",
+  {
+    label: "Tela de Cadastro de Produto",
+    description: "Hub central para criação de novos produtos, gerenciando fotos, preços e variações.",
+    orientationNotes: `
+⚠️ **Arquitetura de Fluxo**:
+- Esta é a tela "Pai" que orquestra vários modais (Variações, Preço, Estoque).
+- **Persistência**: Acumula o estado localmente e só salva via 'saveProductAction' no final.
+- **Eventos**: Dispara 'PRODUCT_UPDATE_EVENT' após sucesso para atualizar a grid principal.
+    `,
+    connectsTo: [
+      { 
+        target: "components/builder/ui/StockVariationsPopup.tsx", 
+        type: "COMPONENT", 
+        description: "Modal de Variações (Filho)" 
+      },
+      { 
+        target: "components/builder/ui/StockPricePopup.tsx", 
+        type: "COMPONENT", 
+        description: "Modal de Preço (Filho)" 
+      },
+      { 
+        target: "app/actions/product.ts", 
+        type: "EXTERNAL", 
+        description: "Server Action: saveProductAction" 
+      }
+    ],
+    tags: ["Main View", "Product Management", "Orchestrator"]
+  }
 );

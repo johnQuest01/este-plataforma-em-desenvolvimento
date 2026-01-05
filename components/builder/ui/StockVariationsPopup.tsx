@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 
-// 📚 ESTUDO: 1. Importação do HOC (Higher Order Component)
+// 🛡️ GUARDIAN: Importação do HOC
 import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
 import { cn } from '@/lib/utils';
@@ -187,7 +187,7 @@ function SortablePhotoItem({ id, url, onRemove }: { id: string, url: string, onR
   );
 }
 
-// --- Main Component ---
+// --- Main Component (Renomeado para Base) ---
 
 const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }: StockVariationsPopupProps) => {
   const [variations, setVariations] = useState<VariationItem[]>(initialItems);
@@ -706,8 +706,9 @@ export const StockVariationsPopup = withGuardian(
 ⚠️ **Pontos de Atenção**:
 - **Z-Index**: Deve sobrepor o Header (z-50).
 - **Dependências**: Utiliza 'createProductionOrderAction' para persistência.
-- **UX**:'.
-    `,
+- **UX**: Implementa Drag-and-Drop para ordenação de fotos.
+- **Fluxo**: Geralmente invocado via 'StockRegisterView'.
+    `.trim(),
     connectsTo: [
       { 
         target: "components/views/StockRegisterView.tsx", 
