@@ -1,7 +1,22 @@
+// path: src/components/builder/context/OrderContext.tsx
 'use client';
 
 import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
 import { ProductData } from '@/app/actions/product';
+
+// ✅ GUARDIAN: Importação do HOC
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
+
+// 1. Definição de Tipo Local para garantir segurança ao acessar propriedades dinâmicas
+// Isso substitui o uso perigoso de 'any'
+interface SafeVariant {
+  color?: string | null;
+  size?: string | null;
+  type?: string | null;
+  variation?: string | null;
+  name?: string | null;
+  stock?: number | null;
+}
 
 interface OrderContextType {
   product: ProductData | null;
@@ -22,7 +37,8 @@ interface OrderContextType {
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
-export const OrderProvider = ({
+// 2. Componente Base do Provider
+const OrderProviderBase = ({
   children,
   product
 }: {
@@ -46,23 +62,29 @@ export const OrderProvider = ({
     return parseFloat(cleanPrice) || 0;
   }, [product]);
 
-  // --- CORREÇÃO: Uso de 'variants' e verificação de nulidade ---
+  // --- CORREÇÃO: Tipagem Estrita e Tratamento de Nulos ---
   const filterVariations = useCallback((currentSelections: Record<string, string | null>) => {
     if (!product || !product.variants) return [];
 
     return product.variants.filter(v => {
-      // Cast seguro para acessar propriedades que podem não estar no tipo estrito
-      const anyV = v as any;
-      const variantAttributes: Record<string, string | undefined> = {
-        'color': anyV.color?.trim() || 'Padrão',
-        'size': anyV.size?.trim() || v.name.trim(),
-        'model': (anyV.type || anyV.variation || '').trim() 
+      // ✅ Casting seguro para a interface local definida acima
+      const safeV = v as unknown as SafeVariant;
+
+      // ✅ Tratamento seguro de strings opcionais (sem 'any' e sem erro de undefined)
+      const variantAttributes: Record<string, string> = {
+        'color': safeV.color?.trim() || 'Padrão',
+        // Se size não existir, tenta name. Se name for undefined, usa string vazia.
+        'size': safeV.size?.trim() || safeV.name?.trim() || '',
+        'model': (safeV.type || safeV.variation || '').trim() 
       };
 
       return Object.entries(currentSelections).every(([groupKey, userSelectedValue]) => {
         if (!userSelectedValue) return true;
         const variantValue = variantAttributes[groupKey];
+        
+        // Se o atributo não existir na variante, ela não serve
         if (!variantValue) return false;
+        
         return variantValue.toLowerCase() === userSelectedValue.toLowerCase();
       });
     });
@@ -126,6 +148,31 @@ export const OrderProvider = ({
     </OrderContext.Provider>
   );
 };
+
+// ✅ 3. Exportação do Provider com Rastreamento
+export const OrderProvider = withGuardian(
+  OrderProviderBase,
+  "components/builder/context/OrderContext.tsx",
+  "HOOK", // Classificado como HOOK/LOGIC pois é um Provider de Estado
+  {
+    label: "Contexto de Pedido (Global State)",
+    description: "Gerencia o estado complexo de seleção de produtos (Cor, Tamanho, Quantidade) e cálculo de preço em tempo real.",
+    orientationNotes: `
+🧠 **Lógica Central**:
+- **filterVariations**: Algoritmo que cruza as seleções do usuário com as variantes disponíveis no produto.
+- **checkOptionAvailability**: Usado pela UI para desabilitar botões de opções esgotadas.
+- **Auto-Correction**: Se o estoque mudar ou a seleção for inválida, a quantidade é ajustada automaticamente.
+    `.trim(),
+    connectsTo: [
+      { 
+        target: "components/shop/ProductDetailContent.tsx", 
+        type: "COMPONENT", 
+        description: "Consumidor Principal (UI)" 
+      }
+    ],
+    tags: ["Context", "State Management", "Logic"]
+  }
+);
 
 export const useOrder = () => {
   const context = useContext(OrderContext);

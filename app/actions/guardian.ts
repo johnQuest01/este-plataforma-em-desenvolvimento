@@ -3,10 +3,10 @@
 
 import fs from "fs";
 import path from "path";
-import {
-  DiagnosticIssue,
-  ScreenMetadata,
-  ProjectFile,
+import { 
+  DiagnosticIssue, 
+  ScreenMetadata, 
+  ProjectFile, 
   CodeSnippet,
   FileTypeEnum,
   FileType,
@@ -28,7 +28,7 @@ function extractCodeSnippets(content: string): CodeSnippet[] {
     const innerTextMatch = match[2] ? match[2].replace(/<[^>]*>/g, "").trim() : "";
     const labelPropMatch = fullTag.match(/label="([^"]*)"/);
     const previewText = innerTextMatch || labelPropMatch?.[1] || "Botão Interativo";
-   
+    
     snippets.push({
       type: "BUTTON",
       content: fullTag.trim(),
@@ -63,7 +63,7 @@ function extractCodeSnippets(content: string): CodeSnippet[] {
     const placeholderMatch = fullTag.match(/placeholder="([^"]*)"/);
     const nameMatch = fullTag.match(/name="([^"]*)"/);
     const typeMatch = fullTag.match(/type="([^"]*)"/);
-   
+    
     let preview = "Campo de Entrada";
     if (placeholderMatch) preview = placeholderMatch[1];
     else if (nameMatch) preview = nameMatch[1];
@@ -192,12 +192,12 @@ export async function runFullProjectAuditAction(
       const entries = fs.readdirSync(dir, { withFileTypes: true });
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
-       
+        
         if (entry.isDirectory()) {
           if (!["node_modules", ".next", ".git", ".vscode", "public", "build", "dist", "coverage"].includes(entry.name)) {
             scanDirectory(fullPath);
           }
-        }
+        } 
         else if (entry.isFile()) {
           if (entry.name === '.DS_Store' || entry.name === 'Thumbs.db') continue;
 
@@ -219,7 +219,7 @@ export async function runFullProjectAuditAction(
       console.error(`Erro ao escanear diretório ${dir}:`, e);
     }
   };
- 
+  
   scanDirectory(rootDirectory);
 
   // Lógica de Foco
@@ -233,15 +233,15 @@ export async function runFullProjectAuditAction(
   const codeMap: Record<string, CodeSnippet[]> = {};
   const dependencyLinks: DependencyLink[] = [];
   const connectedFilesSet = new Set<string>();
- 
+  
   // Escopo de Análise Profunda
-  const uiScope = allProjectFiles.filter(f =>
-    (f.path === activeFile ||
-    (focusFile && f.path === focusFile) ||
+  const uiScope = allProjectFiles.filter(f => 
+    (f.path === activeFile || 
+    (focusFile && f.path === focusFile) || 
     (f.type === "COMPONENT" && f.path.endsWith('.tsx'))) &&
     !f.type.match(/ASSET|OTHER/)
   );
- 
+  
   uiScope.forEach(file => {
     const absPath = path.join(rootDirectory, file.path);
     if (fs.existsSync(absPath)) {
@@ -272,18 +272,33 @@ export async function runFullProjectAuditAction(
     }
   });
 
+  // ✅ POPULAR LISTAS DE ARQUIVOS RELACIONADOS (UI vs LOGIC)
+  // Baseado nas dependências encontradas para o arquivo ativo
+  const activeFileDependencies = dependencyLinks
+    .filter(link => link.source === activeFile)
+    .map(link => link.target);
+
+  activeFileDependencies.forEach(depPath => {
+      const fileType = determineFileType(path.basename(depPath), depPath);
+      if (fileType === "COMPONENT" || fileType === "PAGE") {
+          uiFiles.push(depPath);
+      } else {
+          logicFiles.push(depPath);
+      }
+  });
+
   const screenMetadata: ScreenMetadata = {
     pathname: currentPathname,
     responsibleFile: activeFile || "Unknown",
     focusMode: !!focusFile,
     lastModified: new Date().toISOString(),
     elements: { buttons: 0, inputs: 0, logicHooks: 0, serverActions: 0 },
-    relatedFiles: { ui: [], logic: [] },
+    relatedFiles: { ui: uiFiles, logic: logicFiles },
     potentialPopups: [],
     // ✅ Preenchemos as dependências reais
     dependencies: dependencyLinks,
-    connectivity: { 
-        connected: Array.from(connectedFilesSet), 
+    connectivity: {
+        connected: Array.from(connectedFilesSet),
         disconnected: [] // Simplificado para este exemplo
     },
     database: { models: [] },

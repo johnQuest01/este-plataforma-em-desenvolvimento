@@ -13,6 +13,7 @@ interface RootLayoutShellProps {
 }
 
 function RootLayoutShellBase({ children }: RootLayoutShellProps) {
+  // Lógica para garantir que o Guardian só rode em desenvolvimento
   const isDevelopmentEnvironment = process.env.NODE_ENV === 'development';
 
   return (
@@ -26,7 +27,9 @@ function RootLayoutShellBase({ children }: RootLayoutShellProps) {
       <GlobalAdmin />
       <InstallPrompt />
 
-      {/* GUARDIAN ARCHITECTURE (DEV ONLY) */}
+      {/* GUARDIAN ARCHITECTURE (DEV ONLY) 
+          Protege o bundle de produção e performance.
+      */}
       {isDevelopmentEnvironment && (
         <>
           <GlobalGuardianObserver />
@@ -37,10 +40,20 @@ function RootLayoutShellBase({ children }: RootLayoutShellProps) {
   );
 }
 
-// ✅ Exportação com Etiqueta Inteligente
-// Agora o Guardian rastreia este "Shell" como o Layout principal da UI.
+// ✅ Exportação com Etiqueta Inteligente e Metadados
 export const RootLayoutShell = withGuardian(
   RootLayoutShellBase,
   "components/layouts/RootLayoutShell.tsx",
-  "LAYOUT"
+  "LAYOUT",
+  {
+    label: "Shell Principal (Root)",
+    description: "Componente Wrapper global da aplicação. Responsável por injetar ferramentas administrativas, PWA e o próprio Guardian System.",
+    orientationNotes: "Este é o ponto de entrada do 'Client Side'. Ele envolve todas as páginas (children). Se você remover o Guardian daqui, o painel desaparecerá de todo o app.",
+    connectsTo: [
+      { target: "components/admin/GlobalAdmin.tsx", type: "COMPONENT", description: "Painel Admin Global" },
+      { target: "components/builder/blocks/MasterGuardianDashboard.tsx", type: "COMPONENT", description: "O Painel Guardian" },
+      { target: "app/layout.tsx", type: "EXTERNAL", description: "Invocador (Server Component)" }
+    ],
+    tags: ["Core", "Layout", "System"]
+  }
 );

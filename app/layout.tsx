@@ -3,8 +3,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-// ✅ Importamos o Shell (Client Component) que contém o Guardian
-import { RootLayoutShell } from "@/components/layout/RootLayoutShell";
+// ✅ Importamos APENAS o Shell (que já contém o Guardian e Admin)
+import { RootLayoutShell } from "@/components/layouts/RootLayoutShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,8 +31,6 @@ export const viewport: Viewport = {
   themeColor: "#5874f6",
 };
 
-// ❌ SEM 'use client' aqui (Preserva SEO)
-// ❌ SEM withGuardian aqui (Evita erro de hidratação no <html>)
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -41,7 +39,10 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="selection:bg-indigo-500/30">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-950 text-zinc-200`}>
-        {/* O Shell gerencia a UI e o Guardian */}
+        {/* 
+            ✅ Delegamos a renderização para o Shell Rastreado.
+            Isso ativará o 'withGuardian' dentro do RootLayoutShell.tsx
+        */}
         <RootLayoutShell>
           {children}
         </RootLayoutShell>

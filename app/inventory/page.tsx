@@ -1,8 +1,12 @@
+// path: src/app/inventory/page.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+
+// ✅ GUARDIAN: Importação do HOC
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
 import { BlockConfig } from '@/types/builder';
 import { INVENTORY_BLOCKS, STOCK_BLOCKS } from '@/data/inventory-state';
@@ -16,7 +20,8 @@ import { StockModal } from '@/components/builder/ui/StockModal';
 import { CatalogModal } from '@/components/builder/ui/CatalogModal'; // Tela de Fazer Pedido (Loja)
 import { OrdersModal } from '@/components/builder/ui/OrdersModal';   // Tela de Ver Pedidos (Status)
 
-export default function InventoryPage() {
+// 1. Renomeamos o componente para "Base" para poder envolver no HOC depois
+function InventoryPageBase() {
   const [blocks, setBlocks] = useState<BlockConfig[]>(INVENTORY_BLOCKS);
 
   // --- ESTADOS DOS MODAIS ---
@@ -165,3 +170,44 @@ export default function InventoryPage() {
     </main>
   );
 }
+
+// 2. Exportação com a Etiqueta Inteligente (Guardian Beacon)
+// Agora esta página aparecerá na "Tela Ativa" e mostrará suas conexões no "Modo Foco".
+export default withGuardian(
+  InventoryPageBase,
+  "app/inventory/page.tsx",
+  "LAYOUT", // Tipo LAYOUT pois é uma página estrutural
+  {
+    label: "Dashboard de Inventário",
+    description: "Hub central de controle de estoque. Gerencia navegação para Catálogo, Pedidos e Cadastro.",
+    orientationNotes: `
+📌 **Estrutura**:
+- Layout Mobile-First com container centralizado em Desktop.
+- Utiliza 'BlockRenderer' para renderizar componentes dinâmicos (Lego).
+- Gerencia estado de 3 Modais principais.
+    `.trim(),
+    connectsTo: [
+      { 
+        target: "components/builder/ui/StockModal.tsx", 
+        type: "COMPONENT", 
+        description: "Modal de Cadastro de Estoque" 
+      },
+      { 
+        target: "components/builder/ui/CatalogModal.tsx", 
+        type: "COMPONENT", 
+        description: "Modal de Catálogo (Loja)" 
+      },
+      { 
+        target: "components/builder/ui/OrdersModal.tsx", 
+        type: "COMPONENT", 
+        description: "Modal de Visualização de Pedidos" 
+      },
+      { 
+        target: "app/actions.ts", 
+        type: "EXTERNAL", 
+        description: "Server Action: checkForNewImage (Polling)" 
+      }
+    ],
+    tags: ["Main Route", "Dashboard", "Inventory"]
+  }
+);

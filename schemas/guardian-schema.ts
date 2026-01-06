@@ -1,6 +1,7 @@
 // path: src/schemas/guardian-schema.ts
 import { z } from "zod";
 
+
 export const DiagnosticLayerEnum = z.enum([
   "UI_PROPORTION",
   "UI_STYLING",
@@ -13,10 +14,12 @@ export const DiagnosticLayerEnum = z.enum([
   "PERFORMANCE",
 ]);
 
+
 export const FileTypeEnum = z.enum([
   "PAGE", "COMPONENT", "ACTION", "HOOK", "SCHEMA", "CONFIG",
   "PRISMA", "STYLE", "TYPE", "UTIL", "ASSET", "MARKDOWN", "OTHER"
 ]);
+
 
 export const ProjectFileSchema = z.object({
   path: z.string(),
@@ -27,6 +30,7 @@ export const ProjectFileSchema = z.object({
   linesOfCode: z.number(),
 });
 
+
 // ✅ NOVO: Schema para representar uma conexão real entre arquivos
 export const DependencyLinkSchema = z.object({
   source: z.string(), // Quem importa (ex: components/StockModal.tsx)
@@ -34,12 +38,14 @@ export const DependencyLinkSchema = z.object({
   type: z.enum(["IMPORT", "DYNAMIC_IMPORT", "USAGE"]),
 });
 
+
 // ✅ DEFINIÇÃO DE SNIPPETS PARA O REX X-RAY (CÓDIGO REAL)
 export const CodeSnippetSchema = z.object({
   type: z.enum(["BUTTON", "INPUT", "LAYOUT_CARD", "LAYOUT_PROPORTION", "TEXT", "POPUP_STRUCTURE"]),
   content: z.string(), // O código JSX real extraído do arquivo
   preview: z.string(), // Título descritivo para o cabeçalho do bloco
 });
+
 
 export const ScreenMetadataSchema = z.object({
   pathname: z.string(),
@@ -58,7 +64,7 @@ export const ScreenMetadataSchema = z.object({
   }),
   // ✅ NOVO: Lista detalhada de dependências para o mapa de conexão
   dependencies: z.array(DependencyLinkSchema).default([]),
-  
+ 
   potentialPopups: z.array(z.string()),
   connectivity: z.object({
     connected: z.array(z.string()),
@@ -73,6 +79,7 @@ export const ScreenMetadataSchema = z.object({
   codeMap: z.record(z.string(), z.array(CodeSnippetSchema)).optional(),
 });
 
+
 export const DiagnosticIssueSchema = z.object({
   id: z.string(),
   layer: DiagnosticLayerEnum,
@@ -84,6 +91,7 @@ export const DiagnosticIssueSchema = z.object({
   snippet: z.string().optional(),
 });
 
+
 export const GuardianAuditResponseSchema = z.object({
   issues: z.array(DiagnosticIssueSchema),
   categorizedFiles: z.object({
@@ -93,6 +101,7 @@ export const GuardianAuditResponseSchema = z.object({
   screenMetadata: ScreenMetadataSchema,
 });
 
+
 export type DiagnosticIssue = z.infer<typeof DiagnosticIssueSchema>;
 export type DiagnosticLayer = z.infer<typeof DiagnosticLayerEnum>;
 export type ScreenMetadata = z.infer<typeof ScreenMetadataSchema>;
@@ -101,3 +110,4 @@ export type ProjectFile = z.infer<typeof ProjectFileSchema>;
 export type FileType = z.infer<typeof FileTypeEnum>;
 export type CodeSnippet = z.infer<typeof CodeSnippetSchema>;
 export type DependencyLink = z.infer<typeof DependencyLinkSchema>;
+

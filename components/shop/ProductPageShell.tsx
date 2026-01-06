@@ -8,8 +8,10 @@ import { cn } from '@/lib/utils';
 import { ProductDetailContent } from '@/components/shop/ProductDetailContent';
 import { FooterBlock } from '@/components/builder/blocks/Footer';
 import { BlockConfig } from '@/types/builder';
-import { ProductData } from '@/app/actions/product'; // Importe o tipo correto
+import { ProductData } from '@/app/actions/product'; 
+
 // ✅ Importação do Guardian
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
 interface ProductPageShellProps {
   product: ProductData | null;
@@ -62,4 +64,27 @@ function ProductPageShellBase({ product, footerBlock }: ProductPageShellProps) {
   );
 }
 
-// ✅ 2. Exportação com Rastreamento
+// ✅ 2. Exportação com Rastreamento (Correção do Erro)
+export const ProductPageShell = withGuardian(
+  ProductPageShellBase,
+  "components/shop/ProductPageShell.tsx",
+  "LAYOUT",
+  {
+    label: "Shell da Página de Produto",
+    description: "Container principal da PDP (Product Detail Page). Gerencia o layout responsivo e o estado de 'Produto não encontrado'.",
+    orientationNotes: "Este componente é o 'Client Boundary' da página de produto. Ele recebe os dados do servidor e hidrata a interface.",
+    connectsTo: [
+      { 
+        target: "components/shop/ProductDetailContent.tsx", 
+        type: "COMPONENT", 
+        description: "Renderiza os detalhes internos (fotos, preço, botão comprar)" 
+      },
+      { 
+        target: "components/builder/blocks/Footer.tsx", 
+        type: "COMPONENT", 
+        description: "Rodapé fixo da loja" 
+      }
+    ],
+    tags: ["PDP", "Shell", "Layout"]
+  }
+);

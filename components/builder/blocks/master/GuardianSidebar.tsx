@@ -101,8 +101,8 @@ export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, 
                 onClick={() => handleNavigateToCodeMap(data.screenMetadata.responsibleFile)}
                 className={cn(
                   "w-full p-4 rounded-2xl text-left group relative transition-all border cursor-pointer hover:scale-[1.02]",
-                  isFocusMode
-                    ? "bg-indigo-600/20 border-indigo-500/50 shadow-md shadow-indigo-500/10"
+                  isFocusMode 
+                    ? "bg-indigo-600/20 border-indigo-500/50 shadow-md shadow-indigo-500/10" 
                     : "bg-zinc-800/30 border-zinc-700/50 hover:bg-zinc-800/50 hover:border-zinc-600"
               )}>
                 <div className="flex justify-between items-center mb-1">
@@ -133,7 +133,7 @@ export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, 
             </div>
 
             {data?.screenMetadata.relatedFiles.ui.map((file) => (
-              <div
+              <div 
                 key={file}
                 onClick={() => handleNavigateToCodeMap(file)}
                 className="w-full text-left p-3 bg-zinc-800/30 hover:bg-zinc-800 border border-zinc-800/50 rounded-xl transition-all group flex items-center justify-between cursor-pointer"

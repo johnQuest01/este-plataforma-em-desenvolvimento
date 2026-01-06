@@ -1,7 +1,8 @@
+// path: src/components/shop/ProductDetailContent.tsx
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import Image from 'next/image'; // ✅ CORREÇÃO: Import do componente Image
+import Image from 'next/image'; 
 import {
   Heart, Eye, Truck, Tag, Type, Sparkles, ArrowRight, ShoppingBag, Check
 } from 'lucide-react';
@@ -11,6 +12,9 @@ import { useRouter } from 'next/navigation';
 import { StoreHeader } from '@/components/builder/blocks/Header';
 import { OrderProvider, useOrder } from '@/components/builder/context/OrderContext';
 import { createOrderAction } from '@/app/actions/order'; 
+
+// ✅ GUARDIAN: Importação do HOC
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
 interface ProductDetailContentProps {
   product: ProductData;
@@ -142,7 +146,6 @@ const ProductDetailInner = () => {
 
         {/* Imagem Principal */}
         <div className="w-full aspect-[4/5] bg-gray-100 relative group">
-          {/* ✅ CORREÇÃO: Substituído <img> por <Image /> do Next.js */}
           <Image
             src={product.imageUrl || 'https://placehold.co/600x800/png'} 
             alt={product.name}
@@ -204,7 +207,6 @@ const ProductDetailInner = () => {
                         disabled={!available}
                         className={cn(
                           "group transition-all flex items-center gap-3 px-2 py-2 rounded-xl border-2",
-                          // ✅ CORREÇÃO: Mantém bg-white mesmo selecionado para não ofuscar o texto
                           isSelected 
                             ? "border-gray-900 bg-white ring-1 ring-gray-900 scale-105" 
                             : "border-gray-100 bg-white hover:border-gray-300",
@@ -218,7 +220,6 @@ const ProductDetailInner = () => {
                            <Check size={14} strokeWidth={4} />
                         </div>
                         <div className="flex flex-col items-start min-w-[60px]">
-                          {/* ✅ CORREÇÃO: Texto forçado para preto (text-gray-900) */}
                           <span className="text-xs font-black uppercase break-words text-left leading-tight text-gray-900">
                             {color}
                           </span>
@@ -359,10 +360,41 @@ const ProductDetailInner = () => {
   );
 };
 
-export const ProductDetailContent = ({ product }: ProductDetailContentProps) => {
+// 1. Componente Base (Wrapper do Contexto)
+function ProductDetailContentBase({ product }: ProductDetailContentProps) {
   return (
     <OrderProvider product={product}>
       <ProductDetailInner />
     </OrderProvider>
   );
-};
+}
+
+// ✅ 2. Exportação com Etiqueta Inteligente (Guardian Beacon)
+export const ProductDetailContent = withGuardian(
+  ProductDetailContentBase,
+  "components/shop/ProductDetailContent.tsx",
+  "UI_COMPONENT",
+  {
+    label: "Detalhes do Produto (PDP)",
+    description: "Componente central da página de produto. Gerencia seleção de variações (Cor, Tamanho, Tipo), cálculo de preço e validação de estoque.",
+    orientationNotes: `
+📌 **Lógica de Negócio**:
+- Utiliza 'OrderContext' para gerenciar o estado global do pedido.
+- Valida combinações de estoque em tempo real.
+- Dispara 'createOrderAction' ao finalizar a compra.
+    `.trim(),
+    connectsTo: [
+      { 
+        target: "components/builder/context/OrderContext.tsx", 
+        type: "COMPONENT", 
+        description: "Contexto de Pedido (Estado Global)" 
+      },
+      { 
+        target: "app/actions/order.ts", 
+        type: "EXTERNAL", 
+        description: "Server Action: createOrderAction" 
+      }
+    ],
+    tags: ["PDP", "E-commerce", "Complex Logic"]
+  }
+);
