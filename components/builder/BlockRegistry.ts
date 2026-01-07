@@ -7,6 +7,7 @@ import { BlockComponentProps } from '@/types/builder';
 // --- Imports de Blocos do Sistema ---
 import { MasterGuardianDashboard } from "./blocks/MasterGuardianDashboard";
 import { StandardButtonBlock } from './blocks/StandardButtonBlock';
+import { JeansRegistrationBlock } from './blocks/JeansRegistrationBlock';
 
 // --- Imports de Blocos de Layout e UI ---
 import { HeaderBlock } from './blocks/Header';
@@ -108,4 +109,5 @@ export const COMPONENT_MAP: Record<string, LegoComponent> = {
 
   // Dashboard e Analytics
   'total-sales': TotalSalesBlock,
+  'jeans-registration': JeansRegistrationBlock as any, // Cast necessário apenas se o onAction não for usado
 };

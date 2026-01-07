@@ -8,10 +8,12 @@ import { useRouter } from 'next/navigation';
 import { LocalDB } from '@/lib/local-db';
 
 // --- CONFIGURAÇÃO DOS LINKS ---
+// Nota: O ID '18' conecta diretamente à rota criada para o Cadastro de Jeans
 const MOCK_MENU_ITEMS: MenuItem[] = [
   { id: '1', label: 'Início', icon: 'home', link: '/dashboard' },
   { id: '16', label: 'Caixa (PDV)', icon: 'calculator', link: '/pos' },
   { id: '17', label: 'Produção', icon: 'inventory', link: '/production' }, 
+  { id: '18', label: 'Cadastro Jeans', icon: 'shirt', link: '/product/jeans' }, // ROTA ATIVA
   { id: '2', label: 'Histórico', icon: 'history', link: '/history' },
   { id: '3', label: 'Mais Vendidos', icon: 'award', link: '/bestsellers' },
   { id: '4', label: 'Avisos', icon: 'alert', link: '/alerts' },
@@ -46,9 +48,10 @@ export const StoreHeader = ({
   const router = useRouter();
 
   const handleItemClick = (item: MenuItem) => {
-    setIsMenuOpen(false); // Fecha o menu primeiro
+    setIsMenuOpen(false); 
 
     if (item.id === 'logout') {
+      // Pequeno delay para UX antes do confirm
       setTimeout(() => {
         if (window.confirm("Deseja realmente sair?")) {
           LocalDB.clearUser();
@@ -74,22 +77,30 @@ export const StoreHeader = ({
             <button 
               onClick={onBack}
               className="p-2 -ml-2 rounded-full hover:bg-white/20 transition-colors active:scale-90 flex items-center gap-1 shrink-0"
+              aria-label="Voltar"
             >
               <ChevronLeft size={28} strokeWidth={2.5} />
               <span className="font-bold text-sm hidden sm:inline">Voltar</span>
             </button>
           ) : (
-            <h1 className="text-2xl font-black tracking-tight shrink-0">{data.title || 'Loja'}</h1>
+            <h1 className="text-2xl font-black tracking-tight shrink-0">
+              {data.title || 'Loja'}
+            </h1>
           )}
 
           <div className="flex-1 h-10 bg-white rounded-full flex items-center px-4 shadow-inner overflow-hidden">
             <Search size={18} className="text-gray-400 mr-2 shrink-0" />
-            <span className="text-gray-400 text-sm truncate select-none">Buscar na loja...</span>
+            <input 
+              type="text"
+              placeholder="Buscar na loja..."
+              className="bg-transparent border-none outline-none text-sm text-black w-full placeholder:text-gray-400"
+            />
           </div>
 
           <button 
             onClick={() => setIsMenuOpen(true)}
             className="cursor-pointer shrink-0 active:opacity-70 transition-opacity p-1 rounded-full hover:bg-white/10"
+            aria-label="Abrir Menu"
           >
             <Menu size={32} />
           </button>
@@ -97,7 +108,9 @@ export const StoreHeader = ({
 
         <div className="flex items-center gap-2 text-sm font-medium opacity-90 pl-1">
           <MapPin size={18} />
-          <span className="truncate text-xs sm:text-sm">{data.address}</span>
+          <span className="truncate text-xs sm:text-sm">
+            {data.address}
+          </span>
         </div>
       </div>
 
@@ -112,19 +125,22 @@ export const StoreHeader = ({
 };
 
 export const HeaderBlock = ({ config }: { config: BlockConfig }) => {
+  // Handler seguro para o botão de voltar
+  const handleBack = () => {
+    if (typeof window !== 'undefined') {
+      window.history.back();
+    }
+  };
+
   return (
     <StoreHeader 
       style={config.style}
       data={{ 
         address: (config.data?.address as string) || 'Maryland Gestão',
-        title: config.data?.title as string || 'Loja'
+        title: (config.data?.title as string) || 'Loja'
       }}
       showBack={config.data?.showBack as boolean}
-      onBack={() => {
-        if (typeof window !== 'undefined') {
-          window.history.back();
-        }
-      }}
+      onBack={handleBack}
     />
   );
 };
