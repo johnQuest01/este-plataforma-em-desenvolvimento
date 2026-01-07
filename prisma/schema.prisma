@@ -1,3 +1,5 @@
+// prisma/schema.prisma
+
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
@@ -40,13 +42,17 @@ model Store {
   productionOrders ProductionOrder[]
 }
 
-// --- MODELOS DE PRODUTO ---
+// --- MODELOS DE PRODUTO ATUALIZADOS ---
 
 model Product {
   id              String           @id @default(cuid())
   name            String
   description     String?
   price           Decimal          @db.Decimal(10, 2)
+  
+  // Campo essencial para o cadastro inteligente
+  reference       String?          
+  
   imageColor      String?
   imageUrl        String?
   tags            String[]
@@ -59,6 +65,9 @@ model Product {
   updatedAt       DateTime         @updatedAt
   orderItems      OrderItem[]
   productionItems ProductionItem[]
+
+  // Índice para busca rápida no upload em massa
+  @@index([reference])
 }
 
 model ProductVariant {
@@ -72,7 +81,7 @@ model ProductVariant {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
-// --- MODELOS DE PRODUÇÃO ---
+// --- DEMAIS MODELOS ---
 
 model ProductionOrder {
   id          String      @id @default(cuid())
@@ -115,8 +124,6 @@ model ProductionItem {
   updatedAt   DateTime   @updatedAt
 }
 
-// --- MODELOS DE PEDIDO ---
-
 model Order {
   id            String      @id @default(cuid())
   status        String      @default("PENDING")
@@ -140,12 +147,10 @@ model OrderItem {
   production ProductionItem?
 }
 
-// --- MODELOS DE SISTEMA / CONFIGURAÇÃO ---
-
 model GuardianConfig {
   id        String   @id @default(cuid())
-  key       String   @unique // Ex: "UI_THEME"
-  value     String   // Ex: "dark", "light"
+  key       String   @unique
+  value     String  
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 }
