@@ -16,39 +16,37 @@ interface GuardianSidebarProps {
 }
 
 export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, onClearFocus }: GuardianSidebarProps) {
-  // ✅ Hook para navegação
   const { setTab } = useGuardianStore();
-  
   const isFocusMode = !!activeFile;
   const popups = data?.screenMetadata.potentialPopups || [];
 
-  // ✅ Função de Navegação Inteligente
   const handleNavigateToCodeMap = (file: string) => {
-    onFocusFile(file); // Define o foco no arquivo
-    onInspectFile(file, 'UI'); // Prepara a inspeção
-    setTab('CODE_MAP'); // Troca a aba
+    onFocusFile(file);
+    onInspectFile(file, 'UI');
+    setTab('CODE_MAP');
   };
 
   return (
-    <div className="w-80 flex flex-col gap-4 shrink-0">
+    // ✅ RESPONSIVIDADE: w-full no mobile, w-80 no desktop
+    <div className="w-full md:w-80 flex flex-col gap-4 shrink-0 h-full">
       <div className={cn(
-        "p-6 rounded-[2.5rem] border backdrop-blur-sm flex flex-col h-full overflow-hidden transition-all duration-300",
-        isFocusMode ? "bg-indigo-950/30 border-indigo-500/30 shadow-lg shadow-indigo-900/20" : "bg-zinc-900/30 border-zinc-800/50"
+        "p-4 md:p-6 rounded-2xl md:rounded-[2.5rem] border backdrop-blur-sm flex flex-col h-full overflow-hidden transition-all duration-300",
+        isFocusMode ? "bg-indigo-950/30 border-indigo-500/30 shadow-lg shadow-indigo-900/20" : "bg-zinc-900/90 md:bg-zinc-900/30 border-zinc-800/50"
       )}>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4 md:mb-6">
           <h3 className={cn(
             "text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-colors",
             isFocusMode ? "text-indigo-400" : "text-zinc-500"
           )}>
             {isFocusMode ? <Target className="w-4 h-4" /> : <Layers className="w-4 h-4" />}
-            {isFocusMode ? "Modo Foco Ativo" : "Arquivos da Rota"}
+            {isFocusMode ? "Modo Foco" : "Arquivos da Rota"}
           </h3>
-          
+         
           {isFocusMode && (
             <button
               onClick={onClearFocus}
               className="p-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-full text-zinc-400 hover:text-white transition-colors"
-              title="Voltar para visão geral da rota"
+              title="Voltar"
             >
               <RotateCcw size={12} />
             </button>
@@ -56,14 +54,13 @@ export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, 
         </div>
 
         <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2">
-          
-          {/* ✅ LISTA DE POPUPS DETECTADOS (Clicável) */}
+          {/* Conteúdo da Sidebar (Mantido igual, apenas classes de texto ajustadas se necessário) */}
           {!isFocusMode && popups.length > 0 && (
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-2 px-1">
                 <Maximize size={10} className="text-amber-400" />
                 <span className="text-[9px] font-black text-amber-400 uppercase tracking-wider">
-                  Popups Detectados ({popups.length})
+                  Popups ({popups.length})
                 </span>
               </div>
               <div className="space-y-2">
@@ -79,14 +76,12 @@ export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, 
                         {popupFile.split('/').pop()}
                       </span>
                     </div>
-                    <ArrowRight size={12} className="text-amber-400 opacity-50 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* ✅ ARQUIVO RESPONSÁVEL (Clicável) */}
           {data?.screenMetadata.responsibleFile && (
             <div className="mb-6">
               <div className="flex justify-between items-center mb-2 px-1">
@@ -97,22 +92,21 @@ export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, 
                   {isFocusMode ? "ARQUIVO ATIVO" : "PÁGINA PRINCIPAL"}
                 </span>
               </div>
-              <div 
+              <div
                 onClick={() => handleNavigateToCodeMap(data.screenMetadata.responsibleFile)}
                 className={cn(
-                  "w-full p-4 rounded-2xl text-left group relative transition-all border cursor-pointer hover:scale-[1.02]",
-                  isFocusMode 
-                    ? "bg-indigo-600/20 border-indigo-500/50 shadow-md shadow-indigo-500/10" 
-                    : "bg-zinc-800/30 border-zinc-700/50 hover:bg-zinc-800/50 hover:border-zinc-600"
+                  "w-full p-4 rounded-2xl text-left group relative transition-all border cursor-pointer active:scale-95",
+                  isFocusMode
+                    ? "bg-indigo-600/20 border-indigo-500/50"
+                    : "bg-zinc-800/30 border-zinc-700/50 hover:bg-zinc-800/50"
               )}>
                 <div className="flex justify-between items-center mb-1">
-                  <div className="flex items-center gap-2">
-                    <Eye size={14} className={cn("transition-colors", isFocusMode ? "text-indigo-300" : "text-zinc-400 group-hover:text-white")} />
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <Eye size={14} className={cn("shrink-0", isFocusMode ? "text-indigo-300" : "text-zinc-400")} />
                     <span className={cn("text-xs font-bold truncate", isFocusMode ? "text-white" : "text-zinc-200")}>
                       {data.screenMetadata.responsibleFile.split('/').pop()}
                     </span>
                   </div>
-                  <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-all text-zinc-400" />
                 </div>
                 <p className={cn("text-[9px] truncate font-mono mt-1", isFocusMode ? "text-indigo-300" : "text-zinc-500")}>
                   {data.screenMetadata.responsibleFile}
@@ -121,7 +115,6 @@ export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, 
             </div>
           )}
 
-          {/* Lista de Dependências */}
           <div className="space-y-2">
             <div className="flex items-center justify-between px-1 mb-2">
               <span className="text-[9px] font-black text-zinc-600 uppercase tracking-wider">
@@ -133,10 +126,10 @@ export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, 
             </div>
 
             {data?.screenMetadata.relatedFiles.ui.map((file) => (
-              <div 
+              <div
                 key={file}
                 onClick={() => handleNavigateToCodeMap(file)}
-                className="w-full text-left p-3 bg-zinc-800/30 hover:bg-zinc-800 border border-zinc-800/50 rounded-xl transition-all group flex items-center justify-between cursor-pointer"
+                className="w-full text-left p-3 bg-zinc-800/30 hover:bg-zinc-800 border border-zinc-800/50 rounded-xl transition-all group flex items-center justify-between cursor-pointer active:scale-95"
               >
                 <div className="flex items-center gap-3 overflow-hidden flex-1">
                   <Box size={14} className="text-zinc-600 group-hover:text-blue-400 transition-colors shrink-0" />
@@ -146,15 +139,8 @@ export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, 
                     </p>
                   </div>
                 </div>
-                <ArrowRight size={12} className="text-zinc-500 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
               </div>
             ))}
-            
-            {data?.screenMetadata.relatedFiles.ui.length === 0 && (
-              <div className="p-4 border border-dashed border-zinc-800 rounded-xl text-center">
-                <p className="text-[10px] text-zinc-600 italic">Sem dependências de UI diretas.</p>
-              </div>
-            )}
           </div>
         </div>
       </div>
