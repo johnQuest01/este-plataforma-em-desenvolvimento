@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import Image from 'next/image'; // Importação obrigatória do Next.js
+import Image from 'next/image';
 import { RegisteredProductResult } from '@/schemas/jeans-registration-schema';
 
 interface JeansResultCardProps {
@@ -19,14 +19,13 @@ export const JeansResultCard = ({ product }: JeansResultCardProps) => (
     className="w-full bg-white border border-black rounded-lg p-3 flex gap-3 items-stretch shadow-sm mb-3 shrink-0"
   >
     {/* LADO ESQUERDO: Imagem */}
-    {/* 'relative' é necessário para o Image fill funcionar corretamente */}
     <div className="w-28 shrink-0 bg-gray-100 rounded-md overflow-hidden border border-gray-200 relative group">
        <Image
          src={product.imageUrl || 'https://placehold.co/300x400?text=Sem+Imagem'}
          alt={product.name}
-         fill // Ocupa 100% do container pai (w-28)
+         fill
          className="object-cover transition-transform duration-500 group-hover:scale-110"
-         unoptimized // Permite carregar imagens de qualquer URL externa sem travar o build
+         unoptimized
          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
        />
        
@@ -49,15 +48,24 @@ export const JeansResultCard = ({ product }: JeansResultCardProps) => (
            <span className="text-[11px] font-bold text-black leading-tight bg-gray-100 px-1 rounded w-fit">
              Ref: {product.reference}
            </span>
+           
+           {/* Lista de Variações com Scroll */}
            <div className="max-h-[60px] overflow-y-auto scrollbar-hide">
-            {product.variations.map((v, idx) => (
-              <div key={idx} className="flex justify-between items-center border-t border-gray-100 pt-1 mt-1">
-                  <span className="text-[11px] font-bold text-black">Tam: {v.size}</span>
-                  <span className="text-[11px] font-bold text-[#00c853]">
-                    + {v.qty} un.
-                  </span>
-              </div>
-            ))}
+            {product.variations.map((v, idx) => {
+              // LÓGICA DE FORMATAÇÃO: Remove redundâncias
+              const cleanSize = v.size.replace(/tam|tamanho|size|:/gi, '').trim();
+             
+              return (
+                <div key={idx} className="flex justify-between items-center border-t border-gray-100 pt-1 mt-1 first:border-0 first:pt-0 first:mt-0">
+                    <span className="text-[11px] font-bold text-black">
+                      Tam: {cleanSize}
+                    </span>
+                    <span className="text-[11px] font-bold text-[#00c853]">
+                      + {v.qty} un.
+                    </span>
+                </div>
+              );
+            })}
            </div>
          </div>
       </div>
@@ -66,7 +74,7 @@ export const JeansResultCard = ({ product }: JeansResultCardProps) => (
          <span className="font-black text-sm text-black">
             Total: {product.totalQty} un
          </span>
-         <motion.div 
+         <motion.div
             animate={{ scale: [1, 1.2, 1] }}
             transition={{ repeat: Infinity, duration: 2 }}
             className="bg-[#00c853] w-2 h-2 rounded-full shadow-[0_0_5px_#00c853]"

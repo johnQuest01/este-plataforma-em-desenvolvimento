@@ -23,11 +23,11 @@ export const JeansRegistrationBlock = ({
 }) => {
  
   const title = (config.data.title as string) || 'Jeans';
-  
+ 
   // Inputs
   const [refImageInput, setRefImageInput] = useState("");
   const [bulkTextInput, setBulkTextInput] = useState("");
-  
+ 
   // Histórico e Resultados
   const [sessionRefs, setSessionRefs] = useState<{ ref: string; hasImage: boolean }[]>([]);
   const [results, setResults] = useState<RegisteredProductResult[]>([]);
@@ -41,14 +41,12 @@ export const JeansRegistrationBlock = ({
   const headerOpacity = useTransform(scrollY, [0, 200], [1, 0]);
   const headerScale = useTransform(scrollY, [0, 200], [1, 0.9]);
   const headerY = useTransform(scrollY, [0, 200], [0, -50]);
-  // Desativa cliques no header quando ele fica transparente para não atrapalhar
-  const headerPointerEvents = useTransform(scrollY, (y) => y > 150 ? 'none' : 'auto');
-
-  // --- LÓGICA 1: VINCULAR REFERÊNCIA E IMAGEM ---
+  
+  // LÓGICA 1: VINCULAR REFERÊNCIA E IMAGEM
   const handleLinkImage = () => {
     if (!refImageInput.trim()) return;
     const lines = refImageInput.split('\n').filter(line => line.trim().length > 0);
-    
+   
     startTransition(async () => {
       let successCount = 0;
       const newSessionRefs: { ref: string; hasImage: boolean }[] = [];
@@ -76,7 +74,7 @@ export const JeansRegistrationBlock = ({
     });
   };
 
-  // --- LÓGICA 2: PROCESSAR TEXTO BRUTO ---
+  // LÓGICA 2: PROCESSAR TEXTO BRUTO
   const handleBulkProcess = () => {
     if (!bulkTextInput.trim()) return;
     startTransition(async () => {
@@ -94,23 +92,24 @@ export const JeansRegistrationBlock = ({
 
   return (
     <div className="w-full h-[100dvh] flex flex-col bg-gray-50 overflow-hidden font-sans relative">
-      
+     
       {/* --- HEADER ANIMADO (FADE ON SCROLL) --- */}
-      <motion.div 
-        style={{ 
-          opacity: headerOpacity, 
-          scale: headerScale, 
+      <motion.div
+        style={{
+          opacity: headerOpacity,
+          scale: headerScale,
           y: headerY,
-          pointerEvents: headerPointerEvents 
         }}
-        className="shrink-0 w-full flex flex-col items-center z-50 pt-4 origin-top"
+        className="shrink-0 w-full flex flex-col items-center z-50 pt-4 origin-top pointer-events-none absolute top-0 left-0 right-0"
       >
-        <div className="w-full max-w-5xl flex flex-col md:flex-row items-center justify-center gap-8 px-4">
-          
+        {/* AJUSTE: Reduzido gap-8 para gap-2 para aproximar os cards no mobile */}
+        <div className="w-full max-w-5xl flex flex-col md:flex-row items-center justify-center gap-2 px-4">
+         
           {/* 1. Header Original (Card Rosa) */}
           <div className="flex flex-col items-center">
             <JeansHeader />
-            <motion.h2 className="text-xl font-black text-black uppercase tracking-wide mt-2 shrink-0">
+            {/* AJUSTE: Alterado de mt-2 para -mt-6 para puxar o título para cima, colando no card rosa */}
+            <motion.h2 className="text-xl font-black text-black uppercase tracking-wide -mt-6 shrink-0 relative z-10">
               {title}
             </motion.h2>
           </div>
@@ -119,9 +118,9 @@ export const JeansRegistrationBlock = ({
           <div className="hidden md:block">
              <DevelopmentCard />
           </div>
-          
+         
           {/* Versão Mobile do Card Azul (Escalado) */}
-          <div className="md:hidden scale-90 -mt-4">
+          <div className="md:hidden scale-90 -mt-2">
              <DevelopmentCard />
           </div>
 
@@ -129,12 +128,11 @@ export const JeansRegistrationBlock = ({
       </motion.div>
 
       {/* --- ÁREA DE SCROLL (CONTEÚDO) --- */}
-      {/* O ref é anexado aqui para detectar a rolagem */}
-      <div 
+      <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto scrollbar-hide w-full absolute inset-0 z-40 pt-[420px] md:pt-[380px]"
+        className="flex-1 overflow-y-auto scrollbar-hide w-full absolute inset-0 z-40 pt-[510px] md:pt-[380px]"
       >
-        <div className="w-full px-6 pb-32 flex flex-col items-center gap-5 min-h-full">
+        <div className="w-full px-6 pb-32 flex flex-col items-center gap-5 min-h-full pointer-events-auto">
 
           {/* 2. Card de Sessão (Histórico) */}
           <div className="w-full max-w-md md:max-w-lg relative z-30">
@@ -143,13 +141,13 @@ export const JeansRegistrationBlock = ({
 
           {/* 3. Container de Ações Principais */}
           <div className="w-full max-w-md md:max-w-lg flex flex-col gap-6 relative z-30">
-            <JeansLinkForm 
+            <JeansLinkForm
               refImageInput={refImageInput}
               setRefImageInput={setRefImageInput}
               handleLinkImage={handleLinkImage}
               isPending={isPending}
             />
-            <JeansBulkForm 
+            <JeansBulkForm
               bulkTextInput={bulkTextInput}
               setBulkTextInput={setBulkTextInput}
               handleBulkProcess={handleBulkProcess}

@@ -109,5 +109,7 @@ export const COMPONENT_MAP: Record<string, LegoComponent> = {
 
   // Dashboard e Analytics
   'total-sales': TotalSalesBlock,
-  'jeans-registration': JeansRegistrationBlock as any, // Cast necessário apenas se o onAction não for usado
+  
+  // CORREÇÃO: Removido 'as any'. O componente respeita a interface BlockComponentProps.
+  'jeans-registration': JeansRegistrationBlock, 
 };

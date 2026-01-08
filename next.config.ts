@@ -39,12 +39,19 @@ const withProgressiveWebApp = withProgressiveWebAppInitialization({
 
 const nextConfiguration: NextConfiguration = {
   images: {
+    // --- ATUALIZAÇÃO CRÍTICA AQUI ---
+    // Permite SVGs externos (como placehold.co)
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    
     remotePatterns: [
       { protocol: "https", hostname: "placehold.co" },
       { protocol: "https", hostname: "replicate.delivery" },
       { protocol: "https", hostname: "firebasestorage.googleapis.com" },
       { protocol: "https", hostname: "*.googleusercontent.com" },
-      { protocol: "https", hostname: "**" }
+      // O coringa "**" permite colar QUALQUER link de imagem no formulário
+      { protocol: "https", hostname: "**" } 
     ],
     unoptimized: false,
   },

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 
 // --- Sub-component for Animated Dots (Zero Layout Shift) ---
 const LoadingDots = () => {
@@ -37,17 +38,23 @@ export const DevelopmentCard = () => {
   const [percentage, setPercentage] = useState(69);
 
   useEffect(() => {
-    // LOGIC: 1% every 2 days starting from 01/01/2026
-    const startDate = new Date('2026-01-01').getTime();
-    const now = new Date().getTime();
+    // setTimeout(..., 0) move a atualização para o próximo ciclo de eventos,
+    // resolvendo o erro de "setState synchronously within an effect".
+    const timer = setTimeout(() => {
+      // LOGIC: 1% every 2 days starting from 01/01/2026
+      const startDate = new Date('2026-01-01').getTime();
+      const now = new Date().getTime();
 
-    const diffTime = Math.abs(now - startDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const diffTime = Math.abs(now - startDate);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    const increment = Math.floor(diffDays / 2);
-    const finalPercentage = Math.min(69 + increment, 100);
+      const increment = Math.floor(diffDays / 2);
+      const finalPercentage = Math.min(69 + increment, 100);
 
-    setPercentage(finalPercentage);
+      setPercentage(finalPercentage);
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, []);
 
   return (
@@ -57,10 +64,13 @@ export const DevelopmentCard = () => {
       className="relative w-full max-w-[280px] aspect-square flex items-center justify-center shrink-0"
     >
       {/* 1. BACKGROUND: card-bg-blue.svg */}
-      <img
+      <Image
         src="/card-bg-blue.svg"
         alt="Background"
-        className="absolute inset-0 w-full h-full object-contain z-0 drop-shadow-2xl"
+        fill
+        priority
+        className="object-contain z-0 drop-shadow-2xl"
+        sizes="(max-width: 768px) 100vw, 280px"
       />
 
       {/* CONTENT */}
@@ -72,15 +82,21 @@ export const DevelopmentCard = () => {
         </h3>
 
         {/* 2. BANNER + TEXT */}
-        <div className="relative w-full flex items-center justify-center py-1">
-          <img
+        <div className="relative w-full flex items-center justify-center py-1 h-12">
+          {/* Banner Red */}
+          <Image
             src="/card-banner-red.svg"
             alt="Banner Red"
+            width={300}
+            height={100}
             className="absolute w-[95%] h-auto object-contain z-0 transform -rotate-1"
           />
-          <img
+          {/* Maryland Text */}
+          <Image
             src="/text-maryland-outline.svg"
             alt="Maryland"
+            width={300}
+            height={100}
             className="relative z-10 w-[75%] h-auto object-contain drop-shadow-sm"
           />
         </div>
@@ -89,14 +105,15 @@ export const DevelopmentCard = () => {
         <div className="w-full relative h-11 flex items-center justify-center mt-1">
           
           {/* A. Outer Frame (SVG) - The "Shell" */}
-          <img
+          <Image
             src="/ui-progress-container.svg"
             alt="Progress Container"
-            className="absolute inset-0 w-full h-full object-contain z-10 pointer-events-none"
+            fill
+            className="object-contain z-10 pointer-events-none"
+            sizes="280px"
           />
 
           {/* B. Inner Content Area - The "Pill Interior" */}
-          {/* inset-[4px] creates the padding so content stays strictly inside the SVG border */}
           <div className="absolute inset-[4px] z-20 rounded-full overflow-hidden bg-white">
             
             {/* C. Green Fill (Clean, No Border) */}
@@ -110,10 +127,9 @@ export const DevelopmentCard = () => {
             {/* D. Text Overlay (Centered absolutely over the fill) */}
             <div className="absolute inset-0 flex items-center justify-center z-30">
               <motion.div
-                // ANIMATION UPDATE: High Intensity (0 to 1) & Slower (4.5s)
                 animate={{ opacity: [1, 0, 1] }}
                 transition={{
-                  duration: 4.5, // Slower cycle
+                  duration: 4.5,
                   repeat: Infinity,
                   ease: 'easeInOut',
                 }}
