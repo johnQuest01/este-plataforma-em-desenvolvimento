@@ -4,7 +4,12 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { BulkTextSchema, LinkImageSchema, LinkImageInput, BulkTextInput } from '@/schemas/jeans-registration-schema';
 
-// --- FUNÇÃO AUXILIAR: GET OR CREATE STORE ---
+// --- HELPER: NORMALIZAÇÃO ESTRITA ---
+function normalizeRef(ref: string): string {
+  return ref.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+}
+
+// --- HELPER: GET OR CREATE STORE ---
 async function getOrCreateStore(tx: any, slug: string) {
   let store = await tx.store.findUnique({ where: { slug } });
   if (!store) {
@@ -21,13 +26,13 @@ async function getOrCreateStore(tx: any, slug: string) {
   return store;
 }
 
-// --- ACTION 1: VINCULAR IMAGEM ---
+// --- ACTION 1: VINCULAR IMAGEM (CORRIGIDO: REMOVIDO REVALIDATEPATH) ---
 export async function linkReferenceImageAction(input: LinkImageInput) {
   const result = LinkImageSchema.safeParse(input);
   if (!result.success) return { success: false, error: "Dados inválidos." };
 
   const { reference, imageUrl, storeSlug } = result.data;
-  const normalizedRef = reference.toUpperCase().trim();
+  const normalizedRef = normalizeRef(reference);
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -51,7 +56,11 @@ export async function linkReferenceImageAction(input: LinkImageInput) {
       }
       return { success: true, reference: normalizedRef, hasImage: !!imageUrl };
     });
-    revalidatePath('/pos');
+    
+    // REMOVIDO: revalidatePath('/pos'); 
+    // MOTIVO: Esta ação é chamada em loop no cliente. O revalidatePath aqui causava 
+    // múltiplos reloads desnecessários. O estado local do React já cuida da UI.
+    
     return result;
   } catch (error) {
     console.error("Erro img:", error);
@@ -59,7 +68,7 @@ export async function linkReferenceImageAction(input: LinkImageInput) {
   }
 }
 
-// --- ACTION 2: PROCESSAMENTO INTELIGENTE (BULK) ---
+// --- ACTION 2: PROCESSAMENTO INTELIGENTE (MANTIDO) ---
 export async function processBulkJeansAction(input: BulkTextInput) {
   const result = BulkTextSchema.safeParse(input);
   if (!result.success) return { success: false, error: "Texto inválido." };
@@ -69,9 +78,10 @@ export async function processBulkJeansAction(input: BulkTextInput) {
   try {
     const processedItems = await prisma.$transaction(async (tx) => {
       const store = await getOrCreateStore(tx, storeSlug);
-      const lines = rawText.split('\n').filter(l => l.trim().length > 0);
-      
-      // MAPA DE AGREGAÇÃO: Chave = "REF-TAMANHO"
+
+      // 1. TOKENIZAÇÃO
+      const tokens = rawText.split(/[\n,;\t]+/).map(s => s.trim()).filter(s => s !== "");
+
       const aggregationMap = new Map<string, {
         name: string;
         size: string;
@@ -79,192 +89,135 @@ export async function processBulkJeansAction(input: BulkTextInput) {
         ref: string;
       }>();
 
-      for (const line of lines) {
-        // Divide por vírgula, ponto e vírgula ou tabulação
-        const parts = line.split(/,|;|\t/).map(s => s.trim()).filter(s => s !== "");
-        if (parts.length < 2) continue; 
+      let current = {
+        nameParts: [] as string[],
+        numbers: [] as number[],
+        sizeLetter: "",
+        ref: ""
+      };
 
-        // --- VARIÁVEIS PARA DETECÇÃO ---
-        let detectedRef = "";
-        let detectedSize = "";
-        let detectedQty = 0;
-        
-        const numbers: number[] = [];
-        const texts: string[] = [];
+      const flushCurrent = () => {
+        if (current.nameParts.length === 0 && current.numbers.length === 0 && !current.ref) return;
 
-        // 1. Classifica cada parte da linha
-        parts.forEach(p => {
-          const upperP = p.toUpperCase();
-          // É Referência?
-          if (upperP.startsWith("REF") || (/\d/.test(p) && /[a-zA-Z]/.test(p) && p.length > 3)) {
-            detectedRef = upperP;
-          } 
-          // É Número Puro?
-          else if (/^\d+$/.test(p)) {
-            numbers.push(parseInt(p));
-          } 
-          // É Tamanho Letra?
-          else if (/^(P|M|G|GG|XG|S|L|XL|XXL|U|ÚNICO)$/i.test(p)) {
-            detectedSize = upperP;
-          }
-          // É Texto (Nome)?
-          else {
-            texts.push(p);
-          }
-        });
+        let detectedSize = current.sizeLetter;
+        let detectedQty = 1;
 
-        // 2. Interpreta os Números (Tamanho vs Quantidade)
-        if (numbers.length === 2) {
-          const n1 = numbers[0];
-          const n2 = numbers[1];
-          
+        if (current.numbers.length === 2) {
+          const n1 = current.numbers[0];
+          const n2 = current.numbers[1];
           if (detectedSize) {
-            // Se já tem tamanho letra, soma os números na Qty
             detectedQty = n1 + n2;
           } else {
-            // Heurística: Tamanho Jeans (32-60) vs Qty
-            // Se n1 parece tamanho e n2 parece qty
-            if ((n1 >= 32 && n1 <= 60) && n2 < 30) {
-              detectedSize = n1.toString();
-              detectedQty = n2;
-            } else if ((n2 >= 32 && n2 <= 60) && n1 < 30) {
-              detectedSize = n2.toString();
-              detectedQty = n1;
-            } else {
-              // Padrão: 1º Tam, 2º Qty
-              detectedSize = n1.toString();
-              detectedQty = n2;
-            }
+            if ((n1 >= 32 && n1 <= 60) && n2 < 30) { detectedSize = n1.toString(); detectedQty = n2; }
+            else if ((n2 >= 32 && n2 <= 60) && n1 < 30) { detectedSize = n2.toString(); detectedQty = n1; }
+            else { detectedSize = n1.toString(); detectedQty = n2; }
           }
-        } else if (numbers.length === 1) {
-          if (detectedSize) {
-            // Tem tamanho letra, numero é Qty
-            detectedQty = numbers[0];
-          } else {
-            // Só tem um número. Se for pequeno (< 30), é Qty e Tam é U.
-            // Se for grande (34+), é Tam e Qty é 1.
-            if (numbers[0] >= 34 && numbers[0] <= 60) {
-              detectedSize = numbers[0].toString();
+        } else if (current.numbers.length === 1) {
+          if (detectedSize) detectedQty = current.numbers[0];
+          else {
+            if (current.numbers[0] >= 34 && current.numbers[0] <= 60) {
+              detectedSize = current.numbers[0].toString();
               detectedQty = 1;
             } else {
-              detectedQty = numbers[0];
+              detectedQty = current.numbers[0];
               detectedSize = "U";
             }
           }
-        } else if (numbers.length > 2) {
-           // Muitos números: 1º é Tam, resto soma Qty
-           detectedSize = numbers[0].toString();
-           detectedQty = numbers.slice(1).reduce((a, b) => a + b, 0);
-        } else {
-          detectedQty = 1;
+        } else if (current.numbers.length > 2) {
+           detectedSize = current.numbers[0].toString();
+           detectedQty = current.numbers.slice(1).reduce((a, b) => a + b, 0);
         }
 
-        // 3. Define Nome e Referência Final
-        let detectedName = texts.join(" ").trim();
-        if (!detectedName) detectedName = "Produto Sem Nome";
-        
         if (!detectedSize) detectedSize = "U";
+        let finalName = current.nameParts.join(" ");
+        if (!finalName) finalName = "Produto Sem Nome";
 
-        // --- LÓGICA DE AGRUPAMENTO POR NOME (CRUCIAL) ---
-        // Se não veio REF, tenta achar no banco pelo NOME para agrupar
-        if (!detectedRef) {
-          const existingProductByName = await tx.product.findFirst({
-            where: { 
-              storeId: store.id, 
-              name: { equals: detectedName, mode: 'insensitive' } 
-            }
-          });
+        let finalRef = current.ref;
+        if (!finalRef) {
+           const nameCode = normalizeRef(finalName).substring(0, 6);
+           finalRef = `GEN-${nameCode}`;
+        }
 
-          if (existingProductByName && existingProductByName.reference) {
-            detectedRef = existingProductByName.reference;
+        const key = `${finalRef}-${detectedSize}`;
+        if (aggregationMap.has(key)) {
+          aggregationMap.get(key)!.qty += detectedQty;
+        } else {
+          aggregationMap.set(key, { name: finalName, size: detectedSize, qty: detectedQty, ref: finalRef });
+        }
+
+        current = { nameParts: [], numbers: [], sizeLetter: "", ref: "" };
+      };
+
+      for (const token of tokens) {
+        const upperToken = token.toUpperCase();
+        const cleanRef = normalizeRef(token);
+       
+        const isRef = (upperToken.startsWith("REF") || (/\d/.test(token) && /[a-zA-Z]/.test(token) && cleanRef.length > 3));
+        const isNumber = /^\d+$/.test(token);
+        const isSizeLetter = /^(P|M|G|GG|XG|S|L|XL|XXL|U|ÚNICO)$/i.test(token);
+
+        if (isRef) {
+          current.ref = cleanRef;
+          flushCurrent();
+        }
+        else if (isNumber) {
+          current.numbers.push(parseInt(token));
+        }
+        else if (isSizeLetter) {
+          current.sizeLetter = upperToken;
+        }
+        else {
+          if (current.numbers.length > 0 || current.sizeLetter !== "") {
+            flushCurrent();
+            current.nameParts.push(token);
           } else {
-            // Se não achou, gera uma REF baseada no nome para agrupar as linhas atuais
-            // Ex: "Calça Azul" linha 1 e "Calça Azul" linha 2 vão ter a mesma REF gerada
-            const nameCode = detectedName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 4).toUpperCase();
-            detectedRef = `GEN-${nameCode}`;
+            current.nameParts.push(token);
           }
         }
-
-        // 4. Agrega no Mapa (Memória) antes de salvar
-        const uniqueKey = `${detectedRef}-${detectedSize}`;
-        
-        if (aggregationMap.has(uniqueKey)) {
-          const existing = aggregationMap.get(uniqueKey)!;
-          existing.qty += detectedQty; // SOMA
-        } else {
-          aggregationMap.set(uniqueKey, { 
-            name: detectedName, 
-            size: detectedSize, 
-            qty: detectedQty, 
-            ref: detectedRef 
-          });
-        }
       }
+      flushCurrent();
 
-      // --- PASSO 5: SALVAR NO BANCO ---
       const touchedProductIds = new Set<string>();
 
       for (const item of aggregationMap.values()) {
         if (item.qty <= 0) continue;
 
-        // Busca ou Cria Produto Pai
         let product = await tx.product.findFirst({
-          where: {
-            storeId: store.id,
-            OR: [{ reference: item.ref }, { tags: { has: item.ref } }]
-          }
+          where: { storeId: store.id, OR: [{ reference: item.ref }, { tags: { has: item.ref } }] }
         });
 
         if (!product) {
           product = await tx.product.create({
             data: {
-              name: item.name,
-              reference: item.ref,
-              price: 0,
-              imageUrl: "",
-              storeId: store.id,
-              tags: [item.ref],
-              isVisible: true
+              name: item.name, reference: item.ref, price: 0, imageUrl: "",
+              storeId: store.id, tags: [item.ref], isVisible: true
             }
           });
         } else {
-          // Atualiza nome se o atual for genérico ou para garantir consistência
           if (product.name.includes("REF:") || item.name !== "Produto Sem Nome") {
-             await tx.product.update({
-               where: { id: product.id },
-               data: { name: item.name, isVisible: true }
-             });
+             await tx.product.update({ where: { id: product.id }, data: { name: item.name, isVisible: true } });
           }
         }
         touchedProductIds.add(product.id);
 
-        // Gerencia Variação (SKU)
         const sku = `${item.ref}-${item.size}`;
         const existingVariant = await tx.productVariant.findUnique({ where: { sku } });
 
         if (existingVariant) {
           await tx.productVariant.update({
             where: { id: existingVariant.id },
-            data: {
-              stock: { increment: item.qty }, // Incrementa o valor
-              name: `${item.name} - ${item.size}`
-            }
+            data: { stock: { increment: item.qty }, name: `${item.name} - ${item.size}` }
           });
         } else {
           await tx.productVariant.create({
             data: {
-              name: `${item.name} - ${item.size}`,
-              sku,
-              price: 0,
-              stock: item.qty,
-              images: [],
-              productId: product.id
+              name: `${item.name} - ${item.size}`, sku, price: 0, stock: item.qty,
+              images: [], productId: product.id
             }
           });
         }
       }
 
-      // Retorno: Busca os produtos completos com todas as variações atualizadas
       const finalProducts = await tx.product.findMany({
         where: { id: { in: Array.from(touchedProductIds) } },
         include: { variants: true },
@@ -282,16 +235,11 @@ export async function processBulkJeansAction(input: BulkTextInput) {
           size: v.sku?.split('-')[1] || "U",
           qty: v.stock,
           color: "Jeans"
-        })).sort((a, b) => {
-            // Ordena tamanhos numericamente se possível
-            const numA = parseInt(a.size);
-            const numB = parseInt(b.size);
-            if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-            return a.size.localeCompare(b.size);
-        })
+        })).sort((a, b) => parseInt(a.size) - parseInt(b.size) || a.size.localeCompare(b.size))
       }));
     });
 
+    // Aqui mantemos o revalidatePath pois é uma ação única de massa
     revalidatePath('/pos');
     return { success: true, results: processedItems };
   } catch (error) {
