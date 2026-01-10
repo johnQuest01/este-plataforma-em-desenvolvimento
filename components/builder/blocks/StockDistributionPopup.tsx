@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { X, Minus, Plus, Check, User, Package } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -127,9 +128,15 @@ export const StockDistributionPopup: React.FC<StockDistributionPopupProps> = ({
             >
               {/* Informações da Vendedora */}
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-100 shrink-0">
+                <div className="relative w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-100 shrink-0">
                   {person.avatarUrl ? (
-                    <img src={person.avatarUrl} alt={person.name} className="w-full h-full object-cover" />
+                    <Image 
+                      src={person.avatarUrl} 
+                      alt={person.name} 
+                      fill
+                      className="object-cover"
+                      sizes="40px"
+                    />
                   ) : (
                     <User size={20} className="text-gray-400" />
                   )}

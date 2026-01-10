@@ -17,10 +17,9 @@ export const ReelsModal = ({ isOpen, onClose, item }: ReelsModalProps) => {
   
   // --- ESTADOS ---
   const [isMuted, setIsMuted] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(true);
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [isLoading, setIsLoading] = useState(true); // Importante para UX
+  const [isLoading, setIsLoading] = useState(true);
 
   // --- 1. LISTA DE STORIES (Memoizada) ---
   const stories = useMemo(() => {
@@ -40,16 +39,14 @@ export const ReelsModal = ({ isOpen, onClose, item }: ReelsModalProps) => {
     if (isOpen) {
       setCurrentStoryIndex(0);
       setProgress(0);
-      setIsPlaying(true);
       setIsLoading(true);
       setIsMuted(false); 
     } else {
-      setIsPlaying(false);
       setProgress(0);
     }
   }, [isOpen]);
 
-  // --- 3. CONTROLE DE REPRODUÇÃO ROBUSTO (Correção Técnica) ---
+  // --- 3. CONTROLE DE REPRODUÇÃO ROBUSTO ---
   useEffect(() => {
     if (!isOpen || !videoRef.current || !activeVideoUrl) return;
 
@@ -63,7 +60,6 @@ export const ReelsModal = ({ isOpen, onClose, item }: ReelsModalProps) => {
       try {
         videoEl.currentTime = 0;
         await videoEl.play();
-        setIsPlaying(true);
       } catch (error) {
         console.warn("Autoplay bloqueado. Tentando modo mudo...", error);
         // Fallback: Se o navegador bloquear o som, muta e tenta de novo
@@ -71,10 +67,8 @@ export const ReelsModal = ({ isOpen, onClose, item }: ReelsModalProps) => {
         try {
           videoEl.muted = true;
           await videoEl.play();
-          setIsPlaying(true);
         } catch (retryError) {
           console.error("Erro fatal no vídeo:", retryError);
-          setIsPlaying(false);
         }
       } finally {
         setIsLoading(false);
@@ -137,12 +131,10 @@ export const ReelsModal = ({ isOpen, onClose, item }: ReelsModalProps) => {
   // Pausa ao segurar o clique
   const handlePointerDown = () => {
     videoRef.current?.pause();
-    setIsPlaying(false);
   };
 
   const handlePointerUp = () => {
     videoRef.current?.play().catch(() => setIsMuted(true));
-    setIsPlaying(true);
   };
 
   const toggleMute = (e: React.MouseEvent) => {
@@ -165,7 +157,7 @@ export const ReelsModal = ({ isOpen, onClose, item }: ReelsModalProps) => {
           onClick={onClose}
         />
 
-        {/* O POPUP (Visual "Card" que você gosta) */}
+        {/* O POPUP */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -173,7 +165,6 @@ export const ReelsModal = ({ isOpen, onClose, item }: ReelsModalProps) => {
           transition={{ type: "spring", damping: 25, stiffness: 350 }}
           className={cn(
             "pointer-events-auto relative bg-black overflow-hidden flex flex-col shadow-2xl shadow-black/50 z-10",
-            // AQUI ESTÁ A CONFIGURAÇÃO VISUAL QUE VOCÊ PEDIU:
             "w-[95%] h-[85vh] rounded-[1.5rem]", 
             "lg:w-[400px] lg:h-[750px]"
           )}
@@ -271,7 +262,6 @@ export const ReelsModal = ({ isOpen, onClose, item }: ReelsModalProps) => {
                     onClick={(e) => {
                         e.stopPropagation();
                         onClose();
-                        // Aqui você pode disparar a abertura do produto específico
                         console.log("Comprar Clicado:", item.label);
                     }}
                     className="w-full h-14 bg-white rounded-2xl flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.3)] active:scale-95 transition-transform pointer-events-auto group mt-2 ring-1 ring-white/50"

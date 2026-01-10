@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { Layers, Eye, Box, Target, RotateCcw, Maximize, ArrowRight } from "lucide-react";
+import { Layers, Eye, Box, Target, RotateCcw, Maximize } from "lucide-react";
 import { GuardianAuditResponse } from "@/schemas/guardian-schema";
 import { cn } from "@/lib/utils";
 import { useGuardianStore } from "@/hooks/use-guardian-store";
@@ -11,7 +11,8 @@ interface GuardianSidebarProps {
   data: GuardianAuditResponse | null;
   activeFile?: string;
   onFocusFile: (file: string) => void;
-  onInspectFile: (file: string, type: 'UI' | 'LOGIC') => void;
+  // Tornamos opcional (?) para não quebrar o MasterGuardianDashboard que removeu o estado de inspeção
+  onInspectFile?: (file: string, type: 'UI' | 'LOGIC') => void;
   onClearFocus: () => void;
 }
 
@@ -22,7 +23,10 @@ export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, 
 
   const handleNavigateToCodeMap = (file: string) => {
     onFocusFile(file);
-    onInspectFile(file, 'UI');
+    // Verificação de segurança antes de chamar
+    if (onInspectFile) {
+      onInspectFile(file, 'UI');
+    }
     setTab('CODE_MAP');
   };
 
@@ -54,7 +58,7 @@ export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, 
         </div>
 
         <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2">
-          {/* Conteúdo da Sidebar (Mantido igual, apenas classes de texto ajustadas se necessário) */}
+          {/* Conteúdo da Sidebar */}
           {!isFocusMode && popups.length > 0 && (
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-2 px-1">

@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { BlockConfig } from '@/types/builder';
 import { Check } from 'lucide-react';
 
@@ -19,14 +20,16 @@ export const UserInfoBlock = ({ config }: { config: BlockConfig }) => {
         {/* Lado Esquerdo: Avatar e Nome */}
         <div className="flex items-center gap-3 pr-2 border-r border-gray-100 w-[45%] shrink-0">
           <div className="relative shrink-0">
-            <div className="w-14 h-14 rounded-full overflow-hidden border border-gray-200 bg-gray-50">
-              <img
+            <div className="relative w-14 h-14 rounded-full overflow-hidden border border-gray-200 bg-gray-50">
+              <Image
                 src="https://placehold.co/100x100/e5e7eb/a3a3a3?text=User"
                 alt="User"
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                sizes="56px"
               />
             </div>
-            <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full p-0.5 border-2 border-white shadow-sm">
+            <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full p-0.5 border-2 border-white shadow-sm z-10">
               <Check size={12} strokeWidth={3} />
             </div>
           </div>

@@ -4,7 +4,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu } from "lucide-react"; // Ícone para abrir menu no mobile
 
 import { runFullProjectAuditAction } from "@/app/actions/guardian";
 import { GuardianAuditResponse } from "@/schemas/guardian-schema";
@@ -25,7 +24,6 @@ function MasterGuardianDashboardBase() {
   const [view, setView] = useState<DashboardView>('SCANNER');
   const [loading, setLoading] = useState<boolean>(false);
   const [focusedFile, setFocusedFile] = useState<string | undefined>(undefined);
-  const [inspectingFile, setInspectingFile] = useState<{ name: string, type: 'UI' | 'LOGIC' } | null>(null);
   const [data, setData] = useState<GuardianAuditResponse | null>(null);
 
   // ✅ NOVO: Estado para controlar a Sidebar no Mobile
@@ -102,7 +100,6 @@ function MasterGuardianDashboardBase() {
                                 setFocusedFile(file);
                                 setIsMobileSidebarOpen(false); // Fecha ao selecionar no mobile
                             }}
-                            onInspectFile={(name, type) => setInspectingFile({ name, type })}
                             onClearFocus={() => setFocusedFile(undefined)}
                         />
                         {/* Botão fechar menu mobile */}

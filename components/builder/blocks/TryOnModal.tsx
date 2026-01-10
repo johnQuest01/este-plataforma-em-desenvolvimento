@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Camera, Sparkles, Share2, Upload, Loader2 } from 'lucide-react';
 import { generateVirtualTryOn } from '@/app/actions/try-on';
@@ -17,16 +18,13 @@ interface TryOnModalProps {
 type Step = 'upload' | 'processing' | 'result';
 
 // --- HELPER PARA DESCOBRIR A CATEGORIA DA IA ---
-// Isso impede que a IA tente vestir uma calça no pescoço ou corte um vestido
 const getIACategory = (name: string, category?: string): 'upper_body' | 'lower_body' | 'dresses' => {
   const text = (name + ' ' + (category || '')).toLowerCase();
 
-  // Palavras-chave para Vestidos
   if (text.includes('vestido') || text.includes('dress') || text.includes('longo') || text.includes('body')) {
     return 'dresses';
   }
 
-  // Palavras-chave para Parte de Baixo
   if (
     text.includes('calça') || text.includes('short') || text.includes('saia') || 
     text.includes('bermuda') || text.includes('jeans') || text.includes('legging') ||
@@ -35,7 +33,6 @@ const getIACategory = (name: string, category?: string): 'upper_body' | 'lower_b
     return 'lower_body';
   }
 
-  // Padrão: Parte de Cima (Camiseta, Blusa, Cropped, Casaco, Top, etc)
   return 'upper_body';
 };
 
@@ -46,18 +43,16 @@ export const TryOnModal = ({ isOpen, onClose, productImage, productName, product
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- FUNÇÃO DE COMPRESSÃO (VERSÃO PNG) ---
-  // PNG é crucial para manter a transparência e evitar artefatos que confundem a IA
   const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = (event) => {
-        const img = new Image();
+        const img = new window.Image();
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement('canvas');
           
-          // Redimensiona para 1024px (Tamanho ideal para IA, evita payload muito grande)
           const MAX_WIDTH = 1024;
           const scaleSize = MAX_WIDTH / img.width;
           const finalScale = scaleSize < 1 ? scaleSize : 1;
@@ -67,17 +62,11 @@ export const TryOnModal = ({ isOpen, onClose, productImage, productName, product
 
           const ctx = canvas.getContext('2d');
           if (ctx) {
-            // Limpa o canvas garantindo transparência total antes de desenhar
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            
-            // CONVERTE PARA PNG
-            // PNG mantém qualidade máxima e transparência.
             const compressedBase64 = canvas.toDataURL('image/png');
             resolve(compressedBase64);
           } else {
-            // Fallback caso canvas falhe
             resolve(event.target?.result as string);
           }
         };
@@ -88,9 +77,7 @@ export const TryOnModal = ({ isOpen, onClose, productImage, productName, product
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      
       try {
-        // Usa a compressão PNG
         const compressedBase64 = await compressImage(file);
         setUserPreview(compressedBase64);
       } catch (err) {
@@ -104,23 +91,20 @@ export const TryOnModal = ({ isOpen, onClose, productImage, productName, product
     if (!userPreview) return;
     setStep('processing');
 
-    // 1. Determina a categoria correta automaticamente
     const targetCategory = getIACategory(productName, productCategory);
     console.log(`🤖 IA Configurada para: ${targetCategory} (Produto: ${productName})`);
 
     try {
-        // Chama a API no servidor
         const response = await generateVirtualTryOn({
             userImage: userPreview,
             garmentImage: productImage,
-            category: targetCategory // Envia a categoria dinâmica
+            category: targetCategory
         });
 
         if (response.success && response.imageUrl) {
             setResultImage(response.imageUrl);
             setStep('result');
         } else {
-            // Mostra o erro real se disponível
             const msg = response.error || "Erro ao gerar look. Tente uma foto com fundo mais limpo!";
             alert(`⚠️ ${msg}`);
             setStep('upload');
@@ -136,7 +120,6 @@ export const TryOnModal = ({ isOpen, onClose, productImage, productName, product
     if (!resultImage) return;
 
     try {
-      // Adiciona marca d'água da loja antes de compartilhar
       const blobWithWatermark = await addWatermarkToImage(resultImage, "LOJA MARYLAND");
       if (!blobWithWatermark) return;
 
@@ -189,8 +172,14 @@ export const TryOnModal = ({ isOpen, onClose, productImage, productName, product
               {step === 'upload' && (
                 <div className="flex flex-col gap-4 w-full animate-in fade-in">
                   <div className="bg-blue-50 p-3 rounded-xl flex gap-3 items-center border border-blue-100">
-                    <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center shrink-0 border overflow-hidden">
-                      <img src={productImage} alt="Roupa" className="w-full h-full object-cover" />
+                    <div className="relative w-12 h-12 bg-white rounded-lg flex items-center justify-center shrink-0 border overflow-hidden">
+                      <Image 
+                        src={productImage} 
+                        alt="Roupa" 
+                        fill
+                        className="object-cover"
+                        sizes="48px"
+                      />
                     </div>
                     <p className="text-xs text-blue-800 font-bold leading-tight">
                       Vamos provar:<br/>
@@ -203,7 +192,13 @@ export const TryOnModal = ({ isOpen, onClose, productImage, productName, product
                     className="aspect-[3/4] w-full border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors relative overflow-hidden group"
                   >
                     {userPreview ? (
-                      <img src={userPreview} className="w-full h-full object-cover" alt="Preview" />
+                      <Image 
+                        src={userPreview} 
+                        alt="Preview" 
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 400px"
+                      />
                     ) : (
                       <div className="text-center p-4">
                         <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3 text-blue-600">
@@ -217,7 +212,7 @@ export const TryOnModal = ({ isOpen, onClose, productImage, productName, product
                     <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleFileChange} />
                     
                     {userPreview && (
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
                          <span className="text-white font-bold flex gap-2"><Upload size={16}/> Trocar Foto</span>
                       </div>
                     )}
@@ -252,8 +247,14 @@ export const TryOnModal = ({ isOpen, onClose, productImage, productName, product
               {step === 'result' && resultImage && (
                 <div className="flex flex-col gap-4 w-full animate-in slide-in-from-bottom-10">
                   <div className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden shadow-md border border-gray-100">
-                    <img src={resultImage} alt="Resultado" className="w-full h-full object-cover" />
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-3 py-1 rounded-full font-bold">
+                    <Image 
+                      src={resultImage} 
+                      alt="Resultado" 
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 400px"
+                    />
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-3 py-1 rounded-full font-bold z-10">
                        Criado com IA Maryland
                     </div>
                   </div>

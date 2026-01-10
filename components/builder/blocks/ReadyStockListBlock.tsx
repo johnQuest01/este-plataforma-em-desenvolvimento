@@ -2,10 +2,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { BlockConfig, ProductionItemData } from '@/types/builder';
 import { getReadyForStoreItemsAction, dispatchFromStoreAction } from '@/app/actions/production';
 import { Loader2, ClipboardList, PackageCheck, ChevronDown, ChevronUp } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 // Componente Interno do Card de Estoque Pronto
 const ReadyStockCard = ({ item, onDispatch }: { item: ProductionItemData; onDispatch: (id: string) => void }) => {
@@ -15,13 +15,15 @@ const ReadyStockCard = ({ item, onDispatch }: { item: ProductionItemData; onDisp
         <div className="bg-white rounded-2xl border border-blue-200 shadow-lg p-4 flex flex-col gap-4 transition-all hover:shadow-xl">
             <div className="flex gap-4">
                 {/* Imagem do Produto */}
-                <div className="w-24 h-32 lg:w-32 lg:h-40 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200 relative">
-                    <img 
+                <div className="relative w-24 h-32 lg:w-32 lg:h-40 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200">
+                    <Image 
                         src={item.productImage} 
                         alt={item.productName} 
-                        className="w-full h-full object-cover" 
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 1024px) 96px, 128px"
                     />
-                    <div className="absolute bottom-0 right-0 bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded-tl-md">
+                    <div className="absolute bottom-0 right-0 bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded-tl-md z-10">
                         {item.quantity} un
                     </div>
                 </div>

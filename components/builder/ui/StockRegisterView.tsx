@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { 
@@ -167,9 +168,15 @@ const StockRegisterViewBase = ({ onBack, onRegister }: StockRegisterViewProperti
         </div>
 
         {directPhotoPreviewUrl && (
-          <div className="w-full h-40 rounded-2xl overflow-hidden shadow-md border-2 border-[#5874f6] relative bg-gray-900">
-            <img src={directPhotoPreviewUrl} className="w-full h-full object-cover opacity-90" alt="Pré" />
-            <div className="absolute bottom-2 right-2 bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
+          <div className="relative w-full h-40 rounded-2xl overflow-hidden shadow-md border-2 border-[#5874f6] bg-gray-900">
+            <Image 
+              src={directPhotoPreviewUrl} 
+              fill
+              className="object-cover opacity-90" 
+              alt="Pré-visualização" 
+              sizes="(max-width: 768px) 100vw, 500px"
+            />
+            <div className="absolute bottom-2 right-2 bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow-sm z-10">
               <CheckCircle2 size={10} /> Foto Pronta
             </div>
           </div>

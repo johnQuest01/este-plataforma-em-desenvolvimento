@@ -1,6 +1,6 @@
 'use client';
+
 import React from 'react';
-import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { StoreHeader } from '@/components/builder/blocks/Header';
 import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
@@ -16,7 +16,6 @@ const FOOTER_ITEMS: FooterItem[] = [
 ];
 
 export default function VerifiedPage() {
-  const router = useRouter();
   return (
     <main className="w-full h-dvh-real bg-white lg:bg-gray-100 lg:flex lg:justify-center lg:items-center lg:py-8 overflow-hidden">
       <div className={cn("w-full h-full bg-gray-50 flex flex-col relative overflow-hidden", "lg:h-[850px] lg:max-h-[90vh] lg:w-full lg:max-w-[420px] lg:rounded-[2.5rem] lg:border-[8px] lg:border-gray-900 lg:shadow-2xl max-w-[100vw] lg:mx-auto")}>

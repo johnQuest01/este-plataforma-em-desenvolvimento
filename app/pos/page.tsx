@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { ShoppingBag, X, ChevronLeft, PackageCheck, History, LogOut, Barcode } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -313,10 +314,12 @@ export default function POSPage() {
                 >
                   <div className="aspect-square bg-gray-50 rounded-xl overflow-hidden relative">
                     {product.imageUrl ? (
-                        <img 
+                        <Image 
                           src={product.imageUrl} 
                           alt={product.name} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                          sizes="(max-width: 768px) 50vw, 20vw"
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-300">

@@ -1,6 +1,5 @@
 import { BlockConfig, ProductVariationData } from '@/types/builder';
 import { ProductData } from '@/app/actions/product';
-import { VariationItem } from '@/components/builder/ui/StockVariationsPopup';
 
 export type ModalViewMode = 'list' | 'register' | 'details';
 

@@ -1,10 +1,9 @@
 'use client';
 
-
 import React from 'react';
+import Image from 'next/image';
 import { BlockConfig, ProductVariationData } from '@/types/builder';
 import { Package, ChevronRight, Layers } from 'lucide-react'; // <--- Adicionado Layers
-
 
 // CORREÇÃO: trocado 'payload?: any' por 'payload?: unknown'
 export const StockDetailedProductCardBlock = ({ config, onAction }: { config: BlockConfig, onAction?: (action: string, payload?: unknown) => void }) => {
@@ -14,14 +13,11 @@ export const StockDetailedProductCardBlock = ({ config, onAction }: { config: Bl
     detailedVariations = [] // Array de variações (Ex: [{size: 'P', color: 'Azul', qty: 10}, ...])
   } = config.data;
 
-
   // Casting para garantir o tipo correto (caso o TypeScript reclame)
   const variationsList = detailedVariations as ProductVariationData[];
 
-
   // Calcula o estoque total somando as quantidades de todas as variações
   const totalStock = variationsList.reduce((acc, curr) => acc + curr.quantity, 0);
-
 
   return (
     <div className="w-full px-4 mb-3">
@@ -32,24 +28,25 @@ export const StockDetailedProductCardBlock = ({ config, onAction }: { config: Bl
       >
         <div className="flex gap-4 items-stretch">
             {/* --- LADO ESQUERDO: MINI PREVIEW DA FOTO --- */}
-            <div className="w-28 shrink-0 bg-gray-50 rounded-lg border border-gray-100 overflow-hidden relative flex items-center justify-center">
+            <div className="relative w-28 shrink-0 bg-gray-50 rounded-lg border border-gray-100 overflow-hidden flex items-center justify-center">
             {productImage ? (
-                <img
-                src={productImage as string}
-                alt={productName as string}
-                className="w-full h-full object-cover"
+                <Image
+                  src={productImage as string}
+                  alt={productName as string}
+                  fill
+                  className="object-cover"
+                  sizes="112px"
                 />
             ) : (
                 <Package size={32} className="text-gray-300" />
             )}
            
             {/* Badge de Estoque Total sobre a Imagem */}
-            <div className="absolute bottom-0 inset-x-0 bg-black/60 backdrop-blur-sm p-1 text-center">
+            <div className="absolute bottom-0 inset-x-0 bg-black/60 backdrop-blur-sm p-1 text-center z-10">
                 <span className="text-[10px] text-white/80 font-medium uppercase block leading-none">Total</span>
                 <span className="text-white font-bold text-sm leading-none">{totalStock}</span>
             </div>
             </div>
-
 
             {/* --- LADO DIREITO: LISTA DE VARIAÇÕES --- */}
             <div className="flex-1 min-w-0 flex flex-col">
@@ -61,7 +58,6 @@ export const StockDetailedProductCardBlock = ({ config, onAction }: { config: Bl
                 </h3>
                 <ChevronRight size={18} className="text-gray-300 mt-0.5 shrink-0" />
             </div>
-
 
             {/* Grid/Lista de Variações */}
             <div className="flex-1 overflow-y-auto scrollbar-hide pr-1 flex flex-col gap-1.5 max-h-[120px]">
@@ -83,7 +79,6 @@ export const StockDetailedProductCardBlock = ({ config, onAction }: { config: Bl
                         </div>
                     </div>
 
-
                     {/* Quantidade */}
                     <div className="flex items-baseline gap-1 pl-2 shrink-0">
                         <span className={`font-black text-sm ${variation.quantity > 0 ? 'text-blue-600' : 'text-red-500'}`}>
@@ -100,7 +95,6 @@ export const StockDetailedProductCardBlock = ({ config, onAction }: { config: Bl
             </div>
         </div>
 
-
         {/* --- BOTÃO DE AÇÃO (Recolocado) --- */}
         <button
             onClick={(e) => {
@@ -112,7 +106,6 @@ export const StockDetailedProductCardBlock = ({ config, onAction }: { config: Bl
             <Layers size={16} strokeWidth={2.5} />
             Separar para cada vendedora
         </button>
-
 
       </div>
     </div>

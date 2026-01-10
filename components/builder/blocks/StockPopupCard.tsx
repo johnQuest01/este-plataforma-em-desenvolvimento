@@ -2,6 +2,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { BlockConfig, ProductVariationData } from '@/types/builder';
 
 export const StockPopupCardBlock = ({ config, onAction }: { config: BlockConfig, onAction?: (action: string, payload?: unknown) => void }) => {
@@ -24,11 +25,13 @@ export const StockPopupCardBlock = ({ config, onAction }: { config: BlockConfig,
       >
         
         {/* LADO ESQUERDO: Imagem */}
-        <div className="w-28 shrink-0 bg-gray-100 rounded-md overflow-hidden border border-gray-200 relative">
-           <img 
+        <div className="relative w-28 shrink-0 bg-gray-100 rounded-md overflow-hidden border border-gray-200">
+           <Image 
              src={productImage as string || 'https://placehold.co/300x400'} 
              alt={productName as string}
-             className="w-full h-full object-cover"
+             fill
+             className="object-cover"
+             sizes="112px"
            />
         </div>
 

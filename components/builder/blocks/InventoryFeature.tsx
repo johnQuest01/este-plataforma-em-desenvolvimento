@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { BlockConfig } from '@/types/builder';
 import { PackageOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -72,10 +73,12 @@ export const InventoryFeatureBlock = ({ config }: { config: BlockConfig }) => {
               {isOpen && boxImage ? (
                 // --- CENÁRIO 1: ABERTO (Mostra a Foto) ---
                 <div className="w-full h-full absolute inset-0 z-0 animate-in zoom-in-95 duration-300">
-                  <img 
+                  <Image 
                     src={boxImage} 
                     alt="Produto no Box" 
-                    className="w-full h-full object-cover rounded-lg"
+                    fill
+                    className="object-cover rounded-lg"
+                    sizes="(max-width: 768px) 90vw, 400px"
                   />
                   <div className="absolute inset-0 bg-black/5 pointer-events-none" />
                   

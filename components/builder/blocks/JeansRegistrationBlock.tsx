@@ -19,11 +19,9 @@ import { DevelopmentCard } from './sistemre/DevelopmentCard';
 
 // --- Componente Base (Lógica Original) ---
 const JeansRegistrationBlockBase = ({
-  config,
-  onAction
+  config
 }: {
-  config: BlockConfig,
-  onAction?: (action: string, payload?: unknown) => void
+  config: BlockConfig
 }) => {
  
   const title = (config.data.title as string) || 'Jeans';
@@ -165,7 +163,6 @@ const JeansRegistrationBlockBase = ({
 };
 
 // 🛡️ GUARDIAN: Exportação com Rastreamento
-// CORREÇÃO APLICADA: Alterado de "COMPONENT" para "UI_COMPONENT" para satisfazer o TypeScript.
 export const JeansRegistrationBlock = withGuardian(
   JeansRegistrationBlockBase,
   "components/builder/blocks/JeansRegistrationBlock.tsx",

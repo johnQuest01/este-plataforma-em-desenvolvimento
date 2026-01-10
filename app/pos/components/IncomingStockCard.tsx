@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { ChevronUp, ChevronDown, AlertTriangle, Undo2, Send, PackageCheck } from 'lucide-react';
 import { ProductionItemData } from '@/types/builder';
 
@@ -24,15 +25,21 @@ export const IncomingStockCard = ({ item, onConfirm, onReturn }: IncomingStockCa
     <div className="bg-white p-5 rounded-2xl border border-blue-200 shadow-md flex flex-col gap-4 w-full min-w-0 max-w-full">
       {/* Header */}
       <div className="flex gap-4 w-full">
-        <div className="w-24 h-32 bg-gray-100 rounded-xl overflow-hidden shrink-0 border border-gray-200 relative shadow-sm">
+        <div className="relative w-24 h-32 bg-gray-100 rounded-xl overflow-hidden shrink-0 border border-gray-200 shadow-sm">
           {item.productImage ? (
-             <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" />
+             <Image 
+               src={item.productImage} 
+               alt={item.productName} 
+               fill
+               className="object-cover"
+               sizes="96px"
+             />
           ) : (
              <div className="w-full h-full flex items-center justify-center bg-slate-200 text-slate-400">
                <PackageCheck size={24} />
              </div>
           )}
-          <div className="absolute bottom-0 right-0 bg-blue-600 text-white text-xs font-black px-2 py-1 rounded-tl-lg">
+          <div className="absolute bottom-0 right-0 bg-blue-600 text-white text-xs font-black px-2 py-1 rounded-tl-lg z-10">
             {item.quantity} un
           </div>
         </div>

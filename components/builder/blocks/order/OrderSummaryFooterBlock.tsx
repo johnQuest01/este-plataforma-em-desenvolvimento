@@ -1,16 +1,13 @@
 'use client';
 
 import React from 'react';
-import { BlockConfig } from '@/types/builder';
 import { useOrder } from '@/components/builder/context/OrderContext';
 import { cn } from '@/lib/utils';
 import { Minus, Plus, ShoppingBag } from 'lucide-react';
 
 export const OrderSummaryFooterBlock = ({
-  config,
   onAction
 }: {
-  config: BlockConfig,
   onAction?: (action: string) => void
 }) => {
   const {

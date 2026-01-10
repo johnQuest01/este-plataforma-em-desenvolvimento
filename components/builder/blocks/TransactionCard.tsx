@@ -1,9 +1,8 @@
-// components/builder/blocks/TransactionCard.tsx
 'use client';
 
 import React from 'react';
 import { BlockConfig } from '@/types/builder';
-import { ArrowUpRight, ArrowDownLeft, DollarSign } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export const TransactionCardBlock = ({ config }: { config: BlockConfig }) => {

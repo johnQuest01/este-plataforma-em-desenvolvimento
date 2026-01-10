@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import Image from 'next/image';
 import { ProductionItemData, ProductionVariationDetail } from '@/types/builder';
 import { cn } from '@/lib/utils';
 import { 
@@ -156,9 +157,15 @@ export const ReadyStockCard = ({
 
       {/* CABEÇALHO DO CARD */}
       <div className="flex gap-4 w-full max-w-full">
-        <div className="w-16 h-20 bg-gray-100 rounded-lg overflow-hidden border border-gray-200 shrink-0 relative">
-          <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" />
-          <div className="absolute bottom-0 right-0 bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-tl-md">
+        <div className="relative w-16 h-20 bg-gray-100 rounded-lg overflow-hidden border border-gray-200 shrink-0">
+          <Image 
+            src={item.productImage} 
+            alt={item.productName} 
+            fill
+            className="object-cover"
+            sizes="64px"
+          />
+          <div className="absolute bottom-0 right-0 bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-tl-md z-10">
             {item.quantity}un
           </div>
         </div>

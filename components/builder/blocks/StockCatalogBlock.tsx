@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { BlockConfig, CatalogItem, CatalogTag } from '@/types/builder';
 import { cn } from '@/lib/utils';
 import { MapPin, Package } from 'lucide-react';
@@ -53,7 +54,7 @@ export const StockCatalogBlock = ({ config, onAction }: StockCatalogBlockProps) 
     
     // Verificação segura de variants (Prisma usa 'variants', não 'variations')
     // Mas o tipo ProductData pode ter mapeado para 'variants'
-    const variants = p.variants || [];
+    // const variants = p.variants || []; // REMOVIDO: Variável não utilizada
     
     // Verifica se alguma variação tem local de estoque que bate com a busca
     // Nota: O schema atual do Prisma não tem 'stockLocations' na variante, 
@@ -178,12 +179,14 @@ export const StockCatalogBlock = ({ config, onAction }: StockCatalogBlockProps) 
                     </div>
 
                     <div className="flex gap-3">
-                        <div className="w-[48%] aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden border border-gray-200 shrink-0">
+                        <div className="relative w-[48%] aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden border border-gray-200 shrink-0">
                             {image ? (
-                                <img 
+                                <Image 
                                     src={image} 
                                     alt={title} 
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    className="object-cover"
+                                    sizes="(max-width: 768px) 50vw, 25vw"
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-gray-300">

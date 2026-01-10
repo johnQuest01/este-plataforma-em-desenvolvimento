@@ -8,7 +8,6 @@ import {
   ScreenMetadata,
   ProjectFile,
   CodeSnippet,
-  FileTypeEnum,
   FileType,
   DependencyLink,
   AutoDoc

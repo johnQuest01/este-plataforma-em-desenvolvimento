@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 
 // 🛡️ GUARDIAN: Importação do HOC
 import { withGuardian } from "@/components/guardian/GuardianBeacon";
@@ -111,14 +112,20 @@ const MiniPreviewCard = ({ draft, sizePreview }: { draft: DraftState, sizePrevie
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="w-12 h-12 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden shrink-0 relative">
+      <div className="relative w-12 h-12 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden shrink-0">
         {hasImage ? (
-          <img src={draft.images[0]} alt="Preview" className="w-full h-full object-cover" />
+          <Image 
+            src={draft.images[0]} 
+            alt="Preview do produto" 
+            fill
+            className="object-cover"
+            sizes="48px"
+          />
         ) : (
           <ImageIcon size={20} className="text-gray-300" />
         )}
         {sizePreview && (
-          <div className="absolute bottom-0 right-0 bg-[#5874f6] text-white text-[9px] font-black px-1.5 py-0.5 rounded-tl-md">
+          <div className="absolute bottom-0 right-0 bg-[#5874f6] text-white text-[9px] font-black px-1.5 py-0.5 rounded-tl-md z-10">
             {sizePreview}
           </div>
         )}
@@ -175,7 +182,13 @@ function SortablePhotoItem({ id, url, onRemove }: { id: string, url: string, onR
       {...attributes} 
       {...listeners}
     >
-      <img src={url} alt="Variation" className="w-full h-full object-cover pointer-events-none" />
+      <Image 
+        src={url} 
+        alt="Variação do produto" 
+        fill
+        className="object-cover pointer-events-none"
+        sizes="100px"
+      />
       <button 
         onClick={(e) => { e.stopPropagation(); onRemove(); }} 
         onPointerDown={(e) => e.stopPropagation()} 
@@ -426,6 +439,7 @@ const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }
         if (result.success) alert("✅ Enviado para Produção!");
         else alert("❌ Erro ao enviar.");
     } catch (error) {
+        console.error('[StockVariations] Erro ao processar:', error);
         alert("Erro técnico ao enviar.");
     } finally {
         setIsSendingToProduction(false);
@@ -611,9 +625,19 @@ const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }
               {variations.slice().reverse().map((item) => (
                 <div key={item.id} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all">
                   <div className="flex items-center gap-4 overflow-hidden">
-                    <div className="w-16 h-16 bg-gray-50 border border-gray-200 rounded-xl flex shrink-0 items-center justify-center overflow-hidden relative shadow-sm">
-                      {item.images && item.images.length > 0 ? <img src={item.images[0]} alt="Mini" className="w-full h-full object-cover" /> : <ImageIcon size={24} className="text-gray-300" />}
-                      <div className="absolute bottom-0 right-0 bg-gray-900 text-white text-[10px] font-black px-1.5 py-0.5 rounded-tl-lg">{item.size}</div>
+                    <div className="relative w-16 h-16 bg-gray-50 border border-gray-200 rounded-xl flex shrink-0 items-center justify-center overflow-hidden shadow-sm">
+                      {item.images && item.images.length > 0 ? (
+                        <Image 
+                          src={item.images[0]} 
+                          alt="Miniatura" 
+                          fill
+                          className="object-cover"
+                          sizes="64px"
+                        />
+                      ) : (
+                        <ImageIcon size={24} className="text-gray-300" />
+                      )}
+                      <div className="absolute bottom-0 right-0 bg-gray-900 text-white text-[10px] font-black px-1.5 py-0.5 rounded-tl-lg z-10">{item.size}</div>
                     </div>
                     <div className="flex flex-col justify-center gap-1 truncate">
                       <span className="text-sm font-black text-gray-900 truncate leading-tight">{item.name}</span>
@@ -663,11 +687,19 @@ const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }
           <div className="absolute inset-0 z-[60] flex items-center justify-center bg-gray-900/40 p-6 pb-60 touch-none cursor-default">
             <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="bg-white w-full max-w-[280px] rounded-2xl shadow-2xl p-5 flex flex-col items-center gap-4 relative overflow-hidden">
                <div className="w-full flex items-center gap-3 p-2 bg-gray-50 rounded-xl mb-1">
-                   {draft.images.length > 0 ? (
-                       <img src={draft.images[0]} className="w-8 h-8 rounded-lg object-cover bg-white border border-gray-200" />
-                   ) : (
-                       <div className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center"><Box size={14} className="text-gray-300"/></div>
-                   )}
+                   <div className="relative w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
+                       {draft.images.length > 0 ? (
+                           <Image 
+                             src={draft.images[0]} 
+                             alt="Miniatura" 
+                             fill
+                             className="object-cover"
+                             sizes="32px"
+                           />
+                       ) : (
+                           <Box size={14} className="text-gray-300"/>
+                       )}
+                   </div>
                    <div className="flex flex-col leading-none">
                        <span className="text-[10px] font-bold text-gray-500 uppercase">Adicionando</span>
                        <span className="text-xs font-black text-gray-900">{editingSize}</span>

@@ -2,6 +2,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { BlockConfig } from '@/types/builder';
 import { Package, Palette, Ruler, Tag } from 'lucide-react';
 
@@ -32,12 +33,14 @@ export const StockSearchResultCardBlock = ({ config }: { config: BlockConfig }) 
       <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex gap-4 items-start relative overflow-hidden transition-all hover:shadow-md">
         
         {/* --- LADO ESQUERDO: MINI PREVIEW DA FOTO --- */}
-        <div className="w-24 h-24 shrink-0 bg-gray-50 rounded-lg border border-gray-100 overflow-hidden relative">
+        <div className="relative w-24 h-24 shrink-0 bg-gray-50 rounded-lg border border-gray-100 overflow-hidden">
            {productImage ? (
-             <img 
+             <Image 
                src={productImage as string} 
                alt={productName as string}
-               className="w-full h-full object-cover"
+               fill
+               className="object-cover"
+               sizes="96px"
              />
            ) : (
              <div className="w-full h-full flex items-center justify-center text-gray-300">

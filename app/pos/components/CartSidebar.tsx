@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import {
   ShoppingBag, Trash2, Plus, Minus, User, FileText, Printer,
   QrCode, CreditCard, Banknote, CheckCircle2
@@ -6,22 +7,21 @@ import {
 import { cn } from '@/lib/utils';
 import { CartItem, PaymentMethod } from '@/types/builder';
 
-// --- HELPER TYPES ---
-// Define what a variation looks like in the cart context
-interface CartVariationData {
-  qty: number;
-  size?: string;
-  color?: string;
-  [key: string]: unknown;
-}
-
 // --- SUB-COMPONENTES INTERNOS ---
 const CartItemRow = ({ item, onRemove, onUpdate }: { item: CartItem, onRemove: (id: string) => void, onUpdate: (id: string, d: number) => void }) => {
     const parsePrice = (priceStr: string) => parseFloat(priceStr.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
     return (
         <div className="flex gap-3 py-3 border-b border-gray-100 last:border-0">
-            <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200">
-                {item.product.mainImage && <img src={item.product.mainImage} alt="" className="w-full h-full object-cover" />}
+            <div className="relative w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200">
+                {item.product.mainImage && (
+                  <Image 
+                    src={item.product.mainImage} 
+                    alt={item.product.name} 
+                    fill
+                    className="object-cover"
+                    sizes="48px"
+                  />
+                )}
             </div>
             <div className="flex-1 min-w-0 flex flex-col justify-between">
                 <div className="flex justify-between items-start">

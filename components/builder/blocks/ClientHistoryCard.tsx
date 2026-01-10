@@ -2,9 +2,9 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { BlockConfig } from '@/types/builder';
 import { CheckCircle2 } from 'lucide-react';
-
 
 export const ClientHistoryCardBlock = ({ config }: { config: BlockConfig }) => {
   const name = config.data.name as string;
@@ -21,14 +21,16 @@ export const ClientHistoryCardBlock = ({ config }: { config: BlockConfig }) => {
         
         {/* Avatar com Badge */}
         <div className="relative shrink-0 self-start mt-1">
-          <div className="w-16 h-16 rounded-full overflow-hidden border border-gray-300">
-            <img 
+          <div className="relative w-16 h-16 rounded-full overflow-hidden border border-gray-300">
+            <Image 
               src={image || 'https://placehold.co/100x100'} 
               alt="Avatar" 
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              sizes="64px"
             />
           </div>
-          <div className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-0.5 border-2 border-white">
+          <div className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-0.5 border-2 border-white z-10">
             <CheckCircle2 size={14} strokeWidth={4} />
           </div>
         </div>

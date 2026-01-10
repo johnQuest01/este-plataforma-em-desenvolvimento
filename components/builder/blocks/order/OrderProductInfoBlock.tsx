@@ -2,6 +2,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { BlockConfig } from '@/types/builder';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -14,11 +15,13 @@ export const OrderProductInfoBlock = ({ config }: { config: BlockConfig }) => {
       style={{ backgroundColor: config.style.bgColor || 'transparent' }}
     >
       {/* FOTO - Mantida Grande (w-[140px]) */}
-      <div className="w-[140px] aspect-[3/4] rounded-2xl overflow-hidden border border-gray-200 shadow-md shrink-0 bg-gray-50">
-        <img 
+      <div className="relative w-[140px] aspect-[3/4] rounded-2xl overflow-hidden border border-gray-200 shadow-md shrink-0 bg-gray-50">
+        <Image 
           src={(productImage as string) || 'https://placehold.co/400x500'} 
           alt="Product" 
-          className="w-full h-full object-cover" 
+          fill
+          className="object-cover"
+          sizes="140px"
         />
       </div>
 

@@ -2,6 +2,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { ChevronLeft, Box, Layers, AlertCircle, Sparkles } from 'lucide-react';
 import { ProductVariationData } from '@/types/builder';
 import { cn } from '@/lib/utils';
@@ -47,8 +48,14 @@ export const StockDetailView = ({ product, onBack }: ProductDetailViewProps) => 
         
         {/* Bloco da Imagem e Resumo */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 flex gap-4">
-          <div className="w-24 aspect-[3/4] bg-gray-100 rounded-xl overflow-hidden border border-gray-100 shrink-0">
-            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+          <div className="relative w-24 aspect-[3/4] bg-gray-100 rounded-xl overflow-hidden border border-gray-100 shrink-0">
+            <Image 
+              src={product.image} 
+              alt={product.name} 
+              fill
+              className="object-cover"
+              sizes="96px"
+            />
           </div>
           <div className="flex flex-col justify-center flex-1 gap-2">
             <div className="flex items-center gap-2 text-xs font-medium text-gray-500">

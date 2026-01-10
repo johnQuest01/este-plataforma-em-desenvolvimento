@@ -3,7 +3,7 @@
 
 import React, { memo } from 'react';
 import { motion } from 'framer-motion';
-import { BlockConfig, BlockComponentProps } from '@/types/builder';
+import { BlockComponentProps } from '@/types/builder';
 import { COMPONENT_MAP } from './BlockRegistry';
 import { RexRuntimePixel } from './blocks/master/RexRuntimePixel';
 

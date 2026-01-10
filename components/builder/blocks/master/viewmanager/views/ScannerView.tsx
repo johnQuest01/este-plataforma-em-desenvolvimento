@@ -13,7 +13,6 @@ import {
   Cpu, 
   LayoutTemplate, 
   Monitor,
-  Box,
   Component
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -54,7 +53,7 @@ export function ScannerView({ data }: ViewProps) {
   });
 
   // Função auxiliar para navegar para o Code Map
-  const handleInspectElement = (file: string) => {
+  const handleInspectElement = () => {
     setTab('CODE_MAP');
   };
 
@@ -95,7 +94,7 @@ export function ScannerView({ data }: ViewProps) {
                     return (
                         <div
                             key={element.elementId}
-                            onClick={() => handleInspectElement(element.responsibleFile)}
+                            onClick={() => handleInspectElement()}
                             className={cn(
                                 "flex flex-col gap-2 p-4 border rounded-xl relative overflow-hidden group cursor-pointer transition-all",
                                 isPage 
@@ -182,7 +181,7 @@ export function ScannerView({ data }: ViewProps) {
                 return (
                   <div
                     key={popup.elementId}
-                    onClick={() => handleInspectElement(popup.responsibleFile)}
+                    onClick={() => handleInspectElement()}
                     className="flex flex-col gap-2 p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-xl relative overflow-hidden group cursor-pointer hover:bg-indigo-500/20 transition-all"
                   >
                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500" />

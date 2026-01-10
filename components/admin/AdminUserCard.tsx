@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { BlockConfig } from '@/types/builder';
 import { CheckCircle2, Crown, Power } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -32,11 +33,13 @@ export const AdminUserCardBlock = ({ config }: { config: BlockConfig }) => {
           {/* Avatar com Anel de Status */}
           <div className="relative">
             <div className="w-14 h-14 rounded-full p-[2px] bg-gradient-to-tr from-[#5874f6] to-blue-300">
-              <div className="w-full h-full rounded-full border-2 border-white overflow-hidden bg-gray-50">
-                <img
+              <div className="relative w-full h-full rounded-full border-2 border-white overflow-hidden bg-gray-50">
+                <Image
                   src={userImage || 'https://placehold.co/150x150/e0f2fe/5874f6?text=M'}
                   alt={userName}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="56px"
                 />
               </div>
             </div>

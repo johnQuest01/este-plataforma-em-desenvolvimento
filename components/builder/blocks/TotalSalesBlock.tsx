@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { BlockComponentProps, SaleRecord } from '@/types/builder';
-import { cn } from '@/lib/utils';
 
 export const TotalSalesBlock = ({ config, onAction }: BlockComponentProps) => {
   const [searchTerm, setSearchTerm] = useState('');

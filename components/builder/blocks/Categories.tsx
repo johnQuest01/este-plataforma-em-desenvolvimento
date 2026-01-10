@@ -57,7 +57,7 @@ export const CategoriesBlock = ({ config, onAction }: CategoriesBlockProps) => {
                   !hasReels && "border border-gray-200 p-0"
                 )}
                 style={hasReels ? { 
-                  background: `linear-gradient(45deg, ${ringColor}, ${adjustColor(ringColor, 40)})` 
+                  background: `linear-gradient(45deg, ${ringColor}, ${adjustColor(ringColor)})` 
                 } : {}}
               >
                 <div className={cn(
@@ -90,6 +90,6 @@ export const CategoriesBlock = ({ config, onAction }: CategoriesBlockProps) => {
   );
 };
 
-function adjustColor(color: string, amount: number) {
+function adjustColor(color: string) {
     return color; // Placeholder para lógica de clareamento de cor
 }

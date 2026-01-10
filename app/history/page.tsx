@@ -1,11 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { StoreHeader } from '@/components/builder/blocks/Header';
 import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
 import { BlockRenderer } from '@/components/builder/BlockRender';
-import { BlockConfig, FooterItem, SaleRecord } from '@/types/builder';
+import { FooterItem, SaleRecord } from '@/types/builder';
 
 const MOCK_SALES: SaleRecord[] = [
   { id: '1', productName: 'Camiseta Oversized Black', totalValue: 380.00, quantity: 2, date: '2025-12-20T14:30:00', sellerName: 'Amanda Costa' },
@@ -26,7 +25,6 @@ const FOOTER_ITEMS: FooterItem[] = [
 export default function HistoryPage() {
   const [activeView, setActiveView] = useState<'main' | 'total-sales'>('main');
   const [searchQuery, setSearchQuery] = useState('');
-  const router = useRouter();
 
   const isBrunoFound = searchQuery.toLowerCase().includes('bruno');
 
