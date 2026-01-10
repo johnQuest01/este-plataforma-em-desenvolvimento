@@ -3,103 +3,135 @@
 
 import fs from "fs";
 import path from "path";
-import { 
-  DiagnosticIssue, 
-  ScreenMetadata, 
-  ProjectFile, 
+import {
+  DiagnosticIssue,
+  ScreenMetadata,
+  ProjectFile,
   CodeSnippet,
   FileTypeEnum,
   FileType,
-  DependencyLink
+  DependencyLink,
+  AutoDoc
 } from "@/schemas/guardian-schema";
 
 /**
- * Rex Intelligence: Deep Code Extractor (X-Ray Mode)
- * Captura a implementação real de elementos UI sem placeholders.
+ * Rex Intelligence: Deep Code Extractor (X-Ray Mode - Enhanced)
+ * Captura TUDO: Componentes, Textos, Blocos, Divs e Botões.
  */
 function extractCodeSnippets(content: string): CodeSnippet[] {
   const snippets: CodeSnippet[] = [];
 
-  // 1. Captura de Botões
-  const buttonRegex = /<([a-zA-Z0-9\.]*Button|button|motion\.button)[\s\S]*?>([\s\S]*?)<\/\1>|<([a-zA-Z0-9\.]*Button|button|motion\.button)[\s\S]*?\/>/g;
+  // --- 1. COMPONENTES CUSTOMIZADOS (Lego Blocks) ---
+  // Captura <JeansHeader />, <JeansResultCard ...>
+  // Regex: Começa com Letra Maiúscula
+  const componentRegex = /<([A-Z][a-zA-Z0-9\.]+)[\s\S]*?(\/>|>\s*<\/\1>)/g;
   let match;
-  while ((match = buttonRegex.exec(content)) !== null) {
+  while ((match = componentRegex.exec(content)) !== null) {
     const fullTag = match[0];
-    const innerTextMatch = match[2] ? match[2].replace(/<[^>]*>/g, "").trim() : "";
-    const labelPropMatch = fullTag.match(/label="([^"]*)"/);
-    const previewText = innerTextMatch || labelPropMatch?.[1] || "Botão Interativo";
+    const componentName = match[1];
     
-    snippets.push({
-      type: "BUTTON",
-      content: fullTag.trim(),
-      preview: previewText.slice(0, 40),
-    });
-  }
-
-  // 2. Layouts
-  const proportionRegex = /<div[^>]*className="[^"]*?(flex flex-col h-full|fixed inset-0|absolute bottom-0|absolute top-0|grid)[^"]*?"[\s\S]*?>/g;
-  while ((match = proportionRegex.exec(content)) !== null) {
-    snippets.push({
-      type: "LAYOUT_PROPORTION",
-      content: match[0].trim(),
-      preview: "Estrutura de Layout",
-    });
-  }
-
-  // 3. Cards
-  const cardRegex = /<div[^>]*className="[^"]*?(bg-white|rounded-|border|shadow)[^"]*?"[\s\S]*?>/g;
-  while ((match = cardRegex.exec(content)) !== null) {
-    snippets.push({
-      type: "LAYOUT_CARD",
-      content: match[0].trim(),
-      preview: "Container Visual",
-    });
-  }
-
-  // 4. Inputs
-  const inputRegex = /<(input|textarea|select|[A-Z]\w*Input)[\s\S]*?(\/>|<\/\1>)/g;
-  while ((match = inputRegex.exec(content)) !== null) {
-    const fullTag = match[0];
-    const placeholderMatch = fullTag.match(/placeholder="([^"]*)"/);
-    const nameMatch = fullTag.match(/name="([^"]*)"/);
-    const typeMatch = fullTag.match(/type="([^"]*)"/);
-    
-    let preview = "Campo de Entrada";
-    if (placeholderMatch) preview = placeholderMatch[1];
-    else if (nameMatch) preview = nameMatch[1];
-    else if (typeMatch) preview = `Input (${typeMatch[1]})`;
-
-    snippets.push({
-      type: "INPUT",
-      content: fullTag.trim(),
-      preview: preview,
-    });
-  }
-
-  // 5. Textos
-  const textRegex = /<(h[1-6]|p|span)[^>]*className="[^"]*?"[\s\S]*?>([\s\S]*?)<\/\1>/g;
-  while ((match = textRegex.exec(content)) !== null) {
-    const textContent = match[2].replace(/<[^>]*>/g, "").trim();
-    if (textContent.length > 0 && !textContent.includes("{")) {
+    // Ignora componentes do próprio sistema para não poluir
+    if (!["GuardianBeacon", "motion", "AnimatePresence", "React", "div", "span"].includes(componentName)) {
         snippets.push({
-            type: "TEXT",
-            content: match[0].trim(),
-            preview: textContent.slice(0, 30),
+            type: "LAYOUT_CARD", // Mapeia como um Card Visual
+            content: fullTag.trim(),
+            preview: `Componente: <${componentName} />`,
         });
     }
   }
 
-  // 6. Popups
-  const popupRegex = /<(div|motion\.div)[^>]*className="[^"]*?(fixed inset-0|z-\[.*?\]|z-50)[^"]*?"[\s\S]*?>/g;
-  while ((match = popupRegex.exec(content)) !== null) {
+  // --- 2. BOTÕES E INTERAÇÃO ---
+  // Captura button, motion.button, a, Link
+  const buttonRegex = /<([a-zA-Z0-9\.]*([Bb]utton|[Ll]ink))[\s\S]*?>([\s\S]*?)<\/\1>|<([a-zA-Z0-9\.]*([Bb]utton|[Ll]ink))[\s\S]*?\/>/g;
+  while ((match = buttonRegex.exec(content)) !== null) {
+    const fullTag = match[0];
+    const innerText = match[3] ? match[3].replace(/<[^>]*>/g, "").trim() : "";
+    const labelProp = fullTag.match(/label="([^"]*)"/)?.[1];
+    
     snippets.push({
-      type: "POPUP_STRUCTURE",
-      content: match[0].trim(),
-      preview: "Overlay/Modal Root",
+      type: "BUTTON",
+      content: fullTag.trim(),
+      preview: (innerText || labelProp || "Interação").slice(0, 40),
     });
   }
 
-  return snippets.slice(0, 50);
+  // --- 3. INPUTS E FORMULÁRIOS ---
+  const inputRegex = /<(input|textarea|select|[A-Z]\w*Input)[\s\S]*?(\/>|<\/\1>)/g;
+  while ((match = inputRegex.exec(content)) !== null) {
+    const fullTag = match[0];
+    const placeholder = fullTag.match(/placeholder="([^"]*)"/)?.[1];
+    
+    snippets.push({
+      type: "INPUT",
+      content: fullTag.trim(),
+      preview: placeholder || "Campo de Entrada",
+    });
+  }
+
+  // --- 4. TEXTOS E CONTEÚDO (AGORA LÊ TUDO) ---
+  // Captura qualquer tag que contenha texto direto, sem ser apenas espaço em branco.
+  // Ex: <div>Texto</div>, <span>Valor</span>, <p>Desc</p>
+  const textRegex = /<([a-zA-Z0-9\.]+)[^>]*?>([^<>{}\r\n]+?)<\/\1>/g;
+  while ((match = textRegex.exec(content)) !== null) {
+    const tagName = match[1];
+    const textContent = match[2].trim();
+
+    // Filtra ruídos
+    if (textContent.length > 1 && !tagName.includes("script") && !tagName.includes("style")) {
+        snippets.push({
+            type: "TEXT",
+            content: match[0].trim(),
+            preview: textContent.slice(0, 40),
+        });
+    }
+  }
+
+  // --- 5. ESTRUTURAS DE LAYOUT (DIVS IMPORTANTES) ---
+  // Captura divs que definem grid, flex ou posicionamento
+  const layoutRegex = /<([a-zA-Z0-9\.]+)[\s\S]*?className="([^"]*?(grid|flex|fixed|absolute|relative|w-full)[^"]*?)"[\s\S]*?>/g;
+  while ((match = layoutRegex.exec(content)) !== null) {
+    const className = match[2];
+    
+    // Evita duplicar se já foi pego como texto ou componente
+    const isAlreadyCaptured = snippets.some(s => s.content.includes(match![0]));
+    
+    if (!isAlreadyCaptured) {
+        let typeLabel = "Container Genérico";
+        if (className.includes("grid")) typeLabel = "Grid Layout";
+        else if (className.includes("flex")) typeLabel = "Flex Layout";
+        else if (className.includes("fixed")) typeLabel = "Overlay / Fixed";
+
+        snippets.push({
+            type: "LAYOUT_PROPORTION",
+            content: match[0] + "...", // Apenas a abertura para não ficar gigante
+            preview: typeLabel,
+        });
+    }
+  }
+
+  // --- 6. POPUPS E MODAIS ---
+  const popupRegex = /className="[^"]*?(z-\[999\]|z-50|fixed inset-0)[^"]*?"/g;
+  while ((match = popupRegex.exec(content)) !== null) {
+     // Encontra a tag inteira ao redor desse className (aproximação)
+     const index = match.index;
+     const start = content.lastIndexOf("<", index);
+     const end = content.indexOf(">", index) + 1;
+     
+     if (start > -1 && end > start) {
+         snippets.push({
+             type: "POPUP_STRUCTURE",
+             content: content.substring(start, end),
+             preview: "Estrutura de Modal/Popup",
+         });
+     }
+  }
+
+  // Remove duplicatas exatas e limita a 100 itens para performance
+  const uniqueSnippets = Array.from(new Set(snippets.map(s => JSON.stringify(s))))
+    .map(s => JSON.parse(s))
+    .slice(0, 100);
+
+  return uniqueSnippets;
 }
 
 /**
@@ -126,42 +158,33 @@ function determineFileType(filename: string, relativePath: string): FileType {
 }
 
 /**
- * ✅ NOVO: Analisador de Dependências (Imports)
- * Lê o conteúdo do arquivo e descobre o que ele importa.
+ * Analisador de Dependências (Imports)
  */
 function extractDependencies(filePath: string, content: string, rootDir: string): string[] {
   const dependencies: string[] = [];
-  // Regex para capturar imports: import ... from "..."
   const importRegex = /import\s+(?:[\s\S]*?)\s+from\s+['"]([^'"]+)['"]/g;
-  
+ 
   let match;
   while ((match = importRegex.exec(content)) !== null) {
     const importPath = match[1];
-    
-    // Ignora bibliotecas externas (node_modules) que não começam com . ou @/
+   
     if (!importPath.startsWith('.') && !importPath.startsWith('@/')) {
       continue;
     }
 
     let resolvedPath = importPath;
 
-    // Resolve Alias @/ para src/
     if (importPath.startsWith('@/')) {
       resolvedPath = importPath.replace('@/', 'src/');
     } else {
-      // Resolve caminhos relativos
       const currentDir = path.dirname(filePath);
       resolvedPath = path.join(currentDir, importPath);
-      // Normaliza para remover ../ e ./
       resolvedPath = path.relative(rootDir, path.resolve(rootDir, resolvedPath));
     }
 
-    // Normaliza separadores de path para /
     resolvedPath = resolvedPath.split(path.sep).join('/');
 
-    // Tenta adicionar extensões comuns se não houver
     if (!resolvedPath.endsWith('.ts') && !resolvedPath.endsWith('.tsx') && !resolvedPath.endsWith('.js')) {
-       // Apenas uma heurística simples para exibição
        if (fs.existsSync(path.join(rootDir, resolvedPath + '.tsx'))) resolvedPath += '.tsx';
        else if (fs.existsSync(path.join(rootDir, resolvedPath + '.ts'))) resolvedPath += '.ts';
     }
@@ -170,6 +193,22 @@ function extractDependencies(filePath: string, content: string, rootDir: string)
   }
 
   return dependencies;
+}
+
+/**
+ * ✅ ADICIONE ISTO: Simulação de Análise Automática (Stub)
+ * Em produção, isso chamaria uma LLM ou analisador estático mais robusto.
+ */
+export async function generateAutoDocAction(filePath: string): Promise<AutoDoc | null> {
+  // Simula um delay de rede
+  await new Promise(resolve => setTimeout(resolve, 800));
+
+  return {
+    summary: `Análise automática do arquivo ${filePath.split('/').pop()}. Este componente gerencia a interface visual e interações do usuário.`,
+    stateVariables: ["isLoading", "data", "isVisible"],
+    renderedComponents: ["div", "span", "button"],
+    complexityLevel: "Média"
+  };
 }
 
 export async function runFullProjectAuditAction(
@@ -186,18 +225,17 @@ export async function runFullProjectAuditAction(
   const allProjectFiles: ProjectFile[] = [];
   const rootDirectory = process.cwd();
 
-  // Scanner Recursivo
   const scanDirectory = (dir: string) => {
     try {
       const entries = fs.readdirSync(dir, { withFileTypes: true });
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
-        
+       
         if (entry.isDirectory()) {
           if (!["node_modules", ".next", ".git", ".vscode", "public", "build", "dist", "coverage"].includes(entry.name)) {
             scanDirectory(fullPath);
           }
-        } 
+        }
         else if (entry.isFile()) {
           if (entry.name === '.DS_Store' || entry.name === 'Thumbs.db') continue;
 
@@ -219,10 +257,9 @@ export async function runFullProjectAuditAction(
       console.error(`Erro ao escanear diretório ${dir}:`, e);
     }
   };
-  
+ 
   scanDirectory(rootDirectory);
 
-  // Lógica de Foco
   let activeFile = focusFile;
   if (!activeFile) {
     const normalizedPath = currentPathname === "/" ? "/page" : currentPathname;
@@ -233,28 +270,25 @@ export async function runFullProjectAuditAction(
   const codeMap: Record<string, CodeSnippet[]> = {};
   const dependencyLinks: DependencyLink[] = [];
   const connectedFilesSet = new Set<string>();
-  
-  // Escopo de Análise Profunda
-  const uiScope = allProjectFiles.filter(f => 
-    (f.path === activeFile || 
-    (focusFile && f.path === focusFile) || 
+ 
+  const uiScope = allProjectFiles.filter(f =>
+    (f.path === activeFile ||
+    (focusFile && f.path === focusFile) ||
     (f.type === "COMPONENT" && f.path.endsWith('.tsx'))) &&
     !f.type.match(/ASSET|OTHER/)
   );
-  
+ 
   uiScope.forEach(file => {
     const absPath = path.join(rootDirectory, file.path);
     if (fs.existsSync(absPath)) {
       try {
         const content = fs.readFileSync(absPath, "utf8");
-        
-        // 1. Extrair Snippets Visuais
+       
         const snippets = extractCodeSnippets(content);
         if (snippets.length > 0) {
           codeMap[file.path] = snippets;
         }
 
-        // 2. ✅ Extrair Dependências (Conexões)
         const imports = extractDependencies(file.path, content, rootDirectory);
         imports.forEach(importedPath => {
             dependencyLinks.push({
@@ -272,8 +306,6 @@ export async function runFullProjectAuditAction(
     }
   });
 
-  // ✅ POPULAR LISTAS DE ARQUIVOS RELACIONADOS (UI vs LOGIC)
-  // Baseado nas dependências encontradas para o arquivo ativo
   const activeFileDependencies = dependencyLinks
     .filter(link => link.source === activeFile)
     .map(link => link.target);
@@ -295,11 +327,10 @@ export async function runFullProjectAuditAction(
     elements: { buttons: 0, inputs: 0, logicHooks: 0, serverActions: 0 },
     relatedFiles: { ui: uiFiles, logic: logicFiles },
     potentialPopups: [],
-    // ✅ Preenchemos as dependências reais
     dependencies: dependencyLinks,
     connectivity: {
         connected: Array.from(connectedFilesSet),
-        disconnected: [] // Simplificado para este exemplo
+        disconnected: []
     },
     database: { models: [] },
     projectStructure: allProjectFiles,

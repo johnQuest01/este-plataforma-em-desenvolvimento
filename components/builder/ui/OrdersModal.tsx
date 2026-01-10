@@ -24,7 +24,7 @@ export const OrdersModal = ({ isOpen, onClose }: OrdersModalProps) => {
       if (isOpen) {
         setLoading(true);
         try {
-          // Busca os dados
+          // Busca os dados via Server Action
           const data = await getOrdersAction();
           // Só atualiza o estado se o componente ainda estiver montado
           if (isMounted) {
@@ -96,7 +96,9 @@ export const OrdersModal = ({ isOpen, onClose }: OrdersModalProps) => {
             {/* LISTA DE PEDIDOS */}
             <div className="flex-1 overflow-y-auto p-4 pt-2 scrollbar-hide space-y-3">
               {loading ? (
-                <div className="text-center py-10 text-gray-400 text-xs font-bold">Carregando pedidos...</div>
+                <div className="text-center py-10 text-gray-400 text-xs font-bold animate-pulse">
+                  Carregando pedidos...
+                </div>
               ) : orders.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 opacity-50">
                   <ShoppingBag size={48} className="text-gray-300 mb-2"/>
@@ -104,7 +106,6 @@ export const OrdersModal = ({ isOpen, onClose }: OrdersModalProps) => {
                 </div>
               ) : (
                 orders.map((order) => (
-                  // CARD BRANCO COM TEXTO PRETO
                   <div
                     key={order.id}
                     className="relative p-4 rounded-2xl shadow-sm border border-gray-200 bg-white active:scale-[0.98] transition-all flex flex-col gap-3"
@@ -115,13 +116,14 @@ export const OrdersModal = ({ isOpen, onClose }: OrdersModalProps) => {
                         <span className="font-black text-sm text-gray-900 leading-tight mb-1">
                           {order.title}
                         </span>
+                        {/* ✅ CORREÇÃO: Alterado de date para createdAt com formatação */}
                         <span className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                          {order.date}
+                          {new Date(order.createdAt).toLocaleDateString('pt-BR')}
                         </span>
                       </div>
-                      {/* Valor em destaque */}
+                      {/* ✅ MELHORIA: Valor formatado como moeda */}
                       <span className="font-black text-sm text-gray-900 bg-gray-50 px-2 py-1 rounded-lg">
-                        {order.total}
+                        {order.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </span>
                     </div>
 
@@ -131,15 +133,20 @@ export const OrdersModal = ({ isOpen, onClose }: OrdersModalProps) => {
                     {/* Linha Inferior: Status e Badges */}
                     <div className="flex items-center justify-between">
                       
-                      {/* BADGE 1: COMPRA APROVADA (Verde) */}
-                      <div className="flex items-center gap-1.5 bg-green-50 text-green-700 px-2.5 py-1.5 rounded-lg border border-green-100">
+                      {/* BADGE 1: STATUS DO PEDIDO */}
+                      <div className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border",
+                        order.status === 'COMPLETED' 
+                          ? "bg-green-50 text-green-700 border-green-100" 
+                          : "bg-yellow-50 text-yellow-700 border-yellow-100"
+                      )}>
                         <CheckCircle2 size={14} strokeWidth={3} />
                         <span className="text-[10px] font-black uppercase tracking-wide">
-                          Compra Aprovada
+                          {order.statusLabel}
                         </span>
                       </div>
 
-                      {/* BADGE 2: EMBALANDO (Cinza/Neutro com ícone) */}
+                      {/* BADGE 2: EMBALANDO */}
                       <div className="flex items-center gap-1.5 text-gray-500">
                         <Package size={14} />
                         <span className="text-[10px] font-bold uppercase">

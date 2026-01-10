@@ -1,7 +1,7 @@
 // path: src/components/guardian/GuardianBeacon.tsx
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useId } from "react";
 import { useGuardianStore } from "@/hooks/use-guardian-store";
 import { 
   RuntimeElementStateEnum, 
@@ -10,7 +10,7 @@ import {
 } from "@/schemas/guardian-runtime-schema";
 
 // Tipos de arquivos que podemos rastrear
-type GuardianFileType = "UI_COMPONENT" | "POPUP" | "HOOK" | "LAYOUT" | "FORM";
+type GuardianFileType = "UI_COMPONENT" | "POPUP" | "HOOK" | "LAYOUT" | "FORM"| "PAGE";
 
 interface GuardianBeaconProps {
   file: string;
@@ -37,13 +37,16 @@ export const GuardianBeacon = ({
  
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // ✅ CORREÇÃO DE PUREZA:
-  // Usamos useState com inicializador preguiçoso para gerar o sufixo aleatório apenas uma vez.
-  const [randomSuffix] = useState(() => Math.random().toString(36).substr(2, 9));
+  // ✅ CORREÇÃO DE HIDRATAÇÃO (ZERO ERROR POLICY):
+  // Substituído Math.random() por useId(). O useId garante que o ID gerado no servidor
+  // seja idêntico ao do cliente, eliminando o erro de "Hydration failed".
+  const uniqueId = useId();
+  // Removemos os dois pontos (:) que o useId gera para garantir compatibilidade com seletores CSS se necessário
+  const stableSuffix = uniqueId.replace(/:/g, '');
 
   const elementId = useMemo(() => {
-    return id || `${file}-${randomSuffix}`;
-  }, [file, id, randomSuffix]);
+    return id || `${file}-${stableSuffix}`;
+  }, [file, id, stableSuffix]);
 
   useEffect(() => {
     if (process.env.NODE_ENV !== 'development') return;

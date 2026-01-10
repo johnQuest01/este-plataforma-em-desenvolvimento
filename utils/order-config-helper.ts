@@ -2,6 +2,17 @@
 import { BlockConfig, VariantOption } from '@/types/builder';
 import { ProductData } from '@/app/actions/product';
 
+// 🛡️ GUARDIAN: Safe Property Access Helper
+// Prevents TS2339 errors when accessing properties that might exist at runtime 
+// but are missing from the strict Prisma type definition.
+function getSafeString(item: unknown, key: string): string | undefined {
+  if (typeof item === 'object' && item !== null && key in item) {
+    const val = (item as Record<string, unknown>)[key];
+    return typeof val === 'string' ? val : undefined;
+  }
+  return undefined;
+}
+
 export const generateOrderModalBlocks = (product: ProductData): BlockConfig[] => {
   if (!product) return [];
 
@@ -19,15 +30,20 @@ export const generateOrderModalBlocks = (product: ProductData): BlockConfig[] =>
     size: new Set<string>(),
   };
 
-  // Varre todas as variações para encontrar quais opções existem
-  product.variations.forEach(v => {
-    if (v.color) uniqueValues.color.add(v.color.trim());
-    if (v.size) uniqueValues.size.add(v.size.trim());
-    
-    // Mapeia tanto 'variation' (novo) quanto 'type' (antigo) para o grupo MODELO
-    const typeVal = v.variation || v.type;
-    if (typeVal) uniqueValues.model.add(typeVal.trim());
-  });
+  // FIX: Changed 'variations' to 'variants' to match ProductData type
+  if (product.variants && Array.isArray(product.variants)) {
+    product.variants.forEach(v => {
+      if (v.color) uniqueValues.color.add(v.color.trim());
+      if (v.size) uniqueValues.size.add(v.size.trim());
+      
+      // Mapeia tanto 'variation' (novo/runtime) quanto 'type' (antigo/typed) para o grupo MODELO
+      // Uses safe helper for 'variation' to avoid "Property does not exist" TS error
+      const runtimeVariation = getSafeString(v, 'variation');
+      const typeVal = runtimeVariation || v.type;
+      
+      if (typeVal) uniqueValues.model.add(typeVal.trim());
+    });
+  }
 
   // --- CONSTRUÇÃO DAS OPÇÕES ---
 
@@ -89,7 +105,8 @@ export const generateOrderModalBlocks = (product: ProductData): BlockConfig[] =>
       data: {
         productName: product.name,
         // Usa imagem principal ou a primeira da variação
-        productImage: product.mainImage || (product.variations[0]?.images[0]),
+        // FIX: Changed 'variations' to 'variants' and added safe chaining
+        productImage: product.mainImage || (product.variants?.[0]?.images?.[0]),
         vendorName: 'Loja Oficial',
       },
       style: { bgColor: '#ffffff' }

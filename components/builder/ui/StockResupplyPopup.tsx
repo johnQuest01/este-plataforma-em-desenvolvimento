@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, Layers, RefreshCw } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import Image from 'next/image'; // ✅ Importação do Next Image
 import { ProductData, getProductsAction } from '@/app/actions/product';
 
 // --- UTILS ---
@@ -23,16 +24,23 @@ interface ProductImageProps {
 }
 
 const ProductImage = ({ src, alt, totalQty, className }: ProductImageProps) => {
+  // Fallback para evitar erro se a URL estiver vazia
+  const validSrc = src && src.length > 0 ? src : 'https://placehold.co/100x120/e2e8f0/94a3b8?text=Sem+Img';
+
   return (
     <div className={cn("relative w-20 h-24 bg-gray-100 rounded-xl overflow-hidden border border-gray-100 shrink-0", className)}>
-      <img src={src} alt={alt} className="w-full h-full object-cover" />
+      {/* ✅ CORREÇÃO: Substituído img por Image do Next.js */}
+      <Image 
+        src={validSrc} 
+        alt={alt} 
+        fill
+        className="object-cover"
+        sizes="(max-width: 768px) 80px, 100px"
+        unoptimized // Garante que funcione com URLs externas sem config extra
+      />
       
-      {/* ALTERAÇÃO REALIZADA: 
-        Transformamos a faixa inferior em um "Badge Flutuante".
-        - `bottom-1 inset-x-1`: Descola das bordas.
-        - `rounded-lg`: Arredonda a imagem preta debaixo do texto.
-      */}
-      <div className="absolute bottom-1 inset-x-1 bg-black/70 backdrop-blur-sm text-center py-1 rounded-lg">
+      {/* Badge Flutuante de Quantidade Total */}
+      <div className="absolute bottom-1 inset-x-1 bg-black/70 backdrop-blur-sm text-center py-1 rounded-lg z-10">
         <span className="text-[10px] text-white font-bold block leading-none">
           {totalQty} total
         </span>
@@ -63,7 +71,7 @@ export const StockResupplyPopup = ({ isOpen, onClose }: StockResupplyPopupProps)
           const data = await getProductsAction();
           setProducts(data);
         } catch (error) {
-          console.error(error);
+          console.error("[REPLY_POPUP_LOAD_ERROR]:", error);
         } finally {
           setLoading(false);
         }
@@ -138,14 +146,16 @@ export const StockResupplyPopup = ({ isOpen, onClose }: StockResupplyPopupProps)
                 </div>
               ) : (
                 filtered.map(product => {
-                  const totalQty = product.variations.reduce((acc, v) => acc + v.qty, 0);
+                  // Cálculo seguro da quantidade total
+                  const totalQty = product.variants?.reduce((acc, v) => acc + (v.qty ?? 0), 0) || 0;
+                  
                   return (
                     <div key={product.id} className="bg-white p-4 rounded-3xl border border-gray-200 shadow-sm flex flex-col gap-4">
                       
-                      {/* Cabeçalho do Card (Com Componente Isolado) */}
+                      {/* Cabeçalho do Card */}
                       <div className="flex gap-4">
                         <ProductImage 
-                          src={product.mainImage} 
+                          src={product.imageUrl ?? ''} 
                           alt={product.name} 
                           totalQty={totalQty} 
                         />
@@ -160,23 +170,23 @@ export const StockResupplyPopup = ({ isOpen, onClose }: StockResupplyPopupProps)
                         </div>
                       </div>
 
-                      {/* --- LISTA DE VARIAÇÕES --- */}
+                      {/* --- LISTA DE VARIANTES --- */}
                       <div className="bg-gray-50 rounded-2xl p-2 border border-gray-100 flex flex-col gap-2 max-h-48 overflow-y-auto custom-scrollbar">
-                        {product.variations.map((v, idx) => (
-                          <div key={idx} className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-gray-200 shadow-sm">
+                        {product.variants?.map((v, idx) => (
+                          <div key={v.id || idx} className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-gray-200 shadow-sm">
                             
                             <div className="flex items-center gap-3 overflow-hidden">
                               <span className="font-black bg-gray-900 text-white w-10 h-10 flex items-center justify-center rounded-lg text-sm shrink-0 shadow-sm">
-                                {v.size}
+                                {v.size ?? 'U'}
                               </span>
                               
                               <div className="flex flex-col leading-tight truncate">
                                 <span className="font-extrabold text-gray-800 text-sm truncate uppercase">
-                                  {v.color}
+                                  {v.color ?? 'Padrão'}
                                 </span>
-                                {(v.variation || v.type) && (
+                                {(v.type) && (
                                   <span className="text-xs font-semibold text-gray-500 truncate">
-                                    {v.variation || v.type}
+                                    {v.type}
                                   </span>
                                 )}
                               </div>
@@ -184,7 +194,7 @@ export const StockResupplyPopup = ({ isOpen, onClose }: StockResupplyPopupProps)
 
                             <div className="flex flex-col items-end pl-2">
                               <span className="font-black text-gray-900 text-base leading-none">
-                                {v.qty}
+                                {v.qty ?? 0}
                               </span>
                               <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">
                                 un

@@ -5,6 +5,15 @@ import { BlockConfig } from '@/types/builder';
 import { Heart, Send, PackageX, MapPin } from 'lucide-react';
 import { ProductData, getProductsAction } from '@/app/actions/product';
 import { PRODUCT_UPDATE_EVENT } from '@/components/builder/blocks/ProductGrid';
+import Image from 'next/image';
+
+// Interface para estender a tipagem do Prisma Variant com campos dinâmicos possíveis
+interface ExtendedVariant {
+  category?: string;
+  stockLocations?: string[];
+  images?: string[];
+  [key: string]: unknown; // Permite flexibilidade controlada sem usar 'any'
+}
 
 interface CategoryProductListBlockProps {
   config: BlockConfig;
@@ -21,7 +30,6 @@ export const CategoryProductListBlock = ({ config, onAction }: CategoryProductLi
   const fetchProducts = useCallback(async () => {
     try {
       const dbProducts = await getProductsAction();
-      // Garante que seja sempre um array
       setProducts(Array.isArray(dbProducts) ? dbProducts : []);
     } catch (error) {
       console.error("Erro ao buscar produtos:", error);
@@ -46,25 +54,20 @@ export const CategoryProductListBlock = ({ config, onAction }: CategoryProductLi
 
   // Filtra produtos pela categoria E pelo estoque
   const filteredProducts = products.filter(p => {
-    // CORREÇÃO CRÍTICA: Uso de 'variants' (Prisma) e verificação de nulidade
     const variants = p.variants || [];
-    
-    // Se não houver variantes, não exibe (ou exibe se a categoria for genérica)
+   
     if (variants.length === 0) return false;
 
     return variants.some(v => {
-      // Adaptação para campos que podem não existir no tipo estrito do Prisma
-      // Assumindo que 'category' e 'stockLocations' não existem no schema atual,
-      // usamos lógica de fallback ou campos customizados se você os adicionou.
-      // Se não existirem, a comparação falhará graciosamente.
-      const vAny = v as any;
-      
-      const category = vAny.category || 'Geral';
-      const stockLocations = vAny.stockLocations || ['Loja Principal'];
+      // CORREÇÃO: Cast seguro para interface estendida
+      const vExtended = v as unknown as ExtendedVariant;
+     
+      const category = vExtended.category || 'Geral';
+      const stockLocations = vExtended.stockLocations || ['Loja Principal'];
 
       const matchCategory = !targetCategory || category.toLowerCase().trim() === targetCategory.toLowerCase().trim();
       const matchStock = !targetStock || stockLocations.includes(targetStock);
-      
+     
       return matchCategory && matchStock;
     });
   });
@@ -82,18 +85,14 @@ export const CategoryProductListBlock = ({ config, onAction }: CategoryProductLi
       ) : (
         <div className="grid grid-cols-2 gap-4">
           {filteredProducts.map((product) => {
-            // CORREÇÃO: Acesso seguro a variants
             const variants = product.variants || [];
             const firstVar = variants[0];
-            const vAny = firstVar as any;
+            // CORREÇÃO: Cast seguro
+            const vExtended = firstVar as unknown as ExtendedVariant;
 
-            // Imagem: Prioridade para imagem do produto, depois da variação
-            const mainImage = product.imageUrl || (firstVar && firstVar.images && firstVar.images[0]) || '';
-            
+            const mainImage = product.imageUrl || (vExtended && vExtended.images && vExtended.images[0]) || '';
             const price = product.price && product.price !== 'R$ 0,00' ? product.price : null;
-            
-            // Nome do estoque (Fallback seguro)
-            const stockName = targetStock || (vAny?.stockLocations?.[0]) || 'Estoque Geral';
+            const stockName = targetStock || (vExtended?.stockLocations?.[0]) || 'Estoque Geral';
 
             return (
               <div
@@ -113,10 +112,16 @@ export const CategoryProductListBlock = ({ config, onAction }: CategoryProductLi
                   </span>
                 </div>
 
-                {/* Imagem */}
+                {/* Imagem Otimizada */}
                 <div className="w-full aspect-[4/5] bg-gray-50 rounded-xl overflow-hidden border border-gray-100 relative pointer-events-none">
                   {mainImage ? (
-                    <img src={mainImage} alt={product.name} className="w-full h-full object-cover" />
+                    <Image 
+                      src={mainImage} 
+                      alt={product.name} 
+                      fill
+                      sizes="(max-width: 768px) 50vw, 33vw"
+                      className="object-cover"
+                    />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-300 bg-gray-50">
                       <span className="text-xs font-bold">Sem Foto</span>

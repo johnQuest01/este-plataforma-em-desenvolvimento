@@ -4,7 +4,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  GitCommit,
   FileCode,
   ChevronRight,
   Box,
@@ -17,7 +16,6 @@ import {
   Workflow,
   Radio,
   Lightbulb,
-  Info,
   Network,
   Link as LinkIcon,
   ExternalLink,
@@ -136,24 +134,33 @@ const IntelligencePanel = ({
   onNavigate: (path: string) => void
 }) => {
   const meta = element.semanticMetadata;
-  
-  // Estado para a documentação automática
+ 
+  // Inicialização Lazy: Define o estado inicial baseado nas props, evitando setState no useEffect
+  const [loadingDoc, setLoadingDoc] = useState(() => !meta?.orientationNotes && !!element.responsibleFile);
   const [autoDoc, setAutoDoc] = useState<AutoDoc | null>(null);
-  const [loadingDoc, setLoadingDoc] = useState(false);
 
-  // Efeito para gerar doc automática se não houver notas manuais
   useEffect(() => {
+    let isMounted = true;
+
     if (!meta?.orientationNotes && element.responsibleFile) {
-        setLoadingDoc(true);
         generateAutoDocAction(element.responsibleFile)
-            .then((doc: AutoDoc | null) => setAutoDoc(doc)) // ✅ Tipagem explícita para evitar 'any' implícito
-            .finally(() => setLoadingDoc(false));
-    } else {
-        setAutoDoc(null);
+            .then((doc: AutoDoc | null) => {
+                if (isMounted) {
+                    setAutoDoc(doc);
+                    setLoadingDoc(false);
+                }
+            })
+            .catch((err) => {
+                console.error("Erro ao gerar doc:", err);
+                if (isMounted) setLoadingDoc(false);
+            });
     }
+
+    return () => {
+        isMounted = false;
+    };
   }, [element.responsibleFile, meta]);
 
-  // Se não tem metadados manuais nem automáticos (ainda), não mostra nada ou mostra loading
   if (!meta && !autoDoc && !loadingDoc) return null;
 
   return (
@@ -162,19 +169,12 @@ const IntelligencePanel = ({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 50 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      // ⚡ LARGURA AJUSTADA: 400px (Compacto mas funcional)
       className="w-[400px] shrink-0 bg-[#0a0a0a] border-l border-zinc-800 shadow-2xl flex flex-col h-full z-20"
     >
       <div className="flex-1 overflow-y-auto custom-scrollbar p-5 flex flex-col gap-5">
        
-        {/* 
-            ✅ CARD DE CONTEXTO DO ARQUIVO (ATUALIZADO)
-            - Removido 'truncate'
-            - Adicionado 'break-all' para caminhos longos
-            - Melhor contraste no texto do caminho
-        */}
         <motion.div
-            key={element.responsibleFile} // A chave força a re-animação ao trocar de arquivo
+            key={element.responsibleFile}
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
@@ -188,20 +188,17 @@ const IntelligencePanel = ({
                     <Target size={10} className="text-emerald-500 animate-pulse" />
                     <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Arquivo em Foco</span>
                 </div>
-                
-                {/* Nome do Componente (Quebra de linha se necessário) */}
+               
                 <h3 className="text-sm font-black text-white uppercase tracking-wide break-words leading-tight mb-1">
                     {element.componentName}
                 </h3>
-                
-                {/* Caminho do Arquivo (Visível, Quebra total, Sem abreviação) */}
+               
                 <p className="text-[10px] font-mono text-zinc-300 break-all leading-relaxed bg-black/20 p-1.5 rounded border border-white/5">
                     {element.responsibleFile}
                 </p>
             </div>
         </motion.div>
 
-        {/* Cabeçalho da Análise */}
         <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="bg-indigo-500/10 p-1.5 rounded-lg border border-indigo-500/20">
@@ -219,9 +216,6 @@ const IntelligencePanel = ({
           </p>
         </div>
 
-        {/* 
-            CENÁRIO 1: NOTAS MANUAIS (Prioridade)
-        */}
         {meta?.orientationNotes && (
           <div className="flex flex-col gap-1.5">
              <div className="flex items-center gap-2 text-indigo-300 px-1">
@@ -239,9 +233,6 @@ const IntelligencePanel = ({
           </div>
         )}
 
-        {/* 
-            CENÁRIO 2: AUTO-DOC (Fallback Inteligente)
-        */}
         {!meta?.orientationNotes && loadingDoc && (
             <div className="p-4 text-center">
                 <span className="text-xs text-zinc-500 animate-pulse">Lendo código fonte...</span>
@@ -250,19 +241,17 @@ const IntelligencePanel = ({
 
         {!meta?.orientationNotes && autoDoc && (
              <div className="flex flex-col gap-3">
-                {/* Resumo */}
                 <div className="bg-emerald-900/10 border border-emerald-500/20 rounded-xl p-3">
                     <p className="text-[11px] text-emerald-200 leading-relaxed">
                         {autoDoc.summary}
                     </p>
                 </div>
 
-                {/* Estados */}
                 {autoDoc.stateVariables.length > 0 && (
                     <div>
                         <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider mb-1 block">Gerenciamento de Estado</span>
                         <div className="flex flex-wrap gap-1.5">
-                            {autoDoc.stateVariables.map((st: string) => ( // ✅ Tipagem explícita
+                            {autoDoc.stateVariables.map((st: string) => (
                                 <span key={st} className="px-2 py-1 bg-zinc-800 rounded text-[10px] font-mono text-zinc-300 border border-zinc-700">
                                     {st}
                                 </span>
@@ -271,12 +260,11 @@ const IntelligencePanel = ({
                     </div>
                 )}
 
-                {/* Componentes Filhos */}
                 {autoDoc.renderedComponents.length > 0 && (
                     <div>
                         <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider mb-1 block">Estrutura de UI</span>
                         <div className="flex flex-wrap gap-1.5">
-                            {autoDoc.renderedComponents.map((comp: string) => ( // ✅ Tipagem explícita
+                            {autoDoc.renderedComponents.map((comp: string) => (
                                 <span key={comp} className="px-2 py-1 bg-blue-900/20 rounded text-[10px] font-bold text-blue-300 border border-blue-500/20">
                                     {comp}
                                 </span>
@@ -287,7 +275,6 @@ const IntelligencePanel = ({
              </div>
         )}
 
-        {/* Conexões Lógicas */}
         {meta?.connectsTo && meta.connectsTo.length > 0 && (
           <div>
             <h5 className="text-zinc-500 text-[9px] font-black uppercase tracking-widest mb-3 flex items-center gap-2 border-b border-zinc-800 pb-2">
@@ -344,10 +331,9 @@ const IntelligencePanel = ({
         )}
       </div>
      
-      {/* Rodapé com Tags */}
       <div className="p-5 border-t border-zinc-800 bg-zinc-900/20 backdrop-blur-sm">
           <div className="flex flex-wrap gap-2">
-            {meta?.tags?.map((tag: string) => ( // ✅ Tipagem explícita
+            {meta?.tags?.map((tag: string) => (
               <span key={tag} className="text-[9px] font-bold bg-zinc-800 text-zinc-300 px-2.5 py-1 rounded-lg border border-zinc-700 uppercase tracking-wide shadow-sm">
                 #{tag}
               </span>
@@ -365,8 +351,6 @@ const IntelligencePanel = ({
 
 // --- COMPONENTE PRINCIPAL ---
 export function ConnectionsView({ data }: ViewProps) {
-  const [selectedPath, setSelectedPath] = useState<string[]>([]);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { activeRuntimeElements } = useGuardianStore();
 
   const { dependencyMap, rootFile } = useMemo(() => {
@@ -386,11 +370,22 @@ export function ConnectionsView({ data }: ViewProps) {
     };
   }, [data]);
 
-  useEffect(() => {
-    if (rootFile && selectedPath.length === 0) {
-      setSelectedPath([rootFile]);
-    }
-  }, [rootFile, selectedPath.length]);
+  // ✅ CORREÇÃO DEFINITIVA: Padrão "Adjusting state during render"
+  // 1. Inicialização Lazy
+  const [selectedPath, setSelectedPath] = useState<string[]>(() => {
+    return rootFile ? [rootFile] : [];
+  });
+
+  // 2. Rastreamento do valor anterior da prop
+  const [prevRootFile, setPrevRootFile] = useState(rootFile);
+
+  // 3. Ajuste de estado DURANTE a renderização (substitui o useEffect problemático)
+  if (rootFile !== prevRootFile) {
+    setPrevRootFile(rootFile);
+    setSelectedPath(rootFile ? [rootFile] : []);
+  }
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (scrollContainerRef.current) {
@@ -442,7 +437,6 @@ export function ConnectionsView({ data }: ViewProps) {
     <div className="h-full flex bg-[#050505] overflow-hidden">
      
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
         <div className="px-8 py-6 border-b border-zinc-800/50 bg-zinc-900/20 shrink-0 flex justify-between items-center">
             <div>
                 <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2 mb-1">
@@ -460,7 +454,6 @@ export function ConnectionsView({ data }: ViewProps) {
             </div>
         </div>
 
-        {/* Área de Colunas */}
         <div
             ref={scrollContainerRef}
             className="flex-1 flex overflow-x-auto overflow-y-hidden custom-scrollbar p-8 gap-6 items-start"
@@ -553,7 +546,6 @@ export function ConnectionsView({ data }: ViewProps) {
             );
             })}
 
-            {/* Coluna Fantasma */}
             {(() => {
                 const lastSelected = selectedPath[selectedPath.length - 1];
                 const children = dependencyMap.get(lastSelected) || [];
@@ -604,7 +596,6 @@ export function ConnectionsView({ data }: ViewProps) {
         </div>
       </div>
 
-      {/* ✅ Painel Lateral de Inteligência */}
       <AnimatePresence mode="wait">
         {selectedActiveElement?.semanticMetadata && (
           <IntelligencePanel

@@ -1,7 +1,6 @@
 // path: src/schemas/guardian-schema.ts
 import { z } from "zod";
 
-
 export const DiagnosticLayerEnum = z.enum([
   "UI_PROPORTION",
   "UI_STYLING",
@@ -14,12 +13,10 @@ export const DiagnosticLayerEnum = z.enum([
   "PERFORMANCE",
 ]);
 
-
 export const FileTypeEnum = z.enum([
   "PAGE", "COMPONENT", "ACTION", "HOOK", "SCHEMA", "CONFIG",
   "PRISMA", "STYLE", "TYPE", "UTIL", "ASSET", "MARKDOWN", "OTHER"
 ]);
-
 
 export const ProjectFileSchema = z.object({
   path: z.string(),
@@ -30,14 +27,12 @@ export const ProjectFileSchema = z.object({
   linesOfCode: z.number(),
 });
 
-
 // ✅ NOVO: Schema para representar uma conexão real entre arquivos
 export const DependencyLinkSchema = z.object({
   source: z.string(), // Quem importa (ex: components/StockModal.tsx)
   target: z.string(), // Quem é importado (ex: types/builder.ts)
   type: z.enum(["IMPORT", "DYNAMIC_IMPORT", "USAGE"]),
 });
-
 
 // ✅ DEFINIÇÃO DE SNIPPETS PARA O REX X-RAY (CÓDIGO REAL)
 export const CodeSnippetSchema = z.object({
@@ -46,6 +41,13 @@ export const CodeSnippetSchema = z.object({
   preview: z.string(), // Título descritivo para o cabeçalho do bloco
 });
 
+// ✅ NOVO: Schema para Documentação Automática (AutoDoc)
+export const AutoDocSchema = z.object({
+  summary: z.string(),
+  stateVariables: z.array(z.string()),
+  renderedComponents: z.array(z.string()),
+  complexityLevel: z.enum(["Baixa", "Média", "Alta", "Crítica"]),
+});
 
 export const ScreenMetadataSchema = z.object({
   pathname: z.string(),
@@ -79,7 +81,6 @@ export const ScreenMetadataSchema = z.object({
   codeMap: z.record(z.string(), z.array(CodeSnippetSchema)).optional(),
 });
 
-
 export const DiagnosticIssueSchema = z.object({
   id: z.string(),
   layer: DiagnosticLayerEnum,
@@ -91,7 +92,6 @@ export const DiagnosticIssueSchema = z.object({
   snippet: z.string().optional(),
 });
 
-
 export const GuardianAuditResponseSchema = z.object({
   issues: z.array(DiagnosticIssueSchema),
   categorizedFiles: z.object({
@@ -101,7 +101,6 @@ export const GuardianAuditResponseSchema = z.object({
   screenMetadata: ScreenMetadataSchema,
 });
 
-
 export type DiagnosticIssue = z.infer<typeof DiagnosticIssueSchema>;
 export type DiagnosticLayer = z.infer<typeof DiagnosticLayerEnum>;
 export type ScreenMetadata = z.infer<typeof ScreenMetadataSchema>;
@@ -110,4 +109,4 @@ export type ProjectFile = z.infer<typeof ProjectFileSchema>;
 export type FileType = z.infer<typeof FileTypeEnum>;
 export type CodeSnippet = z.infer<typeof CodeSnippetSchema>;
 export type DependencyLink = z.infer<typeof DependencyLinkSchema>;
-
+export type AutoDoc = z.infer<typeof AutoDocSchema>;

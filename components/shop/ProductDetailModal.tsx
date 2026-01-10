@@ -1,18 +1,31 @@
+// path: src/components/shop/ProductDetailModal.tsx
 'use client';
 
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  X, MapPin, Heart, Share2, Eye, Truck,
+  MapPin, Heart, Share2, Eye, Truck,
   ArrowRight, Sparkles, Tag, Type, ChevronLeft
 } from 'lucide-react';
 import { ProductData } from '@/app/actions/product';
 import { cn } from '@/lib/utils';
+import Image from 'next/image'; // ✅ Importação do Next Image
 
 interface ProductDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   product: ProductData;
+}
+
+// 🛡️ GUARDIAN: Safe Property Access Helper
+// Allows accessing properties that might exist in DB but are missing in the generated Type (Prisma)
+// This avoids 'any' and 'as Type' assertions in the main logic.
+function getSafeString(item: unknown, key: string): string | undefined {
+  if (typeof item === 'object' && item !== null && key in item) {
+    const val = (item as Record<string, unknown>)[key];
+    return typeof val === 'string' ? val : undefined;
+  }
+  return undefined;
 }
 
 export const ProductDetailModal = ({ isOpen, onClose, product }: ProductDetailModalProps) => {
@@ -28,15 +41,32 @@ export const ProductDetailModal = ({ isOpen, onClose, product }: ProductDetailMo
     const sizes: Record<string, number> = {};
     let totalStock = 0;
 
-    product.variations.forEach(v => {
-      if (v.category) categories.add(v.category);
-      if (v.keyword) keywords.add(v.keyword);
-      if (v.type) types.add(v.type);
+    if (product.variants && Array.isArray(product.variants)) {
+      product.variants.forEach((v) => {
+        // 🛡️ Safe Extraction using Helper Function
+        const category = getSafeString(v, 'category');
+        const keyword = getSafeString(v, 'keyword');
+        
+        if (category) categories.add(category);
+        if (keyword) keywords.add(keyword);
+        
+        // 'type' exists in the base interface (optional), so we access it directly if present
+        if (v.type) types.add(v.type);
 
-      if (v.color) colors[v.color] = (colors[v.color] || 0) + v.qty;
-      if (v.size) sizes[v.size] = (sizes[v.size] || 0) + v.qty;
-      totalStock += v.qty;
-    });
+        // Strict Type Safety for Stock/Qty
+        // We check existence of 'stock' safely without forcing type overrides
+        let variantStock = 0;
+        if ('stock' in v && typeof (v as Record<string, unknown>).stock === 'number') {
+             variantStock = (v as Record<string, unknown>).stock as number;
+        }
+        
+        const quantity = v.qty ?? variantStock ?? 0;
+
+        if (v.color) colors[v.color] = (colors[v.color] || 0) + quantity;
+        if (v.size) sizes[v.size] = (sizes[v.size] || 0) + quantity;
+        totalStock += quantity;
+      });
+    }
 
     return {
       categories: Array.from(categories),
@@ -97,10 +127,17 @@ export const ProductDetailModal = ({ isOpen, onClose, product }: ProductDetailMo
           {/* --- 2. CONTEÚDO --- */}
           <div className="flex-1 overflow-y-auto scrollbar-hide bg-white pb-32 relative">
             
-            {/* Imagem Principal */}
+            {/* Imagem Principal Otimizada */}
             <div className="w-full aspect-[4/5] bg-gray-100 relative group">
-              <img src={product.mainImage || 'https://placehold.co/600x800/png'} className="w-full h-full object-cover" alt={product.name} />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
+              <Image 
+                src={product.mainImage || 'https://placehold.co/600x800/png'} 
+                alt={product.name}
+                fill
+                sizes="(max-width: 768px) 100vw, 420px"
+                className="object-cover"
+                priority
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4 pointer-events-none">
                 <p className="text-white text-xs font-bold uppercase tracking-widest">Visualizar Zoom</p>
               </div>
             </div>

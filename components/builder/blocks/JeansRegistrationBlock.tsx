@@ -6,6 +6,9 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { linkReferenceImageAction, processBulkJeansAction } from '@/app/actions/jeans-registration';
 import { RegisteredProductResult } from '@/schemas/jeans-registration-schema';
 
+// 🛡️ GUARDIAN: Importação do HOC
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
+
 // Imports Modulares
 import { JeansHeader } from './sistemre/JeansHeader';
 import { JeansResultCard } from './sistemre/JeansResultCard';
@@ -14,7 +17,8 @@ import { JeansLinkForm } from './sistemre/JeansLinkForm';
 import { JeansSessionCard } from './sistemre/JeansSessionCard';
 import { DevelopmentCard } from './sistemre/DevelopmentCard';
 
-export const JeansRegistrationBlock = ({
+// --- Componente Base (Lógica Original) ---
+const JeansRegistrationBlockBase = ({
   config,
   onAction
 }: {
@@ -56,6 +60,7 @@ export const JeansRegistrationBlock = ({
         const reference = parts[0];
         const imageUrl = parts[1];
 
+        // Ação Server-Side (Sem revalidatePath interno para evitar reload)
         const res = await linkReferenceImageAction({ reference, imageUrl, storeSlug: 'maryland-gestao' });
         if (res.success && 'reference' in res) {
           successCount++;
@@ -73,7 +78,7 @@ export const JeansRegistrationBlock = ({
     });
   };
 
-  // LÓGICA 2: PROCESSAR TEXTO BRUTO (CORRIGIDA)
+  // LÓGICA 2: PROCESSAR TEXTO BRUTO
   const handleBulkProcess = () => {
     if (!bulkTextInput.trim()) return;
     startTransition(async () => {
@@ -158,3 +163,34 @@ export const JeansRegistrationBlock = ({
     </div>
   );
 };
+
+// 🛡️ GUARDIAN: Exportação com Rastreamento
+// CORREÇÃO APLICADA: Alterado de "COMPONENT" para "UI_COMPONENT" para satisfazer o TypeScript.
+export const JeansRegistrationBlock = withGuardian(
+  JeansRegistrationBlockBase,
+  "components/builder/blocks/JeansRegistrationBlock.tsx",
+  "UI_COMPONENT", 
+  {
+    label: "Registro de Jeans (Bulk)",
+    description: "Interface de alta performance para cadastro em massa de produtos via texto bruto e vinculação de imagens.",
+    orientationNotes: `
+⚠️ **Pontos Críticos**:
+- **Tokenizer**: Utiliza lógica de quebra de texto complexa no Server Action.
+- **Performance**: O 'revalidatePath' foi removido do loop de imagens para evitar recarregamentos excessivos.
+- **Estado**: Gerencia 'sessionRefs' localmente para feedback instantâneo.
+    `.trim(),
+    connectsTo: [
+      { 
+        target: "app/actions/jeans-registration.ts", 
+        type: "EXTERNAL", 
+        description: "Server Actions: linkReferenceImageAction, processBulkJeansAction" 
+      },
+      {
+        target: "components/builder/blocks/sistemre/*",
+        type: "COMPONENT",
+        description: "Sub-componentes visuais (Cards, Forms)"
+      }
+    ],
+    tags: ["Inventory", "Bulk Action", "High Performance"]
+  }
+);

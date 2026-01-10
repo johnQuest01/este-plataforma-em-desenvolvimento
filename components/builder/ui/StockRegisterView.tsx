@@ -1,3 +1,4 @@
+// components/builder/ui/StockRegisterView.tsx
 'use client';
 
 import React, { useState, useRef } from 'react';
@@ -9,7 +10,7 @@ import {
   Tag, 
   Box, 
   Barcode, 
-  Image as ImageIcon, 
+  ImageIcon, 
   Store, 
   DollarSign, 
   ChevronLeft, 
@@ -33,7 +34,6 @@ interface StockRegisterViewProperties {
   onRegister?: (productData: { image?: string }) => void;
 }
 
-// 🏗️ COMPONENTE BASE (Local)
 const StockRegisterViewBase = ({ onBack, onRegister }: StockRegisterViewProperties) => {
   const [isToggleActive, setIsToggleActive] = useState(true);
   const [isVariationsOpen, setIsVariationsOpen] = useState(false);
@@ -114,11 +114,17 @@ const StockRegisterViewBase = ({ onBack, onRegister }: StockRegisterViewProperti
         if (itemWithPhoto) finalImageBase64 = itemWithPhoto.images[0];
       }
 
+      // ✅ CORREÇÃO DE TIPAGEM: Sincronização de stock/qty para satisfazer o CreateProductInputSchema
       const result = await saveProductAction({
         name: sanitizedName,
         price: productPrice,
         visibility: productVisibility,
-        variations: savedVariations.map(v => ({ ...v, name: sanitizedName })),
+        variations: savedVariations.map(v => ({ 
+          ...v, 
+          name: sanitizedName,
+          stock: v.qty, // Mapeia qty para stock conforme exigido pelo schema do backend
+          qty: v.qty
+        })),
         image: finalImageBase64
       });
 
@@ -227,7 +233,6 @@ const StockRegisterViewBase = ({ onBack, onRegister }: StockRegisterViewProperti
   );
 };
 
-// 🚀 EXPORTAÇÃO INTELIGENTE
 export const StockRegisterView = withGuardian(
   StockRegisterViewBase, 
   "components/builder/ui/StockRegisterView.tsx", 
@@ -239,24 +244,10 @@ export const StockRegisterView = withGuardian(
 ⚠️ **Arquitetura de Fluxo**:
 - Esta é a tela "Pai" que orquestra vários modais (Variações, Preço, Estoque).
 - **Persistência**: Acumula o estado localmente e só salva via 'saveProductAction' no final.
-- **Eventos**: Dispara 'PRODUCT_UPDATE_EVENT' após sucesso para atualizar a grid principal.
     `,
     connectsTo: [
-      { 
-        target: "components/builder/ui/StockVariationsPopup.tsx", 
-        type: "COMPONENT", 
-        description: "Modal de Variações (Filho)" 
-      },
-      { 
-        target: "components/builder/ui/StockPricePopup.tsx", 
-        type: "COMPONENT", 
-        description: "Modal de Preço (Filho)" 
-      },
-      { 
-        target: "app/actions/product.ts", 
-        type: "EXTERNAL", 
-        description: "Server Action: saveProductAction" 
-      }
+      { target: "components/builder/ui/StockVariationsPopup.tsx", type: "COMPONENT", description: "Modal de Variações" },
+      { target: "app/actions/product.ts", type: "EXTERNAL", description: "Action: saveProductAction" }
     ],
     tags: ["Main View", "Product Management", "Orchestrator"]
   }

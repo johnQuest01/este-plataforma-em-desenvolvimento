@@ -38,9 +38,11 @@ const withProgressiveWebApp = withProgressiveWebAppInitialization({
 });
 
 const nextConfiguration: NextConfiguration = {
+  // --- CORREÇÃO TURBOPACK (Next 16) ---
+  // Silencia o erro de conflito entre Webpack (PWA) e Turbopack
+  turbopack: {},
+
   images: {
-    // --- ATUALIZAÇÃO CRÍTICA AQUI ---
-    // Permite SVGs externos (como placehold.co)
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
@@ -50,7 +52,7 @@ const nextConfiguration: NextConfiguration = {
       { protocol: "https", hostname: "replicate.delivery" },
       { protocol: "https", hostname: "firebasestorage.googleapis.com" },
       { protocol: "https", hostname: "*.googleusercontent.com" },
-      // O coringa "**" permite colar QUALQUER link de imagem no formulário
+      // O coringa permite flexibilidade no cadastro de referências externas
       { protocol: "https", hostname: "**" } 
     ],
     unoptimized: false,
@@ -58,7 +60,7 @@ const nextConfiguration: NextConfiguration = {
   
   output: "standalone",
 
-  // Ensure Prisma Client is treated as a server package
+  // Mantém pacotes críticos fora do bundle do cliente
   serverExternalPackages: [
     "@google-cloud/vertexai", 
     "@prisma/client", 
@@ -67,13 +69,15 @@ const nextConfiguration: NextConfiguration = {
   ],
 
   experimental: {
+    // No Next 16, serverActions já são estáveis, mas as configurações de 
+    // limite de tamanho e origens permitidas permanecem aqui.
     serverActions: {
       bodySizeLimit: "50mb",
-      // CORRECTION: Allow your Cloud Workstation origin
       allowedOrigins: [
         "localhost:3000", 
         "*.cloudworkstations.dev", 
-        "*.app.github.dev"
+        "*.app.github.dev",
+        "*.trycloudflare.com" // Adicionado para suportar seus túneis Cloudflare
       ],
     },
   },

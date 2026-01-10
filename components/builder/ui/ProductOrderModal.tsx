@@ -2,26 +2,36 @@
 
 import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  X, 
-  Check, 
-  ShoppingBag, 
-  ArrowRight, 
-  AlertCircle, 
-  Palette, 
-  Component, 
-  Ruler, 
-  Package 
+import {
+  X,
+  Check,
+  ArrowRight,
+  AlertCircle,
+  Palette,
+  Component,
+  Ruler,
+  Package
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProductData } from '@/app/actions/product';
 import { OrderProvider, useOrder } from '@/components/builder/context/OrderContext';
 import { createOrderAction } from '@/app/actions/order';
+import Image from 'next/image';
 
 interface ProductOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
   product: ProductData | null;
+}
+
+// Interface para tipagem segura das variantes
+interface ExtendedVariant {
+  color?: string;
+  variation?: string;
+  type?: string;
+  size?: string;
+  name?: string;
+  [key: string]: unknown;
 }
 
 // --- SUB-COMPONENTE: Mini Preview Card ---
@@ -39,10 +49,12 @@ const MiniPreviewCard = ({ product }: { product: ProductData }) => {
   return (
     <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 flex gap-4 mb-2 animate-in fade-in zoom-in duration-300 shadow-sm">
       <div className="w-24 h-28 bg-white rounded-xl border border-gray-200 overflow-hidden shrink-0 relative shadow-sm">
-        <img 
-          src={product.imageUrl || 'https://placehold.co/100x100/png'} // FIX: mainImage -> imageUrl
-          alt="Preview" 
-          className="w-full h-full object-cover"
+        <Image
+          src={product.imageUrl || 'https://placehold.co/100x100/png'}
+          alt="Preview"
+          fill
+          sizes="96px"
+          className="object-cover"
         />
         {isValidCombination && (
           <div className="absolute bottom-0 left-0 w-full bg-green-500 h-1.5" />
@@ -53,12 +65,12 @@ const MiniPreviewCard = ({ product }: { product: ProductData }) => {
         <h4 className="text-sm font-black text-gray-900 line-clamp-2 leading-tight">
             {product.name}
         </h4>
-        
+       
         <div className="flex flex-wrap gap-2 mt-1">
           <span className={cn(
             "text-xs px-2.5 py-1 rounded-md border font-bold flex items-center gap-1.5 transition-colors",
-            isColorSelected 
-              ? "bg-white border-gray-300 text-gray-900" 
+            isColorSelected
+              ? "bg-white border-gray-300 text-gray-900"
               : "bg-gray-100 border-dashed border-gray-300 text-gray-400"
           )}>
             <Palette size={10} />
@@ -67,8 +79,8 @@ const MiniPreviewCard = ({ product }: { product: ProductData }) => {
 
           <span className={cn(
             "text-xs px-2.5 py-1 rounded-md border font-bold flex items-center gap-1.5 transition-colors",
-            isModelSelected 
-              ? "bg-white border-gray-300 text-gray-900" 
+            isModelSelected
+              ? "bg-white border-gray-300 text-gray-900"
               : "bg-gray-100 border-dashed border-gray-300 text-gray-400"
           )}>
             <Component size={10} />
@@ -77,8 +89,8 @@ const MiniPreviewCard = ({ product }: { product: ProductData }) => {
 
           <span className={cn(
             "text-xs px-2.5 py-1 rounded-md border font-bold flex items-center gap-1.5 transition-colors",
-            isSizeSelected 
-              ? "bg-gray-900 border-gray-900 text-white" 
+            isSizeSelected
+              ? "bg-gray-900 border-gray-900 text-white"
               : "bg-gray-100 border-dashed border-gray-300 text-gray-400"
           )}>
             <Ruler size={10} />
@@ -101,18 +113,17 @@ const MiniPreviewCard = ({ product }: { product: ProductData }) => {
 
 // --- COMPONENTE PRINCIPAL DO CONTEÚDO DO MODAL ---
 const OrderModalContent = ({ onClose }: { onClose: () => void }) => {
-  const { 
-    buyQuantity, 
-    totalValue, 
-    isValidCombination, 
-    product, 
-    selections, 
+  const {
+    buyQuantity,
+    totalValue,
+    isValidCombination,
+    product,
+    selections,
     setSelection,
     checkOptionAvailability
   } = useOrder();
 
   const options = useMemo(() => {
-    // FIX: Use variants instead of variations
     if (!product || !product.variants) return { colors: [], types: [], sizes: [] };
 
     const colors = new Set<string>();
@@ -120,14 +131,14 @@ const OrderModalContent = ({ onClose }: { onClose: () => void }) => {
     const sizes = new Set<string>();
 
     product.variants.forEach(v => {
-      // Safe access with casting for flexible schema
-      const anyV = v as any;
+      // CORREÇÃO: Cast seguro para ExtendedVariant
+      const anyV = v as unknown as ExtendedVariant;
       if (anyV.color) colors.add(anyV.color.trim());
       else colors.add('Padrão');
 
       const typeVal = anyV.variation || anyV.type;
       if (typeVal) types.add(typeVal.trim());
-      
+     
       const sizeVal = anyV.size || v.name;
       if (sizeVal) sizes.add(sizeVal.trim());
     });
@@ -153,9 +164,12 @@ const OrderModalContent = ({ onClose }: { onClose: () => void }) => {
     if (!product || options.types.length === 0) return [];
     if (!selections['color']) return options.types;
 
-    // FIX: Use variants
-    const variationsForColor = product.variants.filter(v => (v as any).color === selections['color']);
-    const hasTypeForColor = variationsForColor.some(v => (v as any).variation || (v as any).type);
+    // CORREÇÃO: Cast seguro
+    const variationsForColor = product.variants.filter(v => (v as unknown as ExtendedVariant).color === selections['color']);
+    const hasTypeForColor = variationsForColor.some(v => {
+        const ev = v as unknown as ExtendedVariant;
+        return ev.variation || ev.type;
+    });
 
     return hasTypeForColor ? options.types : [];
   }, [product, selections, options.types]);
@@ -164,7 +178,7 @@ const OrderModalContent = ({ onClose }: { onClose: () => void }) => {
 
   const isFormComplete = Boolean(
     (options.colors.length === 0 || selections['color']) &&
-    (relevantTypes.length === 0 || selections['model']) && 
+    (relevantTypes.length === 0 || selections['model']) &&
     (options.sizes.length === 0 || selections['size'])
   );
 
@@ -181,14 +195,13 @@ const OrderModalContent = ({ onClose }: { onClose: () => void }) => {
     try {
       await createOrderAction({
         title: product.name,
-        total: totalValue, 
+        total: totalValue,
         itemsCount: buyQuantity,
-        // Add items for stock deduction
         items: [{ productId: product.id, quantity: buyQuantity }]
       });
-      
+     
       if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
-      
+     
       alert(`✅ Pedido Realizado!\n\nProduto: ${product.name}\nValor: R$ ${totalValue.toFixed(2)}`);
       onClose();
     } catch (error) {
@@ -230,15 +243,15 @@ const OrderModalContent = ({ onClose }: { onClose: () => void }) => {
                   {options.colors.map((color) => {
                     const isSelected = selections['color'] === color;
                     const { available } = checkOptionAvailability('color', color);
-                    
+                   
                     return (
-                      <button 
-                        key={color} 
+                      <button
+                        key={color}
                         onClick={() => handleSelection('color', color)}
                         className={cn(
                           "group transition-all flex items-center gap-3 pr-5 pl-2 py-2 rounded-full border-2",
-                          isSelected 
-                            ? "border-gray-900 bg-gray-50 ring-1 ring-gray-900 scale-105" 
+                          isSelected
+                            ? "border-gray-900 bg-gray-50 ring-1 ring-gray-900 scale-105"
                             : "border-gray-100 bg-white hover:border-gray-300",
                           !available && "opacity-50 grayscale"
                         )}
@@ -276,13 +289,13 @@ const OrderModalContent = ({ onClose }: { onClose: () => void }) => {
                     const { available } = checkOptionAvailability('model', type);
 
                     return (
-                      <button 
-                        key={type} 
+                      <button
+                        key={type}
                         onClick={() => handleSelection('model', type)}
                         className={cn(
-                          "px-6 py-3.5 rounded-xl border-2 text-sm font-bold uppercase transition-all shadow-sm", 
-                          isSelected 
-                            ? "bg-[#5874f6] border-[#5874f6] text-white shadow-blue-500/30 scale-105" 
+                          "px-6 py-3.5 rounded-xl border-2 text-sm font-bold uppercase transition-all shadow-sm",
+                          isSelected
+                            ? "bg-[#5874f6] border-[#5874f6] text-white shadow-blue-500/30 scale-105"
                             : "bg-white border-gray-100 text-gray-700 hover:bg-gray-50 hover:border-gray-300",
                           !available && "opacity-50"
                         )}
@@ -307,13 +320,13 @@ const OrderModalContent = ({ onClose }: { onClose: () => void }) => {
                     const { available, qty } = checkOptionAvailability('size', size);
 
                     return (
-                      <button 
-                        key={size} 
+                      <button
+                        key={size}
                         onClick={() => handleSelection('size', size)}
                         className={cn(
                           "w-16 h-16 flex flex-col items-center justify-center rounded-2xl border-2 transition-all active:scale-95",
-                          isSelected 
-                            ? "bg-gray-900 border-gray-900 text-white shadow-xl scale-105" 
+                          isSelected
+                            ? "bg-gray-900 border-gray-900 text-white shadow-xl scale-105"
                             : "bg-white border-gray-100 text-gray-900 hover:border-gray-300",
                            !available && "opacity-40"
                         )}
@@ -354,13 +367,13 @@ const OrderModalContent = ({ onClose }: { onClose: () => void }) => {
                 </span>
             </div>
 
-            <button 
+            <button
                 onClick={handleSubmitOrder}
                 disabled={!canSubmitOrder}
                 className={cn(
                     "flex-1 h-14 rounded-2xl flex items-center justify-center gap-3 shadow-lg transition-all duration-300",
                     canSubmitOrder
-                        ? "bg-[#00c853] text-white hover:bg-[#00b34a] shadow-green-500/30 active:scale-95 cursor-pointer" 
+                        ? "bg-[#00c853] text-white hover:bg-[#00b34a] shadow-green-500/30 active:scale-95 cursor-pointer"
                         : "bg-gray-100 text-gray-400 shadow-none cursor-not-allowed"
                 )}
             >

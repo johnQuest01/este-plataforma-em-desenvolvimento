@@ -41,14 +41,7 @@ const ProductDetailInner = () => {
     size: false
   });
 
-  // --- EXTRAÇÃO DE METADADOS ---
-  const metadata = useMemo(() => {
-    if (!product || !product.variants || product.variants.length === 0) return { category: null, keyword: null };
-    return {
-        category: 'Geral', 
-        keyword: 'Novo'
-    };
-  }, [product]);
+  // METADATA REMOVED: unused variable caused build error
 
   const options = useMemo(() => {
     if (!product || !product.variants) return { colors: [], types: [], sizes: [] };
@@ -99,10 +92,14 @@ const ProductDetailInner = () => {
 
     if (Object.values(newErrors).some(Boolean)) {
       if (navigator.vibrate) navigator.vibrate(50);
-      const missingFields = [];
+      
+      // FIX: Explicitly typed array to avoid 'never[]' inference error
+      const missingFields: string[] = [];
+      
       if (newErrors.color) missingFields.push("Cor");
       if (newErrors.model) missingFields.push("Tipo");
       if (newErrors.size) missingFields.push("Tamanho");
+      
       alert(`⚠️ Por favor, selecione: ${missingFields.join(", ")}.`);
       return;
     }

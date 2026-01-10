@@ -154,3 +154,12 @@ model GuardianConfig {
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 }
+
+// --- CONFIGURAÇÃO DE LAYOUT LEGO (FIX BUILD ERROR) ---
+model UIConfig {
+  id        String   @id @default(cuid())
+  pageSlug  String   @unique // ex: 'home', 'pos', 'inventory'
+  layout    Json     @default("[]") // Onde ficam os blocos Lego
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}

@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowRight, PackageX } from 'lucide-react';
-import { BlockConfig, ProductItem } from '@/types/builder';
+// ✅ CORREÇÃO: Removido 'ProductItem' que não estava sendo usado
+import { BlockConfig } from '@/types/builder';
 import { ProductData, getProductsAction } from '@/app/actions/product';
 import { useRouter } from 'next/navigation';
 import { formatCurrencyBRL } from '@/lib/utils/currency';
@@ -81,7 +82,7 @@ export const ProductGridBlock = ({ config }: ProductGridBlockProps) => {
         </div>
       ) : (
         <div className="flex gap-3 overflow-x-auto px-4 pb-4 scrollbar-hide snap-x snap-mandatory">
-          {displayProducts.map((item) => {
+          {displayProducts.map((item, index) => {
             const name = item.name;
             const price = item.price; // String ISO ou formatada
 
@@ -94,9 +95,12 @@ export const ProductGridBlock = ({ config }: ProductGridBlockProps) => {
                imageUrl = `https://placehold.co/800x800/e2e8f0/white?text=${name.substring(0,3)}`;
             }
 
+            // Key única garantida (ID ou fallback para index)
+            const uniqueKey = item.id ? `prod-${item.id}` : `prod-idx-${index}`;
+
             return (
               <div
-                key={item.id}
+                key={uniqueKey}
                 className="min-w-[170px] max-w-[170px] border border-gray-200 rounded-xl overflow-hidden bg-white relative flex flex-col shadow-sm snap-start shrink-0 cursor-pointer active:scale-[0.98] transition-transform duration-200"
                 onClick={() => handleProductClick(item)}
               >
@@ -121,7 +125,6 @@ export const ProductGridBlock = ({ config }: ProductGridBlockProps) => {
                     </p>
                     {price && (
                       <p className="font-black text-gray-900 text-base mt-1">
-                        {/* CORREÇÃO: Formatação aplicada na renderização */}
                         {formatCurrencyBRL(price)}
                       </p>
                     )}

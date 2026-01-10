@@ -126,7 +126,8 @@ export type BlockType =
   | 'ready-stock-list'
   | 'stock-distribution-popup'
   | 'total-sales'
-  | 'standard-button'; // ✅ REGISTRADO PARA LEGO ARCHITECTURE
+  | 'standard-button'
+  | 'jeans-registration'; // ✅ REGISTRADO PARA LEGO ARCHITECTURE E BUILD FIX
 
 export interface MenuItem {
   id: string;

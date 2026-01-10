@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { BulkTextSchema, LinkImageSchema, LinkImageInput, BulkTextInput } from '@/schemas/jeans-registration-schema';
+import { Prisma } from '@prisma/client'; // Importação necessária para tipagem estrita
 
 // --- HELPER: NORMALIZAÇÃO ESTRITA ---
 function normalizeRef(ref: string): string {
@@ -10,7 +11,8 @@ function normalizeRef(ref: string): string {
 }
 
 // --- HELPER: GET OR CREATE STORE ---
-async function getOrCreateStore(tx: any, slug: string) {
+// CORREÇÃO: Tipagem estrita do TransactionClient
+async function getOrCreateStore(tx: Prisma.TransactionClient, slug: string) {
   let store = await tx.store.findUnique({ where: { slug } });
   if (!store) {
     let owner = await tx.user.findFirst();
@@ -26,7 +28,7 @@ async function getOrCreateStore(tx: any, slug: string) {
   return store;
 }
 
-// --- ACTION 1: VINCULAR IMAGEM (CORRIGIDO: REMOVIDO REVALIDATEPATH) ---
+// --- ACTION 1: VINCULAR IMAGEM ---
 export async function linkReferenceImageAction(input: LinkImageInput) {
   const result = LinkImageSchema.safeParse(input);
   if (!result.success) return { success: false, error: "Dados inválidos." };
@@ -35,7 +37,7 @@ export async function linkReferenceImageAction(input: LinkImageInput) {
   const normalizedRef = normalizeRef(reference);
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const transactionResult = await prisma.$transaction(async (tx) => {
       const store = await getOrCreateStore(tx, storeSlug);
       const existing = await tx.product.findFirst({
         where: { storeId: store.id, OR: [{ reference: normalizedRef }, { tags: { has: normalizedRef } }] }
@@ -56,19 +58,15 @@ export async function linkReferenceImageAction(input: LinkImageInput) {
       }
       return { success: true, reference: normalizedRef, hasImage: !!imageUrl };
     });
-    
-    // REMOVIDO: revalidatePath('/pos'); 
-    // MOTIVO: Esta ação é chamada em loop no cliente. O revalidatePath aqui causava 
-    // múltiplos reloads desnecessários. O estado local do React já cuida da UI.
-    
-    return result;
+   
+    return transactionResult;
   } catch (error) {
     console.error("Erro img:", error);
     return { success: false, error: "Erro ao salvar imagem." };
   }
 }
 
-// --- ACTION 2: PROCESSAMENTO INTELIGENTE (MANTIDO) ---
+// --- ACTION 2: PROCESSAMENTO INTELIGENTE ---
 export async function processBulkJeansAction(input: BulkTextInput) {
   const result = BulkTextSchema.safeParse(input);
   if (!result.success) return { success: false, error: "Texto inválido." };
@@ -239,7 +237,6 @@ export async function processBulkJeansAction(input: BulkTextInput) {
       }));
     });
 
-    // Aqui mantemos o revalidatePath pois é uma ação única de massa
     revalidatePath('/pos');
     return { success: true, results: processedItems };
   } catch (error) {
