@@ -61,15 +61,18 @@ export interface CartVariation {
   qty: number;
   size?: string;
   color?: string;
-  [key: string]: unknown;
+  // Adicione outros campos se necessário, mas evite 'any' se possível
+  [key: string]: unknown; 
 }
 
 export interface CartProduct {
   id: string;
   name: string;
-  price: string;
+  // ✅ CORREÇÃO: Alterado de string para number para alinhar com o backend
+  price: number; 
   mainImage: string;
   variations: CartVariation[];
+  // Permitir propriedades extras do ProductData se necessário
   [key: string]: unknown;
 }
 
@@ -77,7 +80,7 @@ export interface CartItem {
   cartId: string;
   product: CartProduct;
   quantity: number;
-  variationLabel?: string;
+  variationLabel: string;
 }
 
 export type PaymentMethod = 'credit' | 'debit' | 'pix' | 'cash';

@@ -2,16 +2,17 @@ import { z } from 'zod';
 
 // --- SCHEMAS DE VALIDAÇÃO (ZOD) ---
 
-// Schema base para variante (usado tanto na criação quanto na leitura)
+// Schema base para variante (Híbrido: Aceita Input da UI e Output do Banco)
 export const ProductVariantSchema = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
-  price: z.string().nullable().optional(),
   
-  // CORREÇÃO: 'stock' é o campo do banco, mas 'qty' é o input da UI.
-  // Permitimos ambos, mas garantimos que um deles exista ou tenha default.
+  // ATUALIZAÇÃO: Aceita string (do input mask) OU number (do banco já convertido)
+  price: z.union([z.string(), z.number()]).nullable().optional(),
+  
+  // Compatibilidade UI/Banco para estoque
   stock: z.number().int().nonnegative().default(0), 
-  qty: z.number().int().nonnegative().default(0), // Adicionado para compatibilidade com UI
+  qty: z.number().int().nonnegative().default(0), 
 
   sku: z.string().nullable().optional(),
   images: z.array(z.string()).default([]),
@@ -20,35 +21,44 @@ export const ProductVariantSchema = z.object({
   type: z.string().optional(),
 });
 
+// Schema de Dados do Produto (Output para o Frontend)
 export const ProductDataSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().nullable(),
-  price: z.string(),
+  
+  // ATUALIZAÇÃO: Agora é estritamente number para facilitar cálculos no front
+  price: z.number(),
+  
   imageUrl: z.string().nullable(),
   isVisible: z.boolean(),
   stock: z.number(),
   storeId: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  
   variants: z.array(ProductVariantSchema),
+  
   // Campos opcionais para compatibilidade com UI
   mainImage: z.string().optional(),
   tag: z.string().optional(),
   imageColor: z.string().optional(),
 });
 
-// Schema de Entrada para Criação (O que vem do formulário)
+// Schema de Entrada para Criação (Input do Formulário)
 export const CreateProductInputSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
+  
+  // O preço principal vem como string do input mask (ex: "R$ 100,00")
   price: z.string().min(1, "Preço é obrigatório"),
-  // Aqui usamos o ProductVariantSchema que agora aceita 'qty'
+  
   variations: z.array(ProductVariantSchema), 
   visibility: z.string(),
   image: z.string().optional(),
   storeId: z.string().optional(),
 });
 
+// Tipos inferidos automaticamente
 export type ProductData = z.infer<typeof ProductDataSchema>;
 export type ProductVariantData = z.infer<typeof ProductVariantSchema>;
 export type CreateProductInput = z.infer<typeof CreateProductInputSchema>;

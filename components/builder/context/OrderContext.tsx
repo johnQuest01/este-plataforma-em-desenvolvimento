@@ -2,13 +2,12 @@
 'use client';
 
 import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
-import { ProductData } from '@/app/actions/product';
+import { ProductData } from '@/app/actions/product.schema'; // Importando o tipo correto
 
 // ✅ GUARDIAN: Importação do HOC
 import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
 // 1. Definição de Tipo Local para garantir segurança ao acessar propriedades dinâmicas
-// Isso substitui o uso perigoso de 'any'
 interface SafeVariant {
   color?: string | null;
   size?: string | null;
@@ -16,6 +15,14 @@ interface SafeVariant {
   variation?: string | null;
   name?: string | null;
   stock?: number | null;
+}
+
+// Interface do Item do Carrinho (Re-exportada para uso global se necessário)
+export interface CartItem {
+  cartId: string;
+  product: ProductData;
+  quantity: number;
+  variationLabel: string;
 }
 
 interface OrderContextType {
@@ -33,6 +40,14 @@ interface OrderContextType {
 
   resetOrder: () => void;
   checkOptionAvailability: (groupType: string, value: string) => { available: boolean; qty: number };
+  
+  // Carrinho Global
+  cart: CartItem[];
+  addToCart: (product: ProductData, variationLabel: string) => void;
+  removeFromCart: (cartId: string) => void;
+  updateQuantity: (cartId: string, delta: number) => void;
+  clearCart: () => void;
+  totalItems: number;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
@@ -45,9 +60,14 @@ const OrderProviderBase = ({
   children: React.ReactNode,
   product: ProductData | null
 }) => {
+  // --- ESTADOS DE SELEÇÃO (Página de Detalhes) ---
   const [selections, setSelections] = useState<Record<string, string | null>>({});
   const [buyQuantity, setBuyQuantity] = useState<number>(1);
 
+  // --- ESTADOS DO CARRINHO (Global) ---
+  const [cart, setCart] = useState<CartItem[]>([]);
+
+  // --- LÓGICA DE SELEÇÃO ---
   const setSelection = (groupType: string, value: string | null) => {
     setSelections(prev => ({
       ...prev,
@@ -58,22 +78,17 @@ const OrderProviderBase = ({
 
   const basePrice = useMemo(() => {
     if (!product) return 0;
-    const cleanPrice = product.price.replace(/[^\d,]/g, '').replace(',', '.');
-    return parseFloat(cleanPrice) || 0;
+    // ✅ CORREÇÃO: Uso direto do number, sem parse
+    return typeof product.price === 'number' ? product.price : 0;
   }, [product]);
 
-  // --- CORREÇÃO: Tipagem Estrita e Tratamento de Nulos ---
   const filterVariations = useCallback((currentSelections: Record<string, string | null>) => {
     if (!product || !product.variants) return [];
 
     return product.variants.filter(v => {
-      // ✅ Casting seguro para a interface local definida acima
       const safeV = v as unknown as SafeVariant;
-
-      // ✅ Tratamento seguro de strings opcionais (sem 'any' e sem erro de undefined)
       const variantAttributes: Record<string, string> = {
         'color': safeV.color?.trim() || 'Padrão',
-        // Se size não existir, tenta name. Se name for undefined, usa string vazia.
         'size': safeV.size?.trim() || safeV.name?.trim() || '',
         'model': (safeV.type || safeV.variation || '').trim() 
       };
@@ -81,10 +96,7 @@ const OrderProviderBase = ({
       return Object.entries(currentSelections).every(([groupKey, userSelectedValue]) => {
         if (!userSelectedValue) return true;
         const variantValue = variantAttributes[groupKey];
-        
-        // Se o atributo não existir na variante, ela não serve
         if (!variantValue) return false;
-        
         return variantValue.toLowerCase() === userSelectedValue.toLowerCase();
       });
     });
@@ -92,7 +104,6 @@ const OrderProviderBase = ({
 
   const currentStock = useMemo(() => {
     const matchingVars = filterVariations(selections);
-    // Mapeia 'stock' (Prisma)
     return matchingVars.reduce((acc, v) => acc + (v.stock || 0), 0);
   }, [filterVariations, selections]);
 
@@ -123,12 +134,51 @@ const OrderProviderBase = ({
     return () => clearTimeout(timer);
   }, [currentStock, buyQuantity]);
 
+  // Valor total da seleção atual (não do carrinho)
   const totalValue = buyQuantity * basePrice;
 
   const resetOrder = () => {
     setSelections({});
     setBuyQuantity(1);
   };
+
+  // --- LÓGICA DO CARRINHO ---
+  const addToCart = (productToAdd: ProductData, variationLabel: string) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.product.id === productToAdd.id && item.variationLabel === variationLabel);
+      if (existing) {
+        return prev.map(item => 
+          item.cartId === existing.cartId 
+            ? { ...item, quantity: item.quantity + 1 } 
+            : item
+        );
+      }
+      return [...prev, {
+        cartId: Math.random().toString(36).substr(2, 9),
+        product: productToAdd,
+        quantity: 1,
+        variationLabel
+      }];
+    });
+  };
+
+  const removeFromCart = (cartId: string) => {
+    setCart(prev => prev.filter(item => item.cartId !== cartId));
+  };
+
+  const updateQuantity = (cartId: string, delta: number) => {
+    setCart(prev => prev.map(item => {
+      if (item.cartId === cartId) {
+        const newQty = Math.max(1, item.quantity + delta);
+        return { ...item, quantity: newQty };
+      }
+      return item;
+    }).filter(item => item.quantity > 0));
+  };
+
+  const clearCart = () => setCart([]);
+
+  const totalItems = useMemo(() => cart.reduce((acc, item) => acc + item.quantity, 0), [cart]);
 
   return (
     <OrderContext.Provider value={{
@@ -142,7 +192,14 @@ const OrderProviderBase = ({
       totalValue,
       isValidCombination,
       resetOrder,
-      checkOptionAvailability
+      checkOptionAvailability,
+      // Carrinho
+      cart,
+      addToCart,
+      removeFromCart,
+      updateQuantity,
+      clearCart,
+      totalItems
     }}>
       {children}
     </OrderContext.Provider>
@@ -153,15 +210,14 @@ const OrderProviderBase = ({
 export const OrderProvider = withGuardian(
   OrderProviderBase,
   "components/builder/context/OrderContext.tsx",
-  "HOOK", // Classificado como HOOK/LOGIC pois é um Provider de Estado
+  "HOOK",
   {
     label: "Contexto de Pedido (Global State)",
-    description: "Gerencia o estado complexo de seleção de produtos (Cor, Tamanho, Quantidade) e cálculo de preço em tempo real.",
+    description: "Gerencia o estado complexo de seleção de produtos e carrinho de compras.",
     orientationNotes: `
 🧠 **Lógica Central**:
-- **filterVariations**: Algoritmo que cruza as seleções do usuário com as variantes disponíveis no produto.
-- **checkOptionAvailability**: Usado pela UI para desabilitar botões de opções esgotadas.
-- **Auto-Correction**: Se o estoque mudar ou a seleção for inválida, a quantidade é ajustada automaticamente.
+- **filterVariations**: Algoritmo que cruza as seleções do usuário com as variantes disponíveis.
+- **Carrinho**: Gerenciado localmente neste contexto para persistência durante a sessão.
     `.trim(),
     connectsTo: [
       { 

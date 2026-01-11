@@ -9,7 +9,10 @@ import { CartItem, PaymentMethod } from '@/types/builder';
 
 // --- SUB-COMPONENTES INTERNOS ---
 const CartItemRow = ({ item, onRemove, onUpdate }: { item: CartItem, onRemove: (id: string) => void, onUpdate: (id: string, d: number) => void }) => {
-    const parsePrice = (priceStr: string) => parseFloat(priceStr.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+    // ✅ CORREÇÃO: Preço agora é number direto
+    const price = typeof item.product.price === 'number' ? item.product.price : 0;
+    const totalItemPrice = price * item.quantity;
+
     return (
         <div className="flex gap-3 py-3 border-b border-gray-100 last:border-0">
             <div className="relative w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200">
@@ -36,7 +39,9 @@ const CartItemRow = ({ item, onRemove, onUpdate }: { item: CartItem, onRemove: (
                             <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
                             <button onClick={() => onUpdate(item.cartId, 1)} className="w-6 flex items-center justify-center hover:bg-gray-200 rounded-r-md text-gray-600"><Plus size={12}/></button>
                         </div>
-                        <span className="text-sm font-black text-gray-900">R$ {(parsePrice(item.product.price) * item.quantity).toFixed(2).replace('.', ',')}</span>
+                        <span className="text-sm font-black text-gray-900">
+                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalItemPrice)}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -122,7 +127,9 @@ export const CartSidebar = ({
         <div className="flex justify-between items-end mb-4">
           <div className="flex flex-col">
             <span className="text-sm font-medium text-gray-500">Total a Pagar</span>
-            <span className="text-3xl font-black text-gray-900 tracking-tight">R$ {total.toFixed(2).replace('.', ',')}</span>
+            <span className="text-3xl font-black text-gray-900 tracking-tight">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total)}
+            </span>
           </div>
           <div className="text-right">
             <span className="text-xs font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded-md">{itemsCount} itens</span>

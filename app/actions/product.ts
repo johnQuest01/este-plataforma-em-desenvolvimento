@@ -33,12 +33,14 @@ const parseVariantMetadata = (fullName: string) => {
   return { baseName: fullName, color: 'Padrão', size: 'Único', type: undefined };
 };
 
+// ✅ CORREÇÃO: Conversão de Decimal para Number
 const mapToUserInterface = (product: Prisma.ProductGetPayload<{ include: { variants: true } }>): ProductData => {
   return {
     id: product.id,
     name: product.name,
     description: product.description,
-    price: product.price.toString(), 
+    // Alterado de toString() para Number() para facilitar cálculos no front
+    price: Number(product.price), 
     imageUrl: product.imageUrl,
     isVisible: product.isVisible,
     stock: product.stock,
@@ -50,7 +52,8 @@ const mapToUserInterface = (product: Prisma.ProductGetPayload<{ include: { varia
       return {
         id: variant.id,
         name: metadata.baseName,
-        price: variant.price ? variant.price.toString() : null,
+        // Alterado de toString() para Number()
+        price: variant.price ? Number(variant.price) : null,
         stock: variant.stock,
         sku: variant.sku,
         images: variant.images,
@@ -97,9 +100,7 @@ export async function saveProductAction(inputData: CreateProductInput) {
                 data: {
                     email: "admin@sistema.com",
                     name: "Admin Sistema",
-                    // CORREÇÃO: Adicionado campo 'document' obrigatório (CPF fictício para admin)
                     document: "000.000.000-00", 
-                    // Adicione outros campos obrigatórios do seu User aqui se houver (ex: password, role)
                 }
             });
         }

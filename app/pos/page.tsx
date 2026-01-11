@@ -12,7 +12,7 @@ import { ProductData, getProductsAction } from '@/app/actions/product';
 import { createOrderAction, getOrdersAction } from '@/app/actions/order';
 import { getCashRegisterStatus, openCashRegister, closeCashRegister, CashRegisterData } from '@/app/actions/cash';
 import { getReadyForStoreItemsAction, dispatchFromStoreAction, returnToProductionAction } from '@/app/actions/production';
-import { CartItem, PaymentMethod, ProductionItemData, CartVariation } from '@/types/builder';
+import { CartItem, PaymentMethod, ProductionItemData, CartVariation, CartProduct } from '@/types/builder'; // Import CartProduct e CartVariation
 
 // COMPONENTES
 import { CartSidebar } from './components/CartSidebar';
@@ -146,8 +146,6 @@ export default function POSPage() {
     return products.filter(p => p.name.toLowerCase().includes(lower) || p.id.toLowerCase().includes(lower));
   }, [searchQuery, products]);
 
-  const parsePrice = (priceStr: string) => parseFloat(priceStr.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
-
   const addToCart = (product: ProductData) => {
     const existingItem = cart.find(item => item.product.id === product.id);
     const variants = product.variants || [];
@@ -160,13 +158,19 @@ export default function POSPage() {
       setCart(prev => prev.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item));
     } else {
       const defaultVar = variants[0];
-      const cartProduct = {
-        ...product,
+      
+      // ✅ CORREÇÃO: Mapeamento explícito para CartProduct
+      const cartProduct: CartProduct = {
+        id: product.id,
+        name: product.name,
+        // Garante que price seja number
+        price: typeof product.price === 'number' ? product.price : Number(product.price),
         mainImage: product.imageUrl || '',
-        variations: variants.map(v => ({
+        // Mapeia as variações do ProductData para CartVariation
+        variations: (product.variants || []).map(v => ({
             qty: v.stock,
-            size: v.name,
-            color: 'Padrão'
+            size: v.size || undefined,
+            color: v.color || undefined
         }))
       };
 
@@ -174,7 +178,7 @@ export default function POSPage() {
         cartId: Math.random().toString(36).substr(2, 9),
         product: cartProduct,
         quantity: 1,
-        variationLabel: defaultVar ? defaultVar.name : 'Padrão'
+        variationLabel: defaultVar ? defaultVar.name || 'Padrão' : 'Padrão'
       };
       setCart(prev => [...prev, newCartItem]);
     }
@@ -187,6 +191,7 @@ export default function POSPage() {
       if (item.cartId === cartId) {
         const newQty = item.quantity + delta;
         if (delta > 0) {
+          // Casting seguro pois sabemos a estrutura
           const vars = item.product.variations as CartVariation[];
           const maxStock = vars ? vars.reduce((acc, v) => acc + (v.qty || 0), 0) : 0;
           if (newQty > maxStock) return item;
@@ -197,7 +202,13 @@ export default function POSPage() {
     }));
   };
 
-  const subtotal = cart.reduce((acc, item) => acc + (parsePrice(item.product.price) * item.quantity), 0);
+  // ✅ CORREÇÃO: Cálculo direto com number
+  const subtotal = cart.reduce((acc, item) => {
+    // Garante que price seja tratado como number
+    const price = typeof item.product.price === 'number' ? item.product.price : Number(item.product.price);
+    return acc + (price * item.quantity);
+  }, 0);
+
   const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   const handleFinishSale = async () => {
@@ -370,7 +381,9 @@ export default function POSPage() {
       <div className="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-4 pb-safe-bottom z-50 flex items-center justify-between shadow-[0_-5px_20px_rgba(0,0,0,0.1)]">
         <div className="flex flex-col" onClick={() => setIsMobileCartOpen(true)}>
           <span className="text-xs font-bold text-gray-400 uppercase">Total</span>
-          <span className="text-xl font-black text-gray-900">R$ {subtotal.toFixed(2).replace('.', ',')}</span>
+          <span className="text-xl font-black text-gray-900">
+            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(subtotal)}
+          </span>
         </div>
         <button 
           onClick={() => setIsMobileCartOpen(true)} 
