@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -16,10 +16,12 @@ import { FooterBlock } from '@/components/builder/blocks/Footer';
 import { BlockRenderer } from '@/components/builder/BlockRender';
 import { ReelsModal } from '@/components/builder/ui/ReelsModal';
 import { StoreHeader } from '@/components/builder/blocks/Header';
+// REMOVIDO: import { HealthMonitorBlock } ... (Já está no RootLayoutShell)
 
 export default function DashboardPage() {
   const router = useRouter();
 
+  // Estado inicial carrega apenas os blocos de conteúdo
   const [blocks, setBlocks] = useState<BlockConfig[]>(CLOTHING);
   const [currentTheme, setCurrentTheme] = useState('clothing');
   const [showAdmin, setShowAdmin] = useState(false);
@@ -38,12 +40,19 @@ export default function DashboardPage() {
     checkAuth();
   }, [router]);
 
+  /**
+   * Troca de Temas
+   */
   const switchTheme = (theme: string) => {
     setCurrentTheme(theme);
-    if (theme === 'clothing') setBlocks(CLOTHING);
-    if (theme === 'barber') setBlocks(BARBER);
-    if (theme === 'tech') setBlocks(TECH);
-    if (theme === 'xmas') setBlocks(XMAS);
+    let newBlocks: BlockConfig[] = [];
+
+    if (theme === 'clothing') newBlocks = CLOTHING;
+    if (theme === 'barber') newBlocks = BARBER;
+    if (theme === 'tech') newBlocks = TECH;
+    if (theme === 'xmas') newBlocks = XMAS;
+
+    setBlocks(newBlocks);
     setShowAdmin(false);
   };
 
@@ -54,9 +63,14 @@ export default function DashboardPage() {
     return 'bg-gray-50';
   };
 
-  const footerBlock = blocks.find(b => b.type === 'footer');
-  const headerBlock = blocks.find(b => b.type === 'header');
-  const scrollableBlocks = blocks.filter(b => b.type !== 'footer' && b.type !== 'header');
+  // Memoização da filtragem para performance (React 19)
+  const layout = useMemo(() => {
+    return {
+      header: blocks.find(b => b.type === 'header'),
+      footer: blocks.find(b => b.type === 'footer'),
+      content: blocks.filter(b => b.type !== 'footer' && b.type !== 'header')
+    };
+  }, [blocks]);
 
   const handleBlockAction = (action: string, payload?: unknown) => {
     if (action === 'openReels' && payload) {
@@ -65,25 +79,34 @@ export default function DashboardPage() {
   };
 
   const handleOpenGlobalAdmin = () => {
-     window.dispatchEvent(new Event('toggle_admin_menu'));
-     setShowAdmin(false);
+    window.dispatchEvent(new Event('toggle_admin_menu'));
+    setShowAdmin(false);
   };
 
   if (!isReady) return null;
 
   return (
     <main className="w-full h-dvh-real bg-gray-900 lg:flex lg:justify-center lg:items-center lg:py-8 overflow-hidden relative">
+     
+      {/* Botão Flutuante de Admin (Canto Superior Direito) */}
       <div className="absolute top-4 right-4 z-[9999] flex flex-col items-end gap-2">
-        <button onClick={() => setShowAdmin(!showAdmin)} className="bg-white text-black p-3 rounded-full shadow-xl hover:scale-110 transition-transform border-2 border-purple-500">
+        <button
+          onClick={() => setShowAdmin(!showAdmin)}
+          className="bg-white text-black p-3 rounded-full shadow-xl hover:scale-110 transition-transform border-2 border-purple-500"
+        >
           <Wand2 size={24} className="text-purple-600" />
         </button>
+       
         {showAdmin && (
           <div className="bg-white p-2 rounded-xl shadow-2xl flex flex-col gap-2 min-w-[140px] animate-in fade-in slide-in-from-top-2">
             <span className="text-[10px] font-bold text-gray-400 uppercase px-2">Opções</span>
-            <button onClick={handleOpenGlobalAdmin} className="text-left px-3 py-2 hover:bg-gray-100 rounded-lg text-xs font-bold text-purple-600 border border-purple-100 bg-purple-50 mb-1">
+            <button
+              onClick={handleOpenGlobalAdmin}
+              className="text-left px-3 py-2 hover:bg-gray-100 rounded-lg text-xs font-bold text-purple-600 border border-purple-100 bg-purple-50 mb-1"
+            >
               ⚙️ Painel Admin
             </button>
-            <div className="h-px bg-gray-200 my-1"></div>
+            <div className="h-px bg-gray-200 my-1" />
             <span className="text-[10px] font-bold text-gray-400 uppercase px-2">Temas</span>
             <button onClick={() => switchTheme('clothing')} className="text-left px-3 py-2 hover:bg-gray-100 rounded-lg text-xs font-bold text-blue-600">👕 Loja Roupas</button>
             <button onClick={() => switchTheme('barber')} className="text-left px-3 py-2 hover:bg-gray-100 rounded-lg text-xs font-bold text-yellow-700">💈 Barbearia</button>
@@ -93,31 +116,47 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <div className={cn("w-full h-full flex flex-col relative overflow-hidden transition-colors duration-500", "lg:h-[850px] lg:max-h-[90vh] lg:w-full lg:max-w-[420px]", "lg:rounded-[2.5rem] lg:border-[8px] lg:border-gray-800 lg:shadow-2xl", "max-w-[100vw] lg:mx-auto", getAppBg())}>
-        
+      {/* Frame do Dispositivo (Mobile Viewport) */}
+      <div className={cn(
+        "w-full h-full flex flex-col relative overflow-hidden transition-colors duration-500",
+        "lg:h-[850px] lg:max-h-[90vh] lg:w-full lg:max-w-[420px]",
+        "lg:rounded-[2.5rem] lg:border-[8px] lg:border-gray-800 lg:shadow-2xl",
+        "max-w-[100vw] lg:mx-auto",
+        getAppBg()
+      )}>
+       
+        {/* 
+            REMOVIDO: <HealthMonitorBlock /> 
+            Motivo: Agora ele é injetado globalmente no RootLayoutShell.tsx
+        */}
+
         {currentTheme === 'tech' && (
-          <div className="absolute inset-0 pointer-events-none opacity-20 z-0" style={{ backgroundImage: 'linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+          <div className="absolute inset-0 pointer-events-none opacity-20 z-0" style={{ backgroundImage: 'linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
         )}
 
-        <div className={cn("shrink-0 z-[60] relative transition-colors duration-300", currentTheme === 'tech' ? 'bg-[#050505]' : currentTheme === 'barber' ? 'bg-[#F5F5DC]' : currentTheme === 'xmas' ? 'bg-[#D42426]' : 'bg-white')}>
-          <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-xl pointer-events-none z-50"></div>
-          {headerBlock && (
-            <StoreHeader 
-              style={headerBlock.style} 
-              data={{ 
-                address: headerBlock.data.address as string, 
-                title: 'Loja' 
-              }} 
+        {/* Header Fixo */}
+        <div className={cn(
+          "shrink-0 z-[60] relative transition-colors duration-300",
+          currentTheme === 'tech' ? 'bg-[#050505]' : currentTheme === 'barber' ? 'bg-[#F5F5DC]' : currentTheme === 'xmas' ? 'bg-[#D42426]' : 'bg-white'
+        )}>
+          <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-xl pointer-events-none z-50" />
+          {layout.header && (
+            <StoreHeader
+              style={layout.header.style}
+              data={{
+                address: layout.header.data.address as string,
+                title: 'Maryland SaaS'
+              }}
             />
           )}
         </div>
 
-        {/* CONTEÚDO CORRIGIDO: overscroll-contain removido para rolagem fluida */}
+        {/* Área de Scroll com Blocos Dinâmicos */}
         <div className="flex-1 overflow-y-auto scrollbar-hide bg-transparent relative w-full pb-32 z-10">
-          <div className="flex flex-col min-h-full">
+          <div className="flex flex-col min-h-full p-4 gap-4">
             <AnimatePresence mode='wait'>
-              <div key={currentTheme} className="animate-in fade-in zoom-in-95 duration-500">
-                {scrollableBlocks.map((block) => (
+              <div key={currentTheme} className="animate-in fade-in zoom-in-95 duration-500 flex flex-col gap-4">
+                {layout.content.map((block) => (
                   <BlockRenderer key={block.id} config={block} onAction={handleBlockAction} />
                 ))}
               </div>
@@ -125,10 +164,11 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {footerBlock && footerBlock.isVisible && (
+        {/* Footer Fixo */}
+        {layout.footer && layout.footer.isVisible && (
           <div className="absolute bottom-0 left-0 w-full z-50 pb-safe-bottom bg-transparent pointer-events-none">
             <div className="pointer-events-auto">
-              <FooterBlock config={footerBlock} />
+              <FooterBlock config={layout.footer} />
             </div>
           </div>
         )}

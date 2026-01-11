@@ -1,7 +1,7 @@
 // src/components/builder/blocks/MasterGuardianDashboard.tsx
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -19,14 +19,16 @@ import { GuardianViewManager } from "./master/viewmanager/GuardianViewManager";
 function MasterGuardianDashboardBase() {
   const pathname = usePathname();
   const { isOpen } = useGuardianStore();
+  const containerRef = useRef<HTMLDivElement>(null);
  
   // Local State
   const [view, setView] = useState<DashboardView>('SCANNER');
   const [loading, setLoading] = useState<boolean>(false);
   const [focusedFile, setFocusedFile] = useState<string | undefined>(undefined);
+  const [inspectingFile, setInspectingFile] = useState<{ name: string, type: 'UI' | 'LOGIC' } | null>(null);
   const [data, setData] = useState<GuardianAuditResponse | null>(null);
 
-  // ✅ NOVO: Estado para controlar a Sidebar no Mobile
+  // Estado para Sidebar Mobile
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const performOmniscientScan = useCallback(async () => {
@@ -45,7 +47,7 @@ function MasterGuardianDashboardBase() {
 
   useEffect(() => {
     setFocusedFile(undefined);
-    setIsMobileSidebarOpen(false); // Fecha sidebar ao navegar
+    setIsMobileSidebarOpen(false);
   }, [pathname]);
 
   if (process.env.NODE_ENV !== "development") return null;
@@ -56,70 +58,88 @@ function MasterGuardianDashboardBase() {
 
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            // ✅ LAYOUT RESPONSIVO: Padding menor no mobile, fundo total
-            className="fixed inset-0 bg-[#050505] z-[9999] flex flex-col p-2 md:p-6 overflow-hidden font-sans"
-          >
-            {/* Header com controle de Menu Mobile */}
-            <GuardianHeader
-              pathname={pathname}
-              currentView={view}
-              onViewChange={setView}
-              onRefresh={performOmniscientScan}
-              loading={loading}
-              onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+          <>
+            {/* Backdrop Transparente (Permite ver o app atrás, mas foca na janela) */}
+            <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[9998]"
             />
 
-            <div className="flex-1 flex flex-col md:flex-row gap-4 md:gap-6 overflow-hidden relative mt-2 md:mt-0">
+            {/* JANELA FLUTUANTE COMPACTA */}
+            <motion.div
+              ref={containerRef}
+              drag
+              dragMomentum={false}
+              dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }} 
+              dragListener={false} // Arrasto controlado apenas pelo Header
               
-              {/* 
-                 ✅ SIDEBAR RESPONSIVA (DRAWER)
-                 - Desktop: Exibição normal (block)
-                 - Mobile: Absolute, desliza da esquerda ou aparece como modal
-              */}
-              <AnimatePresence>
-                {(isMobileSidebarOpen || (typeof window !== 'undefined' && window.innerWidth >= 768)) && (
-                  <motion.div
-                    initial={{ x: -300, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: -300, opacity: 0 }}
-                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className={`
-                      absolute inset-0 z-50 md:static md:z-auto md:block
-                      ${isMobileSidebarOpen ? 'block' : 'hidden md:block'}
-                    `}
-                  >
-                    <div className="h-full w-full md:w-80 bg-[#050505] md:bg-transparent pr-2 md:pr-0">
-                        <GuardianSidebar
-                            data={data}
-                            activeFile={focusedFile}
-                            onFocusFile={(file) => {
-                                setFocusedFile(file);
-                                setIsMobileSidebarOpen(false); // Fecha ao selecionar no mobile
-                            }}
-                            onClearFocus={() => setFocusedFile(undefined)}
-                        />
-                        {/* Botão fechar menu mobile */}
-                        <button 
-                            onClick={() => setIsMobileSidebarOpen(false)}
-                            className="md:hidden absolute top-4 right-4 p-2 bg-zinc-800 text-white rounded-full"
-                        >
-                            ✕
-                        </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Área Principal */}
-              <div className="flex-1 bg-zinc-900/20 rounded-2xl md:rounded-[3rem] border border-zinc-800/50 relative overflow-hidden flex flex-col">
-                <GuardianViewManager view={view} data={data} />
+              initial={{ opacity: 0, scale: 0.9, y: 50 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 50 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              
+              className={`
+                fixed z-[9999] flex flex-col overflow-hidden font-sans shadow-2xl border border-zinc-800/90 bg-[#09090b]
+                /* Mobile: Compacto e Flutuante */
+                w-[94vw] h-[75vh] left-[3vw] top-[12.5vh] rounded-2xl
+                /* Desktop: Janela Confortável */
+                md:w-[900px] md:h-[650px] md:left-[calc(50%-450px)] md:top-[calc(50%-325px)] md:rounded-3xl
+              `}
+            >
+              {/* Header (Área de Arrasto) */}
+              <div onPointerDown={(e) => {}}>
+                 <GuardianHeader
+                    pathname={pathname}
+                    currentView={view}
+                    onViewChange={setView}
+                    onRefresh={performOmniscientScan}
+                    loading={loading}
+                    onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+                 />
               </div>
-            </div>
-          </motion.div>
+
+              {/* Corpo do Painel */}
+              <div 
+                className="flex-1 flex overflow-hidden relative bg-zinc-950/50"
+                onPointerDown={(e) => e.stopPropagation()} 
+              >
+                
+                {/* Sidebar (Drawer no Mobile) */}
+                <div className={`
+                    absolute inset-y-0 left-0 z-30 w-64 bg-zinc-900/95 border-r border-zinc-800 transform transition-transform duration-300 ease-in-out shadow-2xl
+                    md:relative md:translate-x-0 md:bg-transparent md:border-r-0 md:w-64 md:shadow-none
+                    ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+                `}>
+                    <GuardianSidebar
+                        data={data}
+                        activeFile={focusedFile}
+                        onFocusFile={(file) => {
+                            setFocusedFile(file);
+                            setIsMobileSidebarOpen(false);
+                        }}
+                        onInspectFile={(name, type) => setInspectingFile({ name, type })}
+                        onClearFocus={() => setFocusedFile(undefined)}
+                    />
+                </div>
+
+                {/* Área Principal */}
+                <div className="flex-1 flex flex-col overflow-hidden relative bg-zinc-900/30 md:rounded-tl-2xl border-l border-zinc-800/50">
+                   {/* Overlay para fechar sidebar no mobile */}
+                   {isMobileSidebarOpen && (
+                       <div 
+                           className="absolute inset-0 bg-black/60 z-20 md:hidden backdrop-blur-sm"
+                           onClick={() => setIsMobileSidebarOpen(false)}
+                       />
+                   )}
+                   
+                   <GuardianViewManager view={view} data={data} />
+                </div>
+
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </>

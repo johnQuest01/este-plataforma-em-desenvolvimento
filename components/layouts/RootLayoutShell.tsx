@@ -8,6 +8,9 @@ import { MasterGuardianDashboard } from "@/components/builder/blocks/MasterGuard
 import { GlobalGuardianObserver } from "@/components/builder/blocks/master/RexRuntimePixel";
 import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
+// ✅ NOVA IMPORTAÇÃO: O Widget Flutuante Global
+import { HealthMonitorBlock } from "@/components/builder/blocks/HealthMonitorBlock";
+
 interface RootLayoutShellProps {
   children: React.ReactNode;
 }
@@ -18,7 +21,7 @@ function RootLayoutShellBase({ children }: RootLayoutShellProps) {
 
   return (
     <>
-      {/* Camada de Conteúdo Principal */}
+      {/* Camada de Conteúdo Principal (Páginas) */}
       <main className="relative z-0">
         {children}
       </main>
@@ -26,6 +29,12 @@ function RootLayoutShellBase({ children }: RootLayoutShellProps) {
       {/* Camada de Utilidades de Admin (Production Ready) */}
       <GlobalAdmin />
       <InstallPrompt />
+
+      {/* 
+          ✅ INJEÇÃO DO MONITOR DE SAÚDE 
+          Como ele tem position: fixed no CSS dele, ele flutuará sobre tudo.
+      */}
+      <HealthMonitorBlock />
 
       {/* GUARDIAN ARCHITECTURE (DEV ONLY) 
           Protege o bundle de produção e performance.
@@ -52,6 +61,7 @@ export const RootLayoutShell = withGuardian(
     connectsTo: [
       { target: "components/admin/GlobalAdmin.tsx", type: "COMPONENT", description: "Painel Admin Global" },
       { target: "components/builder/blocks/MasterGuardianDashboard.tsx", type: "COMPONENT", description: "O Painel Guardian" },
+      { target: "components/builder/blocks/HealthMonitorBlock.tsx", type: "COMPONENT", description: "Widget de Monitoramento" },
       { target: "app/layout.tsx", type: "EXTERNAL", description: "Invocador (Server Component)" }
     ],
     tags: ["Core", "Layout", "System"]

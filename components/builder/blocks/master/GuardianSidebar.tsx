@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { Layers, Eye, Box, Target, RotateCcw, Maximize } from "lucide-react";
+import { Layers, Eye, Box, Target, RotateCcw, Maximize, ArrowRight } from "lucide-react";
 import { GuardianAuditResponse } from "@/schemas/guardian-schema";
 import { cn } from "@/lib/utils";
 import { useGuardianStore } from "@/hooks/use-guardian-store";
@@ -11,7 +11,6 @@ interface GuardianSidebarProps {
   data: GuardianAuditResponse | null;
   activeFile?: string;
   onFocusFile: (file: string) => void;
-  // Tornamos opcional (?) para não quebrar o MasterGuardianDashboard que removeu o estado de inspeção
   onInspectFile?: (file: string, type: 'UI' | 'LOGIC') => void;
   onClearFocus: () => void;
 }
@@ -23,130 +22,121 @@ export function GuardianSidebar({ data, activeFile, onFocusFile, onInspectFile, 
 
   const handleNavigateToCodeMap = (file: string) => {
     onFocusFile(file);
-    // Verificação de segurança antes de chamar
-    if (onInspectFile) {
-      onInspectFile(file, 'UI');
-    }
+    if (onInspectFile) onInspectFile(file, 'UI');
     setTab('CODE_MAP');
   };
 
   return (
-    // ✅ RESPONSIVIDADE: w-full no mobile, w-80 no desktop
-    <div className="w-full md:w-80 flex flex-col gap-4 shrink-0 h-full">
-      <div className={cn(
-        "p-4 md:p-6 rounded-2xl md:rounded-[2.5rem] border backdrop-blur-sm flex flex-col h-full overflow-hidden transition-all duration-300",
-        isFocusMode ? "bg-indigo-950/30 border-indigo-500/30 shadow-lg shadow-indigo-900/20" : "bg-zinc-900/90 md:bg-zinc-900/30 border-zinc-800/50"
-      )}>
-        <div className="flex items-center justify-between mb-4 md:mb-6">
+    <div className="w-full h-full flex flex-col bg-zinc-900/50">
+      {/* Header da Sidebar */}
+      <div className="p-3 border-b border-zinc-800 flex items-center justify-between shrink-0 bg-zinc-900">
           <h3 className={cn(
-            "text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-colors",
+            "text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors",
             isFocusMode ? "text-indigo-400" : "text-zinc-500"
           )}>
-            {isFocusMode ? <Target className="w-4 h-4" /> : <Layers className="w-4 h-4" />}
-            {isFocusMode ? "Modo Foco" : "Arquivos da Rota"}
+            {isFocusMode ? <Target className="w-3 h-3" /> : <Layers className="w-3 h-3" />}
+            {isFocusMode ? "Foco" : "Estrutura"}
           </h3>
          
           {isFocusMode && (
             <button
               onClick={onClearFocus}
-              className="p-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-full text-zinc-400 hover:text-white transition-colors"
-              title="Voltar"
+              className="p-1 bg-zinc-800 hover:bg-zinc-700 rounded-md text-zinc-400 hover:text-white transition-colors border border-zinc-700"
             >
-              <RotateCcw size={12} />
+              <RotateCcw size={10} />
             </button>
           )}
-        </div>
+      </div>
 
-        <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2">
-          {/* Conteúdo da Sidebar */}
-          {!isFocusMode && popups.length > 0 && (
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-2 px-1">
-                <Maximize size={10} className="text-amber-400" />
-                <span className="text-[9px] font-black text-amber-400 uppercase tracking-wider">
-                  Popups ({popups.length})
-                </span>
-              </div>
-              <div className="space-y-2">
-                {popups.map(popupFile => (
-                  <button
-                    key={popupFile}
-                    onClick={() => handleNavigateToCodeMap(popupFile)}
-                    className="w-full p-3 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 rounded-xl text-left transition-all group flex items-center justify-between cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2 overflow-hidden">
-                      <Box size={14} className="text-amber-400 shrink-0" />
-                      <span className="text-[10px] font-bold text-amber-100 truncate">
-                        {popupFile.split('/').pop()}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
+      {/* Lista Scrollável */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-3">
+        
+        {/* Popups */}
+        {!isFocusMode && popups.length > 0 && (
+          <div>
+            <div className="flex items-center gap-1.5 mb-1.5 px-1">
+              <Maximize size={10} className="text-amber-400" />
+              <span className="text-[9px] font-bold text-amber-400 uppercase tracking-wider">
+                Popups ({popups.length})
+              </span>
             </div>
-          )}
-
-          {data?.screenMetadata.responsibleFile && (
-            <div className="mb-6">
-              <div className="flex justify-between items-center mb-2 px-1">
-                <span className={cn(
-                  "text-[9px] font-black uppercase tracking-wider",
-                  isFocusMode ? "text-indigo-400" : "text-zinc-500"
-                )}>
-                  {isFocusMode ? "ARQUIVO ATIVO" : "PÁGINA PRINCIPAL"}
-                </span>
-              </div>
-              <div
-                onClick={() => handleNavigateToCodeMap(data.screenMetadata.responsibleFile)}
-                className={cn(
-                  "w-full p-4 rounded-2xl text-left group relative transition-all border cursor-pointer active:scale-95",
-                  isFocusMode
-                    ? "bg-indigo-600/20 border-indigo-500/50"
-                    : "bg-zinc-800/30 border-zinc-700/50 hover:bg-zinc-800/50"
-              )}>
-                <div className="flex justify-between items-center mb-1">
+            <div className="space-y-1">
+              {popups.map(popupFile => (
+                <button
+                  key={popupFile}
+                  onClick={() => handleNavigateToCodeMap(popupFile)}
+                  className="w-full p-2 bg-amber-500/5 border border-amber-500/10 hover:bg-amber-500/10 rounded-md text-left transition-all group flex items-center justify-between cursor-pointer"
+                >
                   <div className="flex items-center gap-2 overflow-hidden">
-                    <Eye size={14} className={cn("shrink-0", isFocusMode ? "text-indigo-300" : "text-zinc-400")} />
-                    <span className={cn("text-xs font-bold truncate", isFocusMode ? "text-white" : "text-zinc-200")}>
-                      {data.screenMetadata.responsibleFile.split('/').pop()}
+                    <Box size={12} className="text-amber-500/70 shrink-0" />
+                    <span className="text-[10px] font-medium text-amber-200/80 truncate">
+                      {popupFile.split('/').pop()}
                     </span>
                   </div>
-                </div>
-                <p className={cn("text-[9px] truncate font-mono mt-1", isFocusMode ? "text-indigo-300" : "text-zinc-500")}>
-                  {data.screenMetadata.responsibleFile}
-                </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Arquivo Principal */}
+        {data?.screenMetadata.responsibleFile && (
+          <div>
+            <div className="flex justify-between items-center mb-1.5 px-1">
+              <span className={cn(
+                "text-[9px] font-bold uppercase tracking-wider",
+                isFocusMode ? "text-indigo-400" : "text-zinc-500"
+              )}>
+                {isFocusMode ? "Ativo" : "Principal"}
+              </span>
+            </div>
+            <div
+              onClick={() => handleNavigateToCodeMap(data.screenMetadata.responsibleFile)}
+              className={cn(
+                "w-full p-2.5 rounded-lg text-left group relative transition-all border cursor-pointer active:scale-95",
+                isFocusMode
+                  ? "bg-indigo-500/10 border-indigo-500/30"
+                  : "bg-zinc-800/40 border-zinc-700/50 hover:bg-zinc-800/60"
+            )}>
+              <div className="flex items-center gap-2 overflow-hidden">
+                <Eye size={12} className={cn("shrink-0", isFocusMode ? "text-indigo-400" : "text-zinc-400")} />
+                <span className={cn("text-[10px] font-bold truncate", isFocusMode ? "text-indigo-100" : "text-zinc-300")}>
+                  {data.screenMetadata.responsibleFile.split('/').pop()}
+                </span>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between px-1 mb-2">
-              <span className="text-[9px] font-black text-zinc-600 uppercase tracking-wider">
-                {isFocusMode ? "Dependências" : "Componentes"}
+        {/* Dependências */}
+        <div>
+            <div className="flex items-center justify-between px-1 mb-1.5">
+              <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-wider">
+                {isFocusMode ? "Deps" : "Componentes"}
               </span>
-              <span className="text-[9px] bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded">
+              <span className="text-[8px] bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded border border-zinc-700">
                 {data?.screenMetadata.relatedFiles.ui.length || 0}
               </span>
             </div>
 
-            {data?.screenMetadata.relatedFiles.ui.map((file) => (
-              <div
-                key={file}
-                onClick={() => handleNavigateToCodeMap(file)}
-                className="w-full text-left p-3 bg-zinc-800/30 hover:bg-zinc-800 border border-zinc-800/50 rounded-xl transition-all group flex items-center justify-between cursor-pointer active:scale-95"
-              >
-                <div className="flex items-center gap-3 overflow-hidden flex-1">
-                  <Box size={14} className="text-zinc-600 group-hover:text-blue-400 transition-colors shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-mono text-zinc-400 group-hover:text-zinc-200 truncate transition-colors">
-                      {file.split('/').pop()}
-                    </p>
-                  </div>
+            <div className="space-y-1">
+                {data?.screenMetadata.relatedFiles.ui.map((file) => (
+                <div
+                    key={file}
+                    onClick={() => handleNavigateToCodeMap(file)}
+                    className="w-full text-left p-2 bg-zinc-800/20 hover:bg-zinc-800/50 border border-zinc-800/30 rounded-md transition-all group flex items-center justify-between cursor-pointer active:scale-95"
+                >
+                    <div className="flex items-center gap-2 overflow-hidden flex-1">
+                    <Box size={12} className="text-zinc-600 group-hover:text-blue-400 transition-colors shrink-0" />
+                    <span className="text-[10px] font-medium text-zinc-400 group-hover:text-zinc-200 truncate transition-colors">
+                        {file.split('/').pop()}
+                    </span>
+                    </div>
                 </div>
-              </div>
-            ))}
-          </div>
+                ))}
+            </div>
         </div>
+
       </div>
     </div>
   );

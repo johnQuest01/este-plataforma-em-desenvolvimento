@@ -1,4 +1,3 @@
-// components/builder/BlockRegistry.ts
 'use client';
 
 import React from 'react';
@@ -8,6 +7,7 @@ import { BlockComponentProps } from '@/types/builder';
 import { MasterGuardianDashboard } from "./blocks/MasterGuardianDashboard";
 import { StandardButtonBlock } from './blocks/StandardButtonBlock';
 import { JeansRegistrationBlock } from './blocks/JeansRegistrationBlock';
+import { HealthMonitorBlock } from './blocks/HealthMonitorBlock';
 
 // --- Imports de Blocos de Layout e UI ---
 import { HeaderBlock } from './blocks/Header';
@@ -54,17 +54,14 @@ import { TotalSalesBlock } from './blocks/TotalSalesBlock';
 
 /**
  * Definição Estrita do Componente Lego
+ * Nota: Removido uso de 'as LegoComponent' no mapeamento para seguir Strict TS.
  */
 type LegoComponent = React.FC<BlockComponentProps>;
 
-/**
- * COMPONENT_MAP
- * Mapeamento central para renderização dinâmica via BlockRenderer.
- * Prioriza Clean Code e Resolução Única.
- */
 export const COMPONENT_MAP: Record<string, LegoComponent> = {
   // Infraestrutura e Governança
-  'master-guardian-dashboard': MasterGuardianDashboard as LegoComponent,
+  'master-guardian-dashboard': MasterGuardianDashboard,
+  'health-monitor': HealthMonitorBlock, // Mantido no registro para compatibilidade, mas usado diretamente no layout
   'standard-button': StandardButtonBlock,
 
   // Layout Base
@@ -98,7 +95,7 @@ export const COMPONENT_MAP: Record<string, LegoComponent> = {
   'action-buttons': ActionButtonsBlock,
   'grid-buttons': GridButtonsBlock,
   'admin-user-card': AdminUserCardBlock,
-  
+ 
   // Histórico e Logística
   'history-search': HistorySearchBlock,
   'client-history-card': ClientHistoryCardBlock,
@@ -109,7 +106,7 @@ export const COMPONENT_MAP: Record<string, LegoComponent> = {
 
   // Dashboard e Analytics
   'total-sales': TotalSalesBlock,
-  
-  // CORREÇÃO: Removido 'as any'. O componente respeita a interface BlockComponentProps.
-  'jeans-registration': JeansRegistrationBlock, 
+ 
+  // Produção
+  'jeans-registration': JeansRegistrationBlock,
 };

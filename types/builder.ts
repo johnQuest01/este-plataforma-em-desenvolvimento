@@ -1,4 +1,7 @@
-// types/builder.ts
+/**
+ * LEGO ARCHITECTURE - GLOBAL TYPES
+ * Stack 2026: Next 16.1.1 | React 19.2.1 | Strict TS
+ */
 
 // --- NOVOS TIPOS PARA PRODUÇÃO ---
 export type ProductionStep = 'sewing' | 'sorting' | 'tagging' | 'packaging' | 'ready';
@@ -93,6 +96,9 @@ export interface ProductVariationData {
   quantity: number;
 }
 
+/**
+ * ✅ ATUALIZAÇÃO: Registro de novos blocos na união estrita
+ */
 export type BlockType =
   | 'header'
   | 'product-grid'
@@ -127,7 +133,9 @@ export type BlockType =
   | 'stock-distribution-popup'
   | 'total-sales'
   | 'standard-button'
-  | 'jeans-registration'; // ✅ REGISTRADO PARA LEGO ARCHITECTURE E BUILD FIX
+  | 'jeans-registration'
+  | 'health-monitor'            // ✅ Adicionado para fixar TS(2322)
+  | 'master-guardian-dashboard'; // ✅ Adicionado conforme seu Registry
 
 export interface MenuItem {
   id: string;
