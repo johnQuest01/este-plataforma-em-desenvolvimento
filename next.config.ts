@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 import withProgressiveWebAppInitialization from "@ducanh2912/next-pwa";
+import path from "path";
 
 /**
  * PWA Configuration - Optimized for 2026 Mobile-First POS
- * Configuração isolada para evitar poluição de escopo no objeto principal.
  */
 const withProgressiveWebApp = withProgressiveWebAppInitialization({
   dest: "public",
@@ -43,16 +43,14 @@ const withProgressiveWebApp = withProgressiveWebAppInitialization({
 
 /**
  * Next.js 16.1.1 Configuration
- * * ESTRATÉGIA ARQUITETURAL:
- * Removemos a anotação explícita ': NextConfig' da variável para desativar o 
- * 'Excess Property Checking' do TypeScript, que estava entrando em conflito 
- * com os tipos internos do wrapper de PWA. A validação estrita agora ocorre 
- * na exportação final, garantindo compatibilidade total.
  */
 const nextConfiguration = {
   output: "standalone",
 
-  // --- IMAGENS ---
+  // CORREÇÃO: Define explicitamente a raiz do projeto para ignorar lockfiles externos
+  outputFileTracingRoot: path.join(__dirname),
+
+  // --- IMAGENS (Preservado conforme solicitado) ---
   images: {
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
@@ -67,7 +65,7 @@ const nextConfiguration = {
     unoptimized: false,
   },
 
-  // --- EXTERNALIZAÇÃO DE PACOTES (RAIZ NO NEXT 16) ---
+  // --- EXTERNALIZAÇÃO DE PACOTES ---
   serverExternalPackages: [
     "@google-cloud/vertexai", 
     "@prisma/client", 
@@ -90,15 +88,9 @@ const nextConfiguration = {
     },
   },
 
-  // --- QUALIDADE E BUILD ---
-  eslint: {
-    ignoreDuringBuilds: false, 
-  },
-  typescript: {
-    ignoreBuildErrors: false,
-  },
+  // CORREÇÃO: Removidas as chaves 'eslint' e 'typescript' do objeto principal
+  // No Next 16, se houver erro de 'Unrecognized key', as configurações de lint 
+  // devem ser mantidas apenas no .eslintrc.json ou passadas via CLI no build.
 };
 
-// A exportação final aplica o wrapper. O TS validará se 'nextConfiguration'
-// é compatível com os argumentos esperados pela biblioteca de PWA.
 export default withProgressiveWebApp(nextConfiguration as NextConfig);
