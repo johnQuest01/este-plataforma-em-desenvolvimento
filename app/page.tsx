@@ -2,24 +2,23 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  User, 
-  Building2, 
-  ArrowRight, 
-  ShieldCheck, 
-  Store, 
-  Phone, 
-  UserCircle, 
-  BadgeCheck 
-} from 'lucide-react'; 
+import {
+  User,
+  Building2,
+  ArrowRight,
+  ShieldCheck,
+  Store,
+  Phone,
+  UserCircle,
+  BadgeCheck
+} from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { LocalDB } from '@/lib/local-db';
 import { AuthInputField } from '@/components/auth/AuthInputField';
 import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
-
-// --- Utilitários de Máscara (Sem Abreviações) ---
+// --- Utilitários de Máscara ---
 const masks = {
   cpf: (value: string) => value
     .replace(/\D/g, '')
@@ -49,12 +48,13 @@ function EntryPageBase() {
     whatsapp: ''
   });
 
-  // Verifica persistência de usuário ao carregar a página
+  // 1. Verifica persistência e redireciona para JEANS (Nova Home)
   useEffect(() => {
     const checkUserTimer = setTimeout(() => {
       const user = LocalDB.getUser();
       if (user) {
-        router.push('/dashboard');
+        // CRITICAL CHANGE: Redireciona para Jeans ao invés de Dashboard
+        router.push('/product/jeans');
       } else {
         setIsLoading(false);
       }
@@ -64,12 +64,12 @@ function EntryPageBase() {
 
   const handleInputChange = (field: string, value: string) => {
     let finalValue = value;
-    
+
     if (field === 'document') {
       const isCpfGroup = personType === 'fisica' || personType === 'vendedor';
       finalValue = isCpfGroup ? masks.cpf(value) : masks.cnpj(value);
     }
-    
+
     if (field === 'whatsapp') {
       finalValue = masks.phone(value);
     }
@@ -83,10 +83,10 @@ function EntryPageBase() {
   const handleRegisterSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setIsLoading(true);
-    
-    // Simulação de processamento (Aumentar para 800ms para feedback visual)
+
+    // Simulação de processamento
     await new Promise((resolvePromise) => setTimeout(resolvePromise, 800));
-    
+
     // Persistência Local (LocalDB)
     LocalDB.saveUser({
       type: personType === 'vendedor' ? 'fisica' : personType, 
@@ -96,7 +96,8 @@ function EntryPageBase() {
       storeName: personType === 'juridica' ? formData.storeName : undefined
     });
 
-    router.push('/dashboard');
+    // CRITICAL CHANGE: Redireciona para Jeans ao invés de Dashboard
+    router.push('/product/jeans');
   };
 
   if (isLoading) {
@@ -112,13 +113,11 @@ function EntryPageBase() {
 
   return (
     <div className="min-h-screen bg-[#f0f2f5] flex items-center justify-center p-4 sm:p-6 relative overflow-hidden">
-      {/* Elementos Decorativos de Background */}
       <div className="absolute top-[-10%] right-[-5%] w-64 h-64 bg-[#5874f6]/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-[-10%] left-[-5%] w-64 h-64 bg-[#5874f6]/10 rounded-full blur-3xl pointer-events-none" />
 
       <main className="bg-white w-full max-w-[420px] rounded-3xl shadow-2xl border border-gray-100 p-6 sm:p-8 relative z-10 animate-in fade-in zoom-in duration-300">
         
-        {/* Header do Bloco de Identificação */}
         <div className="flex flex-col items-center mb-6 text-center">
           <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-3 shadow-sm border border-blue-100">
             <ShieldCheck size={28} className="text-[#5874f6]" strokeWidth={2} />
@@ -129,7 +128,6 @@ function EntryPageBase() {
 
         <form onSubmit={handleRegisterSubmit} className="flex flex-col gap-4">
           
-          {/* Seletor de Tipo de Pessoa (Física/Jurídica) */}
           <div className="flex bg-gray-100 rounded-xl p-1 shadow-inner">
             <button 
               type="button" 
@@ -159,7 +157,6 @@ function EntryPageBase() {
             </button>
           </div>
 
-          {/* Toggle de Vendedor */}
           <button 
             type="button"
             onClick={() => { 
@@ -237,13 +234,14 @@ function EntryPageBase() {
       </main>
 
       <footer className="absolute bottom-4 text-center text-[10px] text-gray-400 font-medium">
-        <p>© 2025 B2B Engine.</p>
+        <p>© 2026 Maryland Gestão.</p>
       </footer>
     </div>
   );
 }
+
 export default withGuardian(
-  EntryPageBase,                        // O Componente
-  "app/page.tsx",        // O Caminho Exato (aparecerá no Card)
-  "PAGE"                          // O Tipo (Define o ícone e a cor)
+  EntryPageBase,
+  "app/page.tsx",
+  "PAGE"
 );

@@ -1,4 +1,3 @@
-// components/builder/ui/StockRegisterView.tsx
 'use client';
 
 import React, { useState, useRef } from 'react';
@@ -6,18 +5,8 @@ import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { 
-  Camera, 
-  Type, 
-  Tag, 
-  Box, 
-  Barcode, 
-  ImageIcon, 
-  Store, 
-  DollarSign, 
-  ChevronLeft, 
-  CheckCircle2, 
-  Save, 
-  ArrowRightLeft 
+  Camera, Type, Tag, Box, Barcode, ImageIcon, Store, 
+  DollarSign, ChevronLeft, CheckCircle2, Save, ArrowRightLeft 
 } from 'lucide-react';
 
 import { StockVariationsPopup, VariationItem } from './StockVariationsPopup';
@@ -26,16 +15,16 @@ import { StockResupplyPopup } from './StockResupplyPopup';
 import { saveProductAction } from '@/app/actions/product';
 import { PRODUCT_UPDATE_EVENT } from '@/components/builder/blocks/ProductGrid';
 import { fileToBase64 } from '@/utils/image-helper';
-
-// 🛡️ GUARDIAN: Importação do HOC
 import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
+// ✅ TIPAGEM ESTRITA
 interface StockRegisterViewProperties {
   onBack: () => void;
   onRegister?: (productData: { image?: string }) => void;
+  isPageMode?: boolean; // Nova prop para controle de layout
 }
 
-const StockRegisterViewBase = ({ onBack, onRegister }: StockRegisterViewProperties) => {
+const StockRegisterViewBase = ({ onBack, onRegister, isPageMode = false }: StockRegisterViewProperties) => {
   const [isToggleActive, setIsToggleActive] = useState(true);
   const [isVariationsOpen, setIsVariationsOpen] = useState(false);
   const [isPriceOpen, setIsPriceOpen] = useState(false);
@@ -96,7 +85,6 @@ const StockRegisterViewBase = ({ onBack, onRegister }: StockRegisterViewProperti
 
   const handleConfirmRegister = async () => {
     const sanitizedName = productName.trim();
-
     if (!sanitizedName) return alert("⚠️ Digite o nome do produto antes de salvar!");
     
     const hasVariationPhoto = savedVariations.some(v => v.images && v.images.length > 0);
@@ -115,7 +103,6 @@ const StockRegisterViewBase = ({ onBack, onRegister }: StockRegisterViewProperti
         if (itemWithPhoto) finalImageBase64 = itemWithPhoto.images[0];
       }
 
-      // ✅ CORREÇÃO DE TIPAGEM: Sincronização de stock/qty para satisfazer o CreateProductInputSchema
       const result = await saveProductAction({
         name: sanitizedName,
         price: productPrice,
@@ -123,7 +110,7 @@ const StockRegisterViewBase = ({ onBack, onRegister }: StockRegisterViewProperti
         variations: savedVariations.map(v => ({ 
           ...v, 
           name: sanitizedName,
-          stock: v.qty, // Mapeia qty para stock conforme exigido pelo schema do backend
+          stock: v.qty,
           qty: v.qty
         })),
         image: finalImageBase64
@@ -152,12 +139,17 @@ const StockRegisterViewBase = ({ onBack, onRegister }: StockRegisterViewProperti
   };
 
   return (
-    <div className="absolute inset-0 z-10 flex flex-col h-full bg-[#eeeeee] animate-in slide-in-from-right duration-300">
+    <div className={cn(
+      "flex flex-col bg-[#eeeeee] transition-all duration-300",
+      // ✅ LÓGICA HÍBRIDA: Se for PageMode, ocupa o container relativo. Se for Modal, usa absolute inset-0.
+      isPageMode ? "relative w-full h-full rounded-3xl bg-white" : "absolute inset-0 z-10 h-full animate-in slide-in-from-right"
+    )}>
       <input type="file" ref={cameraInputReference} accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
       <input type="file" ref={galleryInputReference} accept="image/*" className="hidden" onChange={handleFileChange} />
 
       <div className="flex-1 overflow-y-auto scrollbar-hide p-3 pb-32 space-y-2">
-        <div className="bg-white rounded-2xl p-3 shadow-sm border border-gray-200 flex items-center justify-between">
+        {/* Header Interno (Ocultar se estiver em PageMode pois a página terá seu próprio header, ou manter estilizado) */}
+        <div className={cn("bg-white rounded-2xl p-3 shadow-sm border border-gray-200 flex items-center justify-between", isPageMode && "border-none shadow-none px-0")}>
           <div className="flex flex-col">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Novo Item</span>
             <h2 className="text-lg font-black text-gray-900 tracking-tight leading-none">Cadastrar</h2>
@@ -192,7 +184,8 @@ const StockRegisterViewBase = ({ onBack, onRegister }: StockRegisterViewProperti
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        {/* ✅ GRID RESPONSIVO: 2 colunas no mobile, 4 no desktop (lg) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           {gridButtons.map((button, index) => {
             const isPriceSet = button.action === 'openPrice' && productPrice !== 'R$ 0,00';
             const hasVars = button.action === 'openVariations' && savedVariations.length > 0;
@@ -210,12 +203,13 @@ const StockRegisterViewBase = ({ onBack, onRegister }: StockRegisterViewProperti
         </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 w-full p-3 pt-6 bg-gradient-to-t from-[#eeeeee] to-transparent z-20">
+      {/* Footer de Ações */}
+      <div className={cn("absolute bottom-0 left-0 w-full p-3 pt-6 bg-gradient-to-t from-[#eeeeee] to-transparent z-20", isPageMode && "from-white rounded-b-3xl")}>
         <div className="flex gap-2">
-          <button onClick={handleSafeBack} disabled={isSendingData} className="flex-1 h-14 bg-[#ff4d6d] text-white rounded-xl shadow-lg flex items-center justify-center gap-2">
+          <button onClick={handleSafeBack} disabled={isSendingData} className="flex-1 h-14 bg-[#ff4d6d] text-white rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-[#e0435f] transition-colors">
             <ChevronLeft size={20} strokeWidth={3} /><span className="font-black text-xs uppercase">Cancelar</span>
           </button>
-          <button onClick={handleConfirmRegister} disabled={isSendingData} className="flex-[2] h-14 bg-[#5874f6] text-white rounded-xl shadow-lg flex items-center justify-center gap-2">
+          <button onClick={handleConfirmRegister} disabled={isSendingData} className="flex-[2] h-14 bg-[#5874f6] text-white rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-[#4a63d8] transition-colors">
             {isSendingData ? <span className="animate-pulse">Salvando...</span> : <><Save size={20} strokeWidth={2.5} /><span className="font-black text-sm uppercase">FINALIZAR CADASTRO</span></>}
           </button>
         </div>
@@ -246,16 +240,16 @@ export const StockRegisterView = withGuardian(
   "UI_COMPONENT",
   {
     label: "Tela de Cadastro de Produto",
-    description: "Hub central para criação de novos produtos, gerenciando fotos, preços e variações.",
+    description: "Hub central para criação de novos produtos. Suporta modo Modal e Página Completa.",
     orientationNotes: `
-⚠️ **Arquitetura de Fluxo**:
-- Esta é a tela "Pai" que orquestra vários modais (Variações, Preço, Estoque).
-- **Persistência**: Acumula o estado localmente e só salva via 'saveProductAction' no final.
+⚠️ **Arquitetura Híbrida**:
+- **isPageMode=true**: Renderiza relativo, sem animação de entrada, grid expandido (Desktop).
+- **isPageMode=false**: Renderiza absoluto, com animação slide-in (Mobile/Modal).
     `,
     connectsTo: [
       { target: "components/builder/ui/StockVariationsPopup.tsx", type: "COMPONENT", description: "Modal de Variações" },
       { target: "app/actions/product.ts", type: "EXTERNAL", description: "Action: saveProductAction" }
     ],
-    tags: ["Main View", "Product Management", "Orchestrator"]
+    tags: ["Main View", "Product Management", "Hybrid UI"]
   }
 );

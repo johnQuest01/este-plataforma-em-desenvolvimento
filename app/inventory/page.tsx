@@ -1,7 +1,7 @@
-// path: src/app/inventory/page.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -17,19 +17,19 @@ import { StoreHeader } from '@/components/builder/blocks/Header';
 
 // --- IMPORTS DOS POPUPS ---
 import { StockModal } from '@/components/builder/ui/StockModal';
-import { CatalogModal } from '@/components/builder/ui/CatalogModal'; // Tela de Fazer Pedido (Loja)
-import { OrdersModal } from '@/components/builder/ui/OrdersModal';   // Tela de Ver Pedidos (Status)
+import { CatalogModal } from '@/components/builder/ui/CatalogModal';
+import { OrdersModal } from '@/components/builder/ui/OrdersModal';
 
-// 1. Renomeamos o componente para "Base" para poder envolver no HOC depois
 function InventoryPageBase() {
+  const router = useRouter();
   const [blocks, setBlocks] = useState<BlockConfig[]>(INVENTORY_BLOCKS);
 
   // --- ESTADOS DOS MODAIS ---
-  const [isStockModalOpen, setIsStockModalOpen] = useState(false);
-  const [isCatalogModalOpen, setIsCatalogModalOpen] = useState(false); // Modal Catálogo
-  const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);   // Modal Pedidos (Novo)
+  const [isStockModalOpen, setIsStockModalOpen] = useState<boolean>(false);
+  const [isCatalogModalOpen, setIsCatalogModalOpen] = useState<boolean>(false);
+  const [isOrdersModalOpen, setIsOrdersModalOpen] = useState<boolean>(false);
 
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState<boolean>(false);
 
   // --- EFEITO DE MONITORAMENTO ---
   useEffect(() => {
@@ -64,16 +64,19 @@ function InventoryPageBase() {
   const handleBlockAction = (action: string) => {
     switch (action) {
       case 'openStockModal':
-        setIsStockModalOpen(true);
+        // ✅ LÓGICA HÍBRIDA: Desktop vai para rota dedicada, Mobile abre modal
+        if (typeof window !== 'undefined' && window.innerWidth > 1024) {
+          router.push('/inventory/register');
+        } else {
+          setIsStockModalOpen(true);
+        }
         break;
       
       case 'openOrders': 
-        // Botão "Pedidos" (Grid Topo) -> Abre Lista de Status
         setIsOrdersModalOpen(true); 
         break;
 
       case 'openCatalog': 
-        // Botão "Fazer pedido" (Botões Baixo) -> Abre a Loja/Catálogo
         setIsCatalogModalOpen(true); 
         break;
 
@@ -172,11 +175,10 @@ function InventoryPageBase() {
 }
 
 // 2. Exportação com a Etiqueta Inteligente (Guardian Beacon)
-// Agora esta página aparecerá na "Tela Ativa" e mostrará suas conexões no "Modo Foco".
 export default withGuardian(
   InventoryPageBase,
   "app/inventory/page.tsx",
-  "LAYOUT", // Tipo LAYOUT pois é uma página estrutural
+  "LAYOUT",
   {
     label: "Dashboard de Inventário",
     description: "Hub central de controle de estoque. Gerencia navegação para Catálogo, Pedidos e Cadastro.",
@@ -185,6 +187,7 @@ export default withGuardian(
 - Layout Mobile-First com container centralizado em Desktop.
 - Utiliza 'BlockRenderer' para renderizar componentes dinâmicos (Lego).
 - Gerencia estado de 3 Modais principais.
+- **Roteamento Híbrido**: Redireciona para /inventory/register em Desktop.
     `.trim(),
     connectsTo: [
       { 
@@ -206,8 +209,13 @@ export default withGuardian(
         target: "app/actions.ts", 
         type: "EXTERNAL", 
         description: "Server Action: checkForNewImage (Polling)" 
+      },
+      {
+        target: "app/inventory/register/page.tsx",
+        type: "ROUTE",
+        description: "Rota Desktop para Cadastro"
       }
     ],
-    tags: ["Main Route", "Dashboard", "Inventory"]
+    tags: ["Main Route", "Dashboard", "Inventory", "Hybrid Routing"]
   }
 );

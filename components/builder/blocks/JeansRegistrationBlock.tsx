@@ -16,8 +16,9 @@ import { JeansBulkForm } from './sistemre/JeansBulkForm';
 import { JeansLinkForm } from './sistemre/JeansLinkForm';
 import { JeansSessionCard } from './sistemre/JeansSessionCard';
 import { DevelopmentCard } from './sistemre/DevelopmentCard';
+// ✅ IMPORTAÇÃO DA NAVEGAÇÃO
+import { JeansNavigation } from './sistemre/JeansNavigation';
 
-// --- Componente Base (Lógica Original) ---
 const JeansRegistrationBlockBase = ({
   config
 }: {
@@ -27,8 +28,8 @@ const JeansRegistrationBlockBase = ({
   const title = (config.data.title as string) || 'Jeans';
  
   // Inputs
-  const [refImageInput, setRefImageInput] = useState("");
-  const [bulkTextInput, setBulkTextInput] = useState("");
+  const [refImageInput, setRefImageInput] = useState<string>("");
+  const [bulkTextInput, setBulkTextInput] = useState<string>("");
  
   // Histórico e Resultados
   const [sessionRefs, setSessionRefs] = useState<{ ref: string; hasImage: boolean }[]>([]);
@@ -39,9 +40,10 @@ const JeansRegistrationBlockBase = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll({ container: scrollRef });
 
-  const headerOpacity = useTransform(scrollY, [0, 200], [1, 0]);
-  const headerScale = useTransform(scrollY, [0, 200], [1, 0.9]);
-  const headerY = useTransform(scrollY, [0, 200], [0, -50]);
+  // Ajuste fino da animação: O header desaparece mais rápido no mobile para liberar visão
+  const headerOpacity = useTransform(scrollY, [0, 150], [1, 0]);
+  const headerScale = useTransform(scrollY, [0, 150], [1, 0.95]);
+  const headerY = useTransform(scrollY, [0, 150], [0, -40]);
  
   // LÓGICA 1: VINCULAR REFERÊNCIA E IMAGEM
   const handleLinkImage = () => {
@@ -58,7 +60,6 @@ const JeansRegistrationBlockBase = ({
         const reference = parts[0];
         const imageUrl = parts[1];
 
-        // Ação Server-Side (Sem revalidatePath interno para evitar reload)
         const res = await linkReferenceImageAction({ reference, imageUrl, storeSlug: 'maryland-gestao' });
         if (res.success && 'reference' in res) {
           successCount++;
@@ -84,12 +85,10 @@ const JeansRegistrationBlockBase = ({
       
       if (res.success && res.results) {
         setResults(prev => {
-          // Remove duplicatas pelo ID para garantir que o item atualizado suba para o topo
           const newIds = new Set(res.results!.map(r => r.id));
           const filteredPrev = prev.filter(p => !newIds.has(p.id));
           return [...res.results!, ...filteredPrev];
         });
-        
         setBulkTextInput("");
       } else {
         const errorMessage = 'error' in res ? res.error : "Erro desconhecido.";
@@ -101,10 +100,10 @@ const JeansRegistrationBlockBase = ({
   return (
     <div className="w-full h-[100dvh] flex flex-col bg-gray-50 overflow-hidden font-sans relative">
      
-      {/* --- HEADER ANIMADO --- */}
+      {/* --- HEADER ANIMADO (FIXO) --- */}
       <motion.div
         style={{ opacity: headerOpacity, scale: headerScale, y: headerY }}
-        className="shrink-0 w-full flex flex-col items-center z-50 pt-4 origin-top pointer-events-none absolute top-0 left-0 right-0"
+        className="shrink-0 w-full flex flex-col items-center z-50 pt-2 md:pt-4 origin-top pointer-events-none absolute top-0 left-0 right-0 bg-gradient-to-b from-gray-50 via-gray-50 to-transparent pb-20"
       >
         <div className="w-full max-w-5xl flex flex-col md:flex-row items-center justify-center gap-2 px-4">
           <div className="flex flex-col items-center">
@@ -113,13 +112,27 @@ const JeansRegistrationBlockBase = ({
               {title}
             </motion.h2>
           </div>
+          
+          {/* Cards de Desenvolvimento (Plataforma) */}
           <div className="hidden md:block"><DevelopmentCard /></div>
-          <div className="md:hidden scale-90 -mt-2"><DevelopmentCard /></div>
+          {/* Mobile: Ajuste de margem para não colar no título */}
+          <div className="md:hidden scale-90 mt-1"><DevelopmentCard /></div>
         </div>
+
+        {/* ✅ BARRA DE NAVEGAÇÃO */}
+        <div className="w-full max-w-2xl flex justify-center mt-4 md:mt-6 pointer-events-auto px-2 md:px-4">
+          <JeansNavigation />
+        </div>
+
       </motion.div>
 
-      {/* --- ÁREA DE SCROLL --- */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide w-full absolute inset-0 z-40 pt-[510px] md:pt-[380px]">
+      {/* --- ÁREA DE SCROLL (CONTEÚDO) --- */}
+      {/* 
+          CORREÇÃO CRÍTICA DE SOBREPOSIÇÃO:
+          - Mobile: pt-[520px] (Aumentado para garantir que os cards comecem abaixo dos botões)
+          - Desktop: md:pt-[440px] (Mantido layout original)
+      */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide w-full absolute inset-0 z-40 pt-[520px] md:pt-[440px]">
         <div className="w-full px-6 pb-32 flex flex-col items-center gap-5 min-h-full pointer-events-auto">
 
           <div className="w-full max-w-md md:max-w-lg relative z-30">
@@ -171,23 +184,23 @@ export const JeansRegistrationBlock = withGuardian(
     label: "Registro de Jeans (Bulk)",
     description: "Interface de alta performance para cadastro em massa de produtos via texto bruto e vinculação de imagens.",
     orientationNotes: `
-⚠️ **Pontos Críticos**:
-- **Tokenizer**: Utiliza lógica de quebra de texto complexa no Server Action.
-- **Performance**: O 'revalidatePath' foi removido do loop de imagens para evitar recarregamentos excessivos.
-- **Estado**: Gerencia 'sessionRefs' localmente para feedback instantâneo.
+⚠️ **Ajustes de Layout**:
+- **Mobile Padding**: 'pt-[520px]' para evitar sobreposição do header empilhado.
+- **Header Background**: Gradiente estendido para garantir legibilidade.
+- **Navegação**: Integrada e responsiva.
     `.trim(),
     connectsTo: [
       { 
         target: "app/actions/jeans-registration.ts", 
         type: "EXTERNAL", 
-        description: "Server Actions: linkReferenceImageAction, processBulkJeansAction" 
+        description: "Server Actions" 
       },
       {
-        target: "components/builder/blocks/sistemre/*",
+        target: "components/builder/blocks/sistemre/JeansNavigation.tsx",
         type: "COMPONENT",
-        description: "Sub-componentes visuais (Cards, Forms)"
+        description: "Navegação Global"
       }
     ],
-    tags: ["Inventory", "Bulk Action", "High Performance"]
+    tags: ["Inventory", "Bulk Action", "Responsive Fix"]
   }
 );
