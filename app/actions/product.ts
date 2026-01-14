@@ -1,5 +1,25 @@
 'use server';
 
+/**
+ * 🧱 BLOCO LEGO: Sistema de Produtos (Product Management)
+ * 
+ * Este arquivo é como uma "caixa de peças LEGO" especializada em criar e gerenciar produtos.
+ * Cada função é uma "peça LEGO" que se encaixa perfeitamente com outras peças do sistema.
+ * 
+ * 📦 CONTEXTO DO APP:
+ * Este é um sistema POS (Point of Sale) - como uma caixa registradora moderna.
+ * Quando um vendedor quer cadastrar um novo produto na loja, este módulo:
+ * 1. Valida os dados do produto (nome, preço, estoque, etc.)
+ * 2. Faz upload da imagem do produto para a nuvem
+ * 3. Cria o produto no banco de dados com todas as variações (cores, tamanhos)
+ * 4. Gera SKU (código único) para cada variação
+ * 
+ * 🎯 ARQUITETURA LEGO:
+ * - Cada Server Action é uma "peça LEGO" independente
+ * - Helpers são "peças auxiliares" que ajudam outras peças
+ * - Mappers transformam dados do banco para o formato da tela
+ */
+
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { uploadImageToCloud } from '@/lib/upload-service';
@@ -15,11 +35,51 @@ import {
 export type { ProductData, ProductVariantData, CreateProductInput } from './product.schema';
 
 // --- HELPERS INTERNOS ---
+/**
+ * 🛠️ PEÇAS LEGO AUXILIARES (Helper Functions):
+ * 
+ * São funções pequenas que ajudam outras funções maiores.
+ * É como ter "peças LEGO especiais" que facilitam montar coisas complexas.
+ * 
+ * Por que separar em helpers?
+ * - Reutilização: pode usar a mesma função em vários lugares
+ * - Organização: código mais limpo e fácil de entender
+ * - Testes: pode testar cada helper separadamente
+ */
 
+/**
+ * 🔤 SERIALIZAÇÃO DE NOME DE VARIAÇÃO:
+ * 
+ * Transforma dados separados em uma string única.
+ * É como colocar várias peças LEGO em uma caixa e escrever o nome na caixa.
+ * 
+ * Exemplo:
+ * - Entrada: "Camiseta", cor: "Azul", tamanho: "M"
+ * - Saída: "Camiseta|Azul|M|"
+ * 
+ * Por que fazer isso?
+ * - Banco de dados precisa de um nome único para cada variação
+ * - Facilita buscar variações depois
+ * - Separa informações com "|" (pipe) para desmontar depois
+ */
 const serializeVariantName = (baseName: string, variation: { color?: string; size?: string; type?: string }): string => {
   return `${baseName}|${variation.color || 'Padrão'}|${variation.size || 'Único'}|${variation.type || ''}`;
 };
 
+/**
+ * 🔓 DESERIALIZAÇÃO DE NOME DE VARIAÇÃO:
+ * 
+ * Faz o contrário da função acima: pega uma string e separa em dados.
+ * É como abrir uma caixa LEGO e separar as peças por tipo.
+ * 
+ * Exemplo:
+ * - Entrada: "Camiseta|Azul|M|"
+ * - Saída: { baseName: "Camiseta", color: "Azul", size: "M", type: undefined }
+ * 
+ * Por que fazer isso?
+ * - Quando busca do banco, vem como string única
+ * - Precisa separar para mostrar na tela (cor, tamanho, etc.)
+ */
 const parseVariantMetadata = (fullName: string) => {
   const parts = fullName.split('|');
   if (parts.length >= 3) {
@@ -33,7 +93,21 @@ const parseVariantMetadata = (fullName: string) => {
   return { baseName: fullName, color: 'Padrão', size: 'Único', type: undefined };
 };
 
-// ✅ CORREÇÃO: Conversão de Decimal para Number
+/**
+ * 🔄 MAPPER: Prisma → Interface da Tela
+ * 
+ * Transforma dados do banco de dados (Prisma) para o formato que a tela precisa.
+ * É como traduzir um manual LEGO de inglês para português.
+ * 
+ * Por que fazer isso?
+ * - Prisma retorna Decimal (tipo especial para dinheiro)
+ * - Tela precisa de Number (tipo JavaScript normal)
+ * - Mapper converte: Decimal → Number
+ * 
+ * Exemplo:
+ * - Banco: price = Decimal("29.90")
+ * - Tela: price = 29.90 (number)
+ */
 const mapToUserInterface = (product: Prisma.ProductGetPayload<{ include: { variants: true } }>): ProductData => {
   return {
     id: product.id,
@@ -66,6 +140,24 @@ const mapToUserInterface = (product: Prisma.ProductGetPayload<{ include: { varia
   };
 };
 
+/**
+ * 🏷️ GERADOR DE SKU (Stock Keeping Unit - Código de Produto):
+ * 
+ * Cria um código único para cada variação de produto.
+ * É como colocar um código de barras em cada peça LEGO.
+ * 
+ * Exemplo:
+ * - Produto: "Camiseta Básica"
+ * - Variação: "Azul, Tamanho M"
+ * - SKU gerado: "CAM-AZ-1234560-ABC"
+ * 
+ * Formato: [3 primeiras letras do produto]-[2 primeiras letras da variação]-[timestamp]-[random]
+ * 
+ * Por que isso é importante?
+ * - Cada produto precisa de um código único
+ * - Facilita controle de estoque
+ * - Evita duplicatas (mesmo produto com códigos diferentes)
+ */
 const generateStockKeepingUnit = (productName: string, variationName: string, index: number): string => {
   const prefix = productName.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, 'X');
   const varSuffix = variationName.substring(0, 2).toUpperCase().replace(/[^A-Z0-9]/g, 'X');
@@ -76,17 +168,62 @@ const generateStockKeepingUnit = (productName: string, variationName: string, in
 
 // --- SERVER ACTIONS ---
 
+/**
+ * 🧱 PEÇA LEGO PRINCIPAL: Salvar Produto
+ * 
+ * Esta função é como montar um "kit LEGO completo" de produto:
+ * 1. Valida os dados (verifica se todas as peças estão presentes)
+ * 2. Converte preço brasileiro (R$ 29,90) para número (29.90)
+ * 3. Faz upload da imagem para a nuvem
+ * 4. Encontra ou cria a loja (garante que há um lugar para guardar o produto)
+ * 5. Cria o produto com todas as variações em uma transação (tudo ou nada)
+ * 6. Atualiza o cache (diz ao Next.js para mostrar os dados atualizados)
+ * 
+ * 📦 CONTEXTO REAL:
+ * Quando um vendedor cadastra um novo produto:
+ * - Preenche formulário: nome, preço, descrição, imagem
+ * - Adiciona variações: cores, tamanhos, tipos
+ * - Clica em "Salvar"
+ * - Esta função cria tudo no banco de dados
+ */
 export async function saveProductAction(inputData: CreateProductInput) {
   try {
+    // 1. Validação Zod (Verifica se todas as peças LEGO estão presentes)
     const validatedInput = CreateProductInputSchema.parse(inputData);
 
+    // 2. Conversão de Preço (R$ 29,90 → 29.90)
+    /**
+     * 💰 CONVERSÃO DE PREÇO:
+     * 
+     * Usuário digita: "R$ 29,90" (formato brasileiro)
+     * Sistema precisa: 29.90 (número decimal)
+     * 
+     * É como converter medidas:
+     * - Usuário pensa em "metros"
+     * - Sistema trabalha em "centímetros"
+     * - Converter: 1 metro = 100 centímetros
+     */
     const numericPrice = parseBrazilianCurrency(validatedInput.price);
     const decimalPrice = new Prisma.Decimal(numericPrice);
 
     let targetStoreId = validatedInput.storeId;
 
     // --- LÓGICA DE AUTO-CURA (SELF-HEALING) ---
-    // Se não houver ID de loja, busca a primeira. Se não existir, CRIA uma.
+    /**
+     * 🏥 AUTO-CURA (Self-Healing):
+     * 
+     * Se não houver loja cadastrada, cria uma automaticamente.
+     * É como ter uma "peça LEGO padrão" sempre disponível.
+     * 
+     * Por que isso existe?
+     * - Em desenvolvimento, pode não ter loja cadastrada ainda
+     * - Em produção, garante que sempre há uma loja para vincular produtos
+     * - Evita erros de "loja não encontrada" que quebrariam o sistema
+     * 
+     * Analogia:
+     * É como ter um "kit LEGO de emergência" sempre pronto.
+     * Se você não tem o kit que precisa, usa o de emergência.
+     */
     if (!targetStoreId) {
       let store = await prisma.store.findFirst();
       
