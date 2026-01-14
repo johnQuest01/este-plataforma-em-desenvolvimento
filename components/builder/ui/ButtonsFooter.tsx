@@ -265,6 +265,95 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
         }
     }, [contentWidth, x]);
 
+    // 8.5. Centraliza botão ativo quando pathname muda (sem alterar loop infinito)
+    // Usa a MESMA lógica que detecta quando um botão está no centro (onde ele fica grande)
+    // Quando o usuário navega para uma nova tela, centraliza o botão correspondente no footer
+    useEffect(() => {
+        if (contentWidth === 0 || !containerRef.current || !contentRef.current) return;
+        
+        // Encontra o botão ativo baseado no pathname
+        const activeItem = visibleItems.find(item => item.route === pathname);
+        if (!activeItem) return;
+
+        // Função matemática de módulo para loop infinito
+        const mathMod = (value: number, modulus: number): number => {
+            return ((value % modulus) + modulus) % modulus;
+        };
+
+        // Usa requestAnimationFrame para garantir que o DOM esteja atualizado antes de calcular
+        const frameId = requestAnimationFrame(() => {
+            if (!containerRef.current || !contentRef.current) return;
+
+            // Encontra o primeiro botão ativo visível no DOM
+            const allButtons = contentRef.current.querySelectorAll('[data-button-item]') as NodeListOf<HTMLElement>;
+            let activeButtonElement: HTMLElement | null = null;
+            
+            for (const button of Array.from(allButtons)) {
+                const buttonId = button.getAttribute('data-button-id');
+                if (buttonId && buttonId.startsWith(activeItem.id)) {
+                    activeButtonElement = button;
+                    break;
+                }
+            }
+
+            if (!activeButtonElement) return;
+
+            // Usa a MESMA lógica que detecta quando um botão está no centro
+            // (a mesma lógica que faz o botão crescer quando está no centro)
+            const buttonRect = activeButtonElement.getBoundingClientRect();
+            const containerRect = containerRef.current.getBoundingClientRect();
+            
+            // Calcula o centro do botão em relação ao container (MESMA fórmula da detecção)
+            const buttonCenterX = buttonRect.left - containerRect.left + buttonRect.width / 2;
+            
+            // Centro fixo do container (MESMO valor usado na detecção)
+            const fixedCenterX = containerRect.width / 2;
+            
+            // Calcula a diferença entre o centro do botão e o centro fixo
+            // Se o botão está à direita do centro, deltaX é positivo
+            // Se o botão está à esquerda do centro, deltaX é negativo
+            const deltaX = buttonCenterX - fixedCenterX;
+            
+            // Posição X atual do conteúdo (raw, antes do wrappedX)
+            const currentX = x.get();
+            
+            // Calcula nova posição: move o conteúdo pela diferença calculada
+            // Se o botão está à direita do centro (deltaX positivo), move o conteúdo para a esquerda (x negativo)
+            // Se o botão está à esquerda do centro (deltaX negativo), move o conteúdo para a direita (x positivo)
+            const targetX = currentX - deltaX;
+
+            // Normaliza para o range [-contentWidth, 0] usando módulo matemático
+            // Isso garante que o loop infinito continue funcionando
+            let normalizedX = mathMod(targetX, contentWidth);
+            if (normalizedX > 0) {
+                normalizedX = normalizedX - contentWidth;
+            }
+            if (normalizedX <= -contentWidth) {
+                normalizedX = normalizedX + contentWidth;
+            }
+
+            // Ajusta para garantir que o botão fique visível usando offset de múltiplas cópias
+            // Encontra a cópia mais próxima que mantenha o botão visível
+            const currentNormalized = mathMod(currentX, contentWidth);
+            let currentNormalizedFixed = currentNormalized;
+            if (currentNormalizedFixed > 0) {
+                currentNormalizedFixed = currentNormalizedFixed - contentWidth;
+            }
+            
+            // Calcula offset necessário para manter o botão na mesma cópia relativa
+            const offset = Math.round((currentNormalizedFixed - normalizedX) / contentWidth) * contentWidth;
+            const finalX = normalizedX + offset;
+
+            // Centraliza IMEDIATAMENTE sem animação (atualização instantânea)
+            x.set(finalX);
+            lastDragX.current = finalX;
+        });
+
+        return () => {
+            cancelAnimationFrame(frameId);
+        };
+    }, [pathname, contentWidth, visibleItems, x]);
+
     // 8. Renderiza ícone baseado no nome
     const renderIcon = (name: string, isActive: boolean): React.JSX.Element => {
         // Tamanho proporcional: 24px quando ativo (w-14 = 56px), 20px quando inativo (w-12 = 48px)
@@ -312,6 +401,8 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
     const renderButton = (item: FooterItem, originalId: string): React.JSX.Element => {
         // REMOVIDO: Não usa mais centerButtonId para evitar qualquer viés
         const isHighlight = item.route === '/pos' || originalId === highlightItem?.id;
+        // Verifica se este botão está ativo (rota atual corresponde ao pathname)
+        const isActive = item.route === pathname;
         const transitionClass = "transition-all duration-75 ease-out";
 
         // Calcula se este botão específico está no centro FIXO (verifica TODOS os botões, não apenas os com isCenter)
@@ -449,8 +540,11 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
                         ? "w-14 h-14 -mt-5 mb-3.5 border-white ring-4 ring-[#5874f6]/20 z-20" // w-14 h-14 (56px) - tamanho reduzido e consistente
                         : "w-12 h-12 mt-4 mb-3 border-transparent bg-white z-10", // w-12 h-12 (48px) - tamanho normal
                     isThisButtonCenter ? "bg-[#5874f6]" : "bg-white",
-                    // Destaque visual para botão Caixa/PDV
-                    isHighlight && !isThisButtonCenter && "ring-2 ring-[#5874f6]/30 border-[#5874f6]/50",
+                    // Destaque amarelo leve para botão ativo (tela atual)
+                    isActive && !isThisButtonCenter && "ring-2 ring-pink-400/50 border-pink-400/30 bg-pink-50",
+                    isActive && isThisButtonCenter && "ring-4 ring-pink-400/40 border-pink-400/50",
+                    // Destaque visual para botão Caixa/PDV (apenas se não for ativo)
+                    isHighlight && !isActive && !isThisButtonCenter && "ring-2 ring-[#5874f6]/30 border-[#5874f6]/50",
                     // Feedback visual de toque
                     "active:scale-90 active:opacity-80"
                 )}
