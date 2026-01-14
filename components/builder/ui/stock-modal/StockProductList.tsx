@@ -5,6 +5,7 @@ import { BlockConfig } from '@/types/builder';
 import { BlockRenderer } from '@/components/builder/BlockRender';
 import { ProductData } from '@/app/actions/product';
 import { mapToDisplayVariations } from './types';
+import { formatCurrencyBRL } from '@/lib/utils/currency';
 
 interface StockProductListProps {
   searchQuery: string;
@@ -23,7 +24,7 @@ export const StockProductList = ({
 }: StockProductListProps) => {
   
   return (
-    <div className="pb-24 px-0">
+    <div className="w-full h-full">
       {/* 1. Static Content Blocks (Filters, etc.) */}
       {searchQuery.length === 0 && (
         <div className="mb-2">
@@ -36,32 +37,37 @@ export const StockProductList = ({
       {/* 2. Dynamic Product Grid */}
       {searchQuery.length > 0 ? (
         // SEARCH MODE
-        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 pt-2 px-0">
-          <div className="px-4 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
-            Resultados da Busca
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="mb-3 md:mb-4 text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider px-2 md:px-0">
+            Resultados da Busca ({filteredProducts.length})
           </div>
           {filteredProducts.length > 0 ? (
-            filteredProducts.map(prod => (
-              <BlockRenderer
-                key={prod.id}
-                config={{
-                  id: `card_${prod.id}`,
-                  type: 'stock-popup-card',
-                  isVisible: true,
-                  style: {},
-                  data: {
-                    productName: prod.name,
-                    // FIX: Convert null to undefined strictly
-                    productImage: prod.imageUrl ?? undefined, 
-                    price: prod.price,
-                    detailedVariations: mapToDisplayVariations(prod.variants)
-                  }
-                }}
-                onAction={onAction}
-              />
-            ))
+            <div className="flex flex-col gap-2 md:gap-3">
+              {filteredProducts.map(prod => {
+                const formattedPrice = formatCurrencyBRL(prod.price ?? 0);
+                const blockData = {
+                  productName: prod.name,
+                  productImage: prod.imageUrl ?? undefined, 
+                  price: formattedPrice,
+                  detailedVariations: mapToDisplayVariations(prod.variants)
+                };
+                return (
+                  <BlockRenderer
+                    key={prod.id}
+                    config={{
+                      id: `card_${prod.id}`,
+                      type: 'stock-popup-card',
+                      isVisible: true,
+                      style: {},
+                      data: blockData as BlockConfig['data']
+                    }}
+                    onAction={onAction}
+                  />
+                );
+              })}
+            </div>
           ) : (
-            <div className="text-center py-8 text-gray-400 font-bold text-sm">
+            <div className="text-center py-8 text-gray-400 font-bold text-xs md:text-sm px-2">
               Nenhum produto encontrado.
             </div>
           )}

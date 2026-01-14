@@ -8,17 +8,26 @@ import { cn } from '@/lib/utils';
 // ✅ GUARDIAN: Importação do HOC
 import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
-import { BlockConfig } from '@/types/builder';
+import { BlockConfig, FooterItem } from '@/types/builder';
 import { INVENTORY_BLOCKS, STOCK_BLOCKS } from '@/data/inventory-state';
-import { FooterBlock } from '@/components/builder/blocks/Footer';
 import { BlockRenderer } from '@/components/builder/BlockRender';
 import { checkForNewImage } from '@/app/actions';
 import { StoreHeader } from '@/components/builder/blocks/Header';
+import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
 
 // --- IMPORTS DOS POPUPS ---
 import { StockModal } from '@/components/builder/ui/StockModal';
 import { CatalogModal } from '@/components/builder/ui/CatalogModal';
 import { OrdersModal } from '@/components/builder/ui/OrdersModal';
+
+// --- CONFIGURAÇÃO DO FOOTER ---
+const FOOTER_ITEMS: FooterItem[] = [
+  { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
+  { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
+  { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
+  { id: 'f4', icon: 'verified', isVisible: true, route: '/verified' },
+  { id: 'f5', icon: 'package-check', isVisible: true, route: '/inventory' }
+];
 
 function InventoryPageBase() {
   const router = useRouter();
@@ -57,8 +66,24 @@ function InventoryPageBase() {
     };
   }, []);
 
-  const footerBlock = blocks.find(b => b.type === 'footer');
   const scrollableBlocks = blocks.filter(b => b.type !== 'footer');
+
+  // Debug temporário para verificar se o bloco está sendo incluído
+  if (process.env.NODE_ENV === 'development') {
+    const actionButtonsBlock = blocks.find(b => b.id === 'inv_actions_bottom');
+    if (actionButtonsBlock) {
+      console.log('[InventoryPage] Bloco action-buttons encontrado:', {
+        id: actionButtonsBlock.id,
+        type: actionButtonsBlock.type,
+        isVisible: actionButtonsBlock.isVisible,
+        buttonsCount: Array.isArray(actionButtonsBlock.data.buttons) ? actionButtonsBlock.data.buttons.length : 0
+      });
+    } else {
+      console.warn('[InventoryPage] Bloco inv_actions_bottom NÃO encontrado nos blocos!');
+    }
+    console.log('[InventoryPage] Total de blocos scrollable:', scrollableBlocks.length);
+    console.log('[InventoryPage] Tipos de blocos:', scrollableBlocks.map(b => b.type));
+  }
 
   // --- GERENCIADOR DE AÇÕES ---
   const handleBlockAction = (action: string) => {
@@ -124,7 +149,7 @@ function InventoryPageBase() {
 
         {/* 2. ÁREA CENTRAL */}
         <div className="flex-1 relative overflow-hidden w-full">
-          <div className="absolute inset-0 overflow-y-auto scrollbar-hide overscroll-contain pb-24">
+          <div className="absolute inset-0 overflow-y-auto scrollbar-hide overscroll-contain pb-28">
             <div className="flex flex-col pt-0 min-h-full">
               <AnimatePresence mode='popLayout'>
                 {scrollableBlocks.map((block) => (
@@ -160,14 +185,13 @@ function InventoryPageBase() {
 
         </div>
 
-        {/* 3. RODAPÉ FIXO */}
-        {footerBlock && footerBlock.isVisible && (
-          <div className="absolute bottom-0 left-0 w-full z-50 pb-safe-bottom bg-transparent pointer-events-none">
-            <div className="pointer-events-auto">
-              <FooterBlock config={footerBlock} />
-            </div>
+        {/* 3. RODAPÉ FIXO - Menu de Navegação (Sempre Visível) - FISHEYE FOOTER */}
+        {/* 3. RODAPÉ FIXO - Menu de Navegação (Sempre Visível) */}
+        <div className="absolute bottom-0 left-0 w-full z-[100] pb-safe-bottom bg-transparent pointer-events-none">
+          <div className="pointer-events-auto">
+            <ButtonsFooter items={FOOTER_ITEMS} style={{ bgColor: '#5874f6' }} />
           </div>
-        )}
+        </div>
 
       </div>
     </main>

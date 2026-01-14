@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { twMerge } from 'tailwind-merge';
 import { ShoppingBag, Package, Factory } from 'lucide-react';
 import { clsx } from 'clsx';
+import { motion, Variants } from 'framer-motion';
 
 interface NavigationButtonProps {
   label: string;
@@ -24,25 +25,25 @@ const NavButton = ({
   variant
 }: NavigationButtonProps) => {
 
-  // Configuração de Variantes (Cores e Gradientes Premium)
+  // Configuração de Variantes (Cores e Gradientes Premium com Bordas)
   const variants = {
     primary: {
-      active: "bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-600/30 ring-1 ring-white/20",
-      inactive: "text-gray-500 hover:bg-blue-50 hover:text-blue-600",
+      active: "bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-600/30 border-2 border-blue-700",
+      inactive: "bg-white text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-2 border-blue-200 hover:border-blue-400 shadow-md",
       iconActive: "text-blue-100",
-      iconInactive: "text-blue-400 group-hover:text-blue-600"
+      iconInactive: "text-blue-500 group-hover:text-blue-600"
     },
     accent: {
-      active: "bg-gradient-to-br from-purple-600 to-purple-700 text-white shadow-lg shadow-purple-600/30 ring-1 ring-white/20",
-      inactive: "text-gray-500 hover:bg-purple-50 hover:text-purple-600",
+      active: "bg-gradient-to-br from-purple-600 to-purple-700 text-white shadow-lg shadow-purple-600/30 border-2 border-purple-700",
+      inactive: "bg-white text-gray-600 hover:bg-purple-50 hover:text-purple-600 border-2 border-purple-200 hover:border-purple-400 shadow-md",
       iconActive: "text-purple-100",
-      iconInactive: "text-purple-400 group-hover:text-purple-600"
+      iconInactive: "text-purple-500 group-hover:text-purple-600"
     },
     warning: {
-      active: "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30 ring-1 ring-white/20",
-      inactive: "text-gray-500 hover:bg-orange-50 hover:text-orange-600",
+      active: "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30 border-2 border-orange-600",
+      inactive: "bg-white text-gray-600 hover:bg-orange-50 hover:text-orange-600 border-2 border-orange-200 hover:border-orange-400 shadow-md",
       iconActive: "text-orange-100",
-      iconInactive: "text-orange-400 group-hover:text-orange-600"
+      iconInactive: "text-orange-500 group-hover:text-orange-600"
     }
   };
 
@@ -53,19 +54,19 @@ const NavButton = ({
       onClick={() => onClick(path)}
       className={twMerge(
         // Base classes
-        "group relative flex items-center justify-center rounded-full font-bold uppercase tracking-wider transition-all duration-300 border border-transparent active:scale-95",
-        // Mobile (Compacto)
-        "px-3 py-2 text-[0.6rem] gap-1.5",
-        // Desktop (Original)
-        "md:px-5 md:py-3 md:text-[0.7rem] md:gap-2.5",
-        isActive ? clsx("scale-105", currentVariant.active) : currentVariant.inactive
+        "group relative flex items-center justify-center rounded-xl font-bold uppercase tracking-wider transition-all duration-300 active:scale-95 shrink-0",
+        // Layout responsivo: largura total no mobile, auto no desktop
+        "w-full md:w-auto px-4 py-3 text-xs gap-3",
+        // Desktop: padding e texto um pouco maiores
+        "md:px-6 md:py-4 md:text-[0.75rem] md:gap-3",
+        isActive ? clsx("scale-[1.02]", currentVariant.active) : currentVariant.inactive
       )}
     >
       <Icon
         className={twMerge(
           "transition-transform duration-300 group-hover:scale-110",
           // Tamanho responsivo do ícone
-          "w-3.5 h-3.5 md:w-[18px] md:h-[18px]",
+          "w-5 h-5 md:w-[20px] md:h-[20px]",
           isActive ? currentVariant.iconActive : currentVariant.iconInactive
         )}
       />
@@ -83,49 +84,89 @@ export const JeansNavigation = () => {
   };
 
   // Se a rota for '/inventory/register', estamos no Estoque.
-  // Usado para ocultar o botão de estoque quando já estamos nele.
   const isInventoryPage = pathname === '/inventory/register';
 
+  // Configuração de animação escalonada
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.05
+      }
+    }
+  };
+
+  const buttonVariants: Variants = {
+    hidden: { 
+      opacity: 0, 
+      y: 10,
+      scale: 0.95
+    },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      scale: 1,
+      transition: {
+        duration: 0.3,
+        ease: [0.4, 0, 0.2, 1] // cubic-bezier equivalente a easeOut
+      }
+    }
+  };
+
   return (
-    <div className={twMerge(
-      // Container Base com Blur Forte e Sombra
-      "flex items-center justify-center bg-white/90 backdrop-blur-2xl rounded-full border border-white/50 shadow-2xl shadow-gray-300/50 mx-auto pointer-events-auto animate-in fade-in slide-in-from-bottom-6 duration-700 ring-1 ring-gray-100 relative z-50",
-      // Ajustes do Container: Mobile vs Desktop
-      "p-1 gap-1 w-[95%] max-w-fit overflow-x-auto scrollbar-hide", // Mobile
-      "md:p-1.5 md:gap-1 md:w-fit md:overflow-visible" // Desktop
-    )}>
+    <motion.div 
+      className={twMerge(
+        // Container com background sutil para legibilidade
+        "flex items-center justify-center mx-auto pointer-events-auto relative z-50",
+        "bg-white/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/50",
+        "p-2 md:p-3",
+        // Layout vertical no mobile, horizontal no desktop
+        "flex-col md:flex-row gap-2 w-full max-w-[90%] md:max-w-2xl"
+      )}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       
       {/* 🛍️ BOTÃO PDV / CAIXA */}
-      <NavButton 
-        label="PDV / Caixa" 
-        path="/pos" 
-        icon={ShoppingBag}
-        isActive={pathname === '/pos'}
-        onClick={handleNavigation}
-        variant="primary"
-      />
-
-      {/* 📦 BOTÃO ESTOQUE: SÓ APARECE SE NÃO ESTIVER NO ESTOQUE */}
-      {!isInventoryPage && (
+      <motion.div variants={buttonVariants} className="w-full md:w-auto">
         <NavButton 
-          label="Estoque" 
-          path="/inventory/register" 
-          icon={Package}
-          isActive={false}
+          label="PDV / Caixa" 
+          path="/pos" 
+          icon={ShoppingBag}
+          isActive={pathname === '/pos'}
           onClick={handleNavigation}
-          variant="accent"
+          variant="primary"
         />
+      </motion.div>
+
+      {/* 📦 BOTÃO ESTOQUE */}
+      {!isInventoryPage && (
+        <motion.div variants={buttonVariants} className="w-full md:w-auto">
+          <NavButton 
+            label="Estoque" 
+            path="/inventory/register" 
+            icon={Package}
+            isActive={false}
+            onClick={handleNavigation}
+            variant="accent"
+          />
+        </motion.div>
       )}
 
       {/* 🏭 BOTÃO PRODUÇÃO */}
-      <NavButton 
-        label="Produção" 
-        path="/production" 
-        icon={Factory}
-        isActive={pathname === '/production'}
-        onClick={handleNavigation}
-        variant="warning"
-      />
-    </div>
+      <motion.div variants={buttonVariants} className="w-full md:w-auto">
+        <NavButton 
+          label="Produção" 
+          path="/production" 
+          icon={Factory}
+          isActive={pathname === '/production'}
+          onClick={handleNavigation}
+          variant="warning"
+        />
+      </motion.div>
+    </motion.div>
   );
 };

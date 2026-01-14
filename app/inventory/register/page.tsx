@@ -67,7 +67,7 @@ const InventoryDashboardPage = () => {
     }
   }, []);
 
-  const handleRegisterSuccess = (data: { image?: string }) => {
+  const handleRegisterSuccess = () => {
     loadData();
   };
 
@@ -123,10 +123,10 @@ const InventoryDashboardPage = () => {
       </div>
 
       {/* --- DASHBOARD CARD (SPLIT VIEW) --- */}
-      <div className="w-full max-w-[1600px] flex-1 bg-white rounded-[2.5rem] shadow-2xl border border-gray-200 overflow-hidden grid grid-cols-12 h-[82vh]">
+      <div className="w-full max-w-[1600px] bg-white rounded-[2.5rem] shadow-2xl border border-gray-200 overflow-hidden grid grid-cols-12" style={{ height: '82vh' }}>
         
         {/* LADO ESQUERDO: LISTA DE ESTOQUE (60%) */}
-        <div className="col-span-12 lg:col-span-7 xl:col-span-8 border-r border-gray-100 flex flex-col bg-[#f8f9fa]">
+        <div className="col-span-12 lg:col-span-7 xl:col-span-8 border-r border-gray-100 flex flex-col bg-[#f8f9fa] h-full overflow-hidden">
           
           {/* Header & Search */}
           <div className="shrink-0 px-6 pt-6 pb-2 bg-white border-b border-gray-100 z-10">
@@ -136,22 +136,24 @@ const InventoryDashboardPage = () => {
             />
           </div>
 
-          {/* Lista de Produtos */}
-          <div className="flex-1 overflow-y-auto scrollbar-hide p-6">
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center h-64 gap-3 opacity-50">
-                <RefreshCw size={32} className="animate-spin text-blue-500" />
-                <span className="text-sm font-bold text-gray-400">Carregando estoque...</span>
-              </div>
-            ) : (
-              <StockProductList 
-                searchQuery={searchQuery}
-                contentBlocks={contentBlocks}
-                filteredProducts={filteredProducts}
-                dbProducts={dbProducts}
-                onAction={handleAction}
-              />
-            )}
+          {/* Lista de Produtos - Área com Scroll */}
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-hide" style={{ maxHeight: '100%' }}>
+            <div className="p-3 md:p-6">
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center h-64 gap-3 opacity-50">
+                  <RefreshCw size={32} className="animate-spin text-blue-500" />
+                  <span className="text-sm font-bold text-gray-400">Carregando estoque...</span>
+                </div>
+              ) : (
+                <StockProductList 
+                  searchQuery={searchQuery}
+                  contentBlocks={contentBlocks}
+                  filteredProducts={filteredProducts}
+                  dbProducts={dbProducts}
+                  onAction={handleAction}
+                />
+              )}
+            </div>
           </div>
         </div>
 

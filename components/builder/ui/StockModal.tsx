@@ -132,7 +132,7 @@ export const StockModal = ({ isOpen, onClose, blocks, onProductRegister }: Stock
             name: selectedProduct.name,
             // FIX: Handle null -> undefined/string conversion
             image: selectedProduct.imageUrl ?? '', 
-            price: selectedProduct.price,
+            price: String(selectedProduct.price),
             variations: mapToDisplayVariations(selectedProduct.variants)
           }}
           onBack={() => setViewMode('list')}

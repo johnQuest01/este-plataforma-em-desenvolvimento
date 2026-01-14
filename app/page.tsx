@@ -17,6 +17,8 @@ import { twMerge } from 'tailwind-merge';
 import { LocalDB } from '@/lib/local-db';
 import { AuthInputField } from '@/components/auth/AuthInputField';
 import { withGuardian } from "@/components/guardian/GuardianBeacon";
+import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
+import { FooterItem } from '@/types/builder';
 
 // --- Utilitários de Máscara ---
 const masks = {
@@ -35,6 +37,14 @@ const masks = {
 };
 
 type PersonType = 'fisica' | 'juridica' | 'vendedor';
+
+const FOOTER_ITEMS: FooterItem[] = [
+  { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
+  { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
+  { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
+  { id: 'f4', icon: 'verified', isVisible: true, route: '/verified' },
+  { id: 'f5', icon: 'package-check', isVisible: true, route: '/inventory' }
+];
 
 function EntryPageBase() {
   const router = useRouter();
@@ -236,6 +246,13 @@ function EntryPageBase() {
       <footer className="absolute bottom-4 text-center text-[10px] text-gray-400 font-medium">
         <p>© 2026 Maryland Gestão.</p>
       </footer>
+
+      {/* FOOTER PADRÃO (Mobile) */}
+      <div className="md:hidden fixed bottom-0 left-0 w-full z-50 pb-safe-bottom bg-transparent pointer-events-none">
+        <div className="pointer-events-auto">
+          <ButtonsFooter items={FOOTER_ITEMS} style={{ bgColor: '#5874f6' }} />
+        </div>
+      </div>
     </div>
   );
 }

@@ -12,10 +12,11 @@ import { ProductData, getProductsAction } from '@/app/actions/product';
 import { createOrderAction, getOrdersAction } from '@/app/actions/order';
 import { getCashRegisterStatus, openCashRegister, closeCashRegister, CashRegisterData } from '@/app/actions/cash';
 import { getReadyForStoreItemsAction, dispatchFromStoreAction, returnToProductionAction } from '@/app/actions/production';
-import { CartItem, PaymentMethod, ProductionItemData, CartVariation, CartProduct } from '@/types/builder'; // Import CartProduct e CartVariation
+import { CartItem, PaymentMethod, ProductionItemData, CartVariation, CartProduct, FooterItem } from '@/types/builder'; // Import CartProduct e CartVariation
 
 // COMPONENTES
 import { CartSidebar } from './components/CartSidebar';
+import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
 import { 
   OpenCashModal, 
   CloseCashModal, 
@@ -52,6 +53,15 @@ export default function POSPage() {
   const [incomingItems, setIncomingItems] = useState<ProductionItemData[]>([]);
   const [isIncomingModalOpen, setIsIncomingModalOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // --- CONFIGURAÇÃO DO FOOTER ---
+  const FOOTER_ITEMS: FooterItem[] = [
+    { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
+    { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
+    { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
+    { id: 'f4', icon: 'verified', isVisible: true, route: '/verified' },
+    { id: 'f5', icon: 'package-check', isVisible: true, route: '/inventory' }
+  ];
 
   // --- LOGICA E EFEITOS ---
   const fetchIncomingItems = async () => {
@@ -377,8 +387,8 @@ export default function POSPage() {
         />
       </div>
 
-      {/* --- MOBILE BAR --- */}
-      <div className="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-4 pb-safe-bottom z-50 flex items-center justify-between shadow-[0_-5px_20px_rgba(0,0,0,0.1)]">
+      {/* --- MOBILE BAR (PDV específico) --- */}
+      <div className="lg:hidden fixed bottom-[80px] left-0 w-full bg-white border-t border-gray-200 p-4 pb-safe-bottom z-40 flex items-center justify-between shadow-[0_-5px_20px_rgba(0,0,0,0.1)]">
         <div className="flex flex-col" onClick={() => setIsMobileCartOpen(true)}>
           <span className="text-xs font-bold text-gray-400 uppercase">Total</span>
           <span className="text-xl font-black text-gray-900">
@@ -391,6 +401,13 @@ export default function POSPage() {
         >
           <ShoppingBag size={20} /> <span>Ver Sacola</span>
         </button>
+      </div>
+
+      {/* --- FOOTER PADRÃO (Mobile) --- */}
+      <div className="lg:hidden fixed bottom-0 left-0 w-full z-50 pb-safe-bottom bg-transparent pointer-events-none">
+        <div className="pointer-events-auto">
+          <ButtonsFooter items={FOOTER_ITEMS} style={{ bgColor: '#5874f6' }} />
+        </div>
       </div>
 
       {/* --- DRAWER MOBILE --- */}

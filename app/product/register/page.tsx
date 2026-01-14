@@ -2,8 +2,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { BlockConfig } from '@/types/builder';
+import { BlockConfig, FooterItem } from '@/types/builder';
 import { BlockRenderer } from '@/components/builder/BlockRender';
+import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
 import { PackagePlus } from 'lucide-react';
 
 // 1. CONFIGURAÇÃO DOS BLOCOS NORMAIS DA PÁGINA
@@ -46,6 +47,14 @@ const POPUP_CONFIG_INITIAL: BlockConfig = {
     ]
   }
 };
+
+const FOOTER_ITEMS: FooterItem[] = [
+  { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
+  { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
+  { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
+  { id: 'f4', icon: 'verified', isVisible: true, route: '/verified' },
+  { id: 'f5', icon: 'package-check', isVisible: true, route: '/inventory' }
+];
 
 export default function ProductRegisterPage() {
   const [blocks] = useState<BlockConfig[]>(PAGE_BLOCKS);
@@ -109,6 +118,13 @@ export default function ProductRegisterPage() {
           onConfirmDistribution: handleConfirmDistribution
         }}
       />
+
+      {/* FOOTER FIXO */}
+      <div className="fixed bottom-0 left-0 w-full z-50 pb-safe-bottom bg-transparent pointer-events-none">
+        <div className="pointer-events-auto">
+          <ButtonsFooter items={FOOTER_ITEMS} style={{ bgColor: '#5874f6' }} />
+        </div>
+      </div>
 
     </main>
   );

@@ -48,6 +48,19 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  
+  /* Animação de scroll infinito para carrossel */
+  --animate-infinite-scroll: infinite-scroll 25s linear infinite;
+}
+
+/* Keyframes para animação de scroll infinito */
+@keyframes infinite-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 :root {

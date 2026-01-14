@@ -5,6 +5,7 @@ import { BlockConfig } from '@/types/builder';
 import { Heart, Send, PackageX, MapPin } from 'lucide-react';
 import { ProductData, getProductsAction } from '@/app/actions/product';
 import { PRODUCT_UPDATE_EVENT } from '@/components/builder/blocks/ProductGrid';
+import { formatCurrencyBRL } from '@/lib/utils/currency';
 import Image from 'next/image';
 
 // Interface para estender a tipagem do Prisma Variant com campos dinâmicos possíveis
@@ -74,7 +75,7 @@ export const CategoryProductListBlock = ({ config, onAction }: CategoryProductLi
 
   return (
     <div
-      className="w-full px-4 pt-4 pb-24"
+      className="w-full px-4 pt-4 pb-32"
       style={{ backgroundColor: config.style.bgColor || 'transparent' }}
     >
       {filteredProducts.length === 0 && !isLoading ? (
@@ -91,7 +92,7 @@ export const CategoryProductListBlock = ({ config, onAction }: CategoryProductLi
             const vExtended = firstVar as unknown as ExtendedVariant;
 
             const mainImage = product.imageUrl || (vExtended && vExtended.images && vExtended.images[0]) || '';
-            const price = product.price && product.price !== 'R$ 0,00' ? product.price : null;
+            const price = product.price && product.price > 0 ? formatCurrencyBRL(product.price) : null;
             const stockName = targetStock || (vExtended?.stockLocations?.[0]) || 'Estoque Geral';
 
             return (

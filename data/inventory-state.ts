@@ -53,7 +53,7 @@ export const INVENTORY_BLOCKS: BlockConfig[] = [
     },
     style: { bgColor: '#eeeeee' }
   },
-  // 5. BOTÕES DE AÇÃO INFERIORES (Botão "Fazer pedido" abre Catálogo)
+  // 5. BOTÕES DE AÇÃO INFERIORES (Abaixo do Box Maryland)
   {
     id: 'inv_actions_bottom',
     type: 'action-buttons',
@@ -66,7 +66,7 @@ export const INVENTORY_BLOCKS: BlockConfig[] = [
           label: 'Fazer pedido', 
           bgColor: '#5874f6', 
           textColor: '#fff',
-          action: 'openCatalog' // <--- AÇÃO NOVA ADICIONADA AQUI
+          action: 'openCatalog'
         },
         { id: 'act_box_received', label: 'Box Recebidas', bgColor: '#ff4d6d', textColor: '#fff', badge: '9' },
         { id: 'act_box_opened', label: 'Box Abertas', bgColor: '#5874f6', textColor: '#fff' },
@@ -83,7 +83,7 @@ export const INVENTORY_BLOCKS: BlockConfig[] = [
       footerItems: [
         { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
         { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
-        { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/' },
+        { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
         { id: 'f4', icon: 'verified', isVisible: true, route: '/verified' },
         { id: 'f5', icon: 'package-check', isVisible: true, route: '/inventory' }
       ]

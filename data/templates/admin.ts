@@ -77,7 +77,7 @@ export const ADMIN_TEMPLATE: BlockConfig[] = [
       footerItems: [
         { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
         { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
-        { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/' }, // Botão central Home
+        { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' }, // Botão central Dashboard
         { id: 'f4', icon: 'verified', isVisible: true, route: '/verified' },
         { id: 'f5', icon: 'package-check', isVisible: true, route: '/inventory' }
       ]

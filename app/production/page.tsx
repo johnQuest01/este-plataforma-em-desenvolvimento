@@ -33,7 +33,7 @@ const PRODUCTION_LAYOUT: BlockConfig[] = [
 const FOOTER_ITEMS: FooterItem[] = [
   { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
   { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
-  { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/' },
+  { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
   { id: 'f4', icon: 'verified', isVisible: true, route: '/verified' },
   { id: 'f5', icon: 'package-check', isVisible: true, route: '/inventory' }
 ];

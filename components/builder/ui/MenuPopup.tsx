@@ -77,7 +77,7 @@ const MenuPopupBase = ({
   if (!isClient) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[99999] pointer-events-none flex flex-col justify-start items-center">
+    <div className="fixed inset-0 z-[99999] pointer-events-none flex flex-col justify-center items-center px-2 sm:px-4">
       <AnimatePresence>
         {isOpen && (
           <React.Fragment key="menu-wrapper">
@@ -95,25 +95,35 @@ const MenuPopupBase = ({
             {/* Container do Modal (Layout Card detectável pelo Rex) */}
             <motion.div
               key="menu-modal"
-              initial={{ opacity: 0, scale: 0.9, y: -20 }}
-              animate={{ opacity: 1, scale: 1, y: 100 }}
-              exit={{ opacity: 0, scale: 0.9, y: -20 }}
-              className="relative z-[100000] w-[90%] max-w-[380px] rounded-[2.5rem] bg-white shadow-2xl overflow-hidden pointer-events-auto border border-gray-100"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className={cn(
+                "relative z-[100000] w-full max-w-[380px]",
+                "rounded-[1.5rem] sm:rounded-[2rem] md:rounded-[2.5rem]",
+                "bg-white shadow-2xl overflow-hidden pointer-events-auto border border-gray-100",
+                "max-h-[90vh] overflow-y-auto scrollbar-hide"
+              )}
               style={styles.modal}
             >
               {/* Botão de Fechar */}
-              <div className="flex justify-end p-4">
+              <div className="flex justify-end p-1 sm:p-1.5 md:p-2">
                 <button 
                   onClick={onClose} 
-                  className="p-2 rounded-full hover:bg-black/5 transition-all active:scale-90"
+                  className="p-1.5 sm:p-2 rounded-full hover:bg-black/5 active:bg-black/10 transition-all active:scale-90 touch-manipulation"
                   style={styles.icon}
+                  aria-label="Fechar menu"
                 >
-                  <X size={24} strokeWidth={2.5} />
+                  <X size={20} strokeWidth={2.5} className="sm:w-6 sm:h-6" />
                 </button>
               </div>
 
               {/* Grade de Itens (Botões detectáveis pelo Rex) */}
-              <div className="grid grid-cols-3 gap-y-8 gap-x-2 p-6 pb-10">
+              <div className={cn(
+                "grid grid-cols-3",
+                "gap-y-2 gap-x-0.5 sm:gap-y-3 sm:gap-x-1 md:gap-y-4",
+                "p-1.5 pb-3 sm:p-2 sm:pb-4 md:p-2.5 md:pb-5"
+              )}>
                 {items.map((item) => {
                   const IconComponent = ICON_MAP[item.icon] || ICON_MAP.default;
                   const isLogout = item.icon === 'logout';
@@ -123,14 +133,22 @@ const MenuPopupBase = ({
                       key={item.id} 
                       onClick={() => onItemClick?.(item)}
                       className={cn(
-                        "flex flex-col items-center gap-2 group",
-                        "transition-all active:scale-95"
+                        "flex flex-col items-center justify-center",
+                        "gap-1.5 sm:gap-2 md:gap-2.5",
+                        "group transition-all active:scale-95 touch-manipulation",
+                        "min-h-[70px] sm:min-h-[80px] md:min-h-[90px]",
+                        "px-0.5 sm:px-1"
                       )}
+                      aria-label={item.label}
                     >
-                      <div className="transform transition-transform group-hover:scale-110">
+                      <div className={cn(
+                        "transform transition-transform",
+                        "group-hover:scale-110 group-active:scale-95",
+                        "flex items-center justify-center"
+                      )}>
                         <IconComponent 
-                          size={32} 
-                          strokeWidth={1.5} 
+                          strokeWidth={1.5}
+                          className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9"
                           style={{ 
                             color: isLogout ? '#ef4444' : styles.icon.color 
                           }} 
@@ -138,7 +156,11 @@ const MenuPopupBase = ({
                       </div>
                       
                       <span 
-                        className="text-[11px] font-semibold text-center leading-tight line-clamp-2"
+                        className={cn(
+                          "font-semibold text-center leading-tight line-clamp-2",
+                          "text-[11px] sm:text-[12px] md:text-[13px]",
+                          "px-0.5 w-full"
+                        )}
                         style={{ 
                           color: isLogout ? '#ef4444' : styles.text.color 
                         }}

@@ -19,20 +19,24 @@ import { ProjectFile } from "@/schemas/guardian-schema";
 
 export const FileRow = React.memo(function FileRow({ file }: { file: ProjectFile }) {
   const getIcon = () => {
+    // Ícones maiores para mobile (18px) e menores para desktop (16px)
+    // Usa classes Tailwind para tamanho responsivo
+    const iconClass = "w-[18px] h-[18px] sm:w-4 sm:h-4";
+    
     switch (file.type) {
-      case "COMPONENT": return <Box size={14} className="text-blue-400" />;
-      case "PAGE": return <Layout size={14} className="text-purple-400" />;
-      case "ACTION": return <Zap size={14} className="text-amber-400" />;
-      case "HOOK": return <Code size={14} className="text-emerald-400" />;
-      case "PRISMA": return <Database size={14} className="text-cyan-400" />;
-      case "SCHEMA": return <FileJson size={14} className="text-pink-400" />;
-      case "TYPE": return <Braces size={14} className="text-orange-400" />;
-      case "UTIL": return <Wrench size={14} className="text-slate-400" />;
-      case "ASSET": return <ImageIcon size={14} className="text-teal-400" />;
-      case "MARKDOWN": return <FileText size={14} className="text-gray-400" />;
-      case "STYLE": return <Palette size={14} className="text-pink-300" />;
-      case "CONFIG": return <Settings size={14} className="text-yellow-200" />;
-      default: return <FileCode size={14} className="text-zinc-500" />;
+      case "COMPONENT": return <Box className={cn(iconClass, "text-blue-400")} />;
+      case "PAGE": return <Layout className={cn(iconClass, "text-purple-400")} />;
+      case "ACTION": return <Zap className={cn(iconClass, "text-amber-400")} />;
+      case "HOOK": return <Code className={cn(iconClass, "text-emerald-400")} />;
+      case "PRISMA": return <Database className={cn(iconClass, "text-cyan-400")} />;
+      case "SCHEMA": return <FileJson className={cn(iconClass, "text-pink-400")} />;
+      case "TYPE": return <Braces className={cn(iconClass, "text-orange-400")} />;
+      case "UTIL": return <Wrench className={cn(iconClass, "text-slate-400")} />;
+      case "ASSET": return <ImageIcon className={cn(iconClass, "text-teal-400")} />;
+      case "MARKDOWN": return <FileText className={cn(iconClass, "text-gray-400")} />;
+      case "STYLE": return <Palette className={cn(iconClass, "text-pink-300")} />;
+      case "CONFIG": return <Settings className={cn(iconClass, "text-yellow-200")} />;
+      default: return <FileCode className={cn(iconClass, "text-zinc-500")} />;
     }
   };
 
@@ -53,25 +57,33 @@ export const FileRow = React.memo(function FileRow({ file }: { file: ProjectFile
   };
 
   return (
-    <div className="flex items-center justify-between p-2.5 bg-zinc-900/40 border border-zinc-800/50 rounded-xl hover:bg-zinc-800 transition-colors group">
-      <div className="flex items-center gap-3 overflow-hidden">
-        <div className="w-7 h-7 rounded-lg bg-black/40 flex items-center justify-center shrink-0 border border-zinc-800">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-zinc-900/40 border border-zinc-800/50 rounded-xl hover:bg-zinc-800 transition-colors group gap-3">
+      <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+        <div className="w-12 h-12 sm:w-10 sm:h-10 rounded-lg bg-black/40 flex items-center justify-center shrink-0 border border-zinc-800 shadow-lg">
           {getIcon()}
         </div>
-        <div className="min-w-0">
-          <p className="text-xs font-bold text-zinc-200 truncate group-hover:text-white transition-colors">
+        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+          <p className="text-sm sm:text-xs font-bold text-zinc-200 group-hover:text-white transition-colors break-words">
             {file.name}
           </p>
-          <p className="text-[9px] text-zinc-500 font-mono truncate">{file.path}</p>
+          <div className="flex items-start gap-2">
+            <FileCode className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+            <p className="text-sm sm:text-xs text-zinc-300 font-mono break-all leading-relaxed">
+              {file.path}
+            </p>
+          </div>
         </div>
       </div>
-      <div className="flex items-center gap-3 shrink-0">
-        <span className="text-[9px] text-zinc-600 font-mono">
-          {(file.size / 1024).toFixed(1)} KB
-        </span>
+      <div className="flex items-center gap-3 shrink-0 flex-wrap">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800/50 rounded-md border border-zinc-700/50">
+          <Database className="w-4 h-4 text-cyan-400" />
+          <span className="text-xs sm:text-[10px] text-zinc-300 font-mono font-semibold">
+            {(file.size / 1024).toFixed(1)} KB
+          </span>
+        </div>
         <span
           className={cn(
-            "text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase w-16 text-center",
+            "text-xs sm:text-[10px] font-bold px-2 py-1 rounded border uppercase text-center",
             getBadgeColor()
           )}
         >

@@ -142,7 +142,7 @@ const StockRegisterViewBase = ({ onBack, onRegister, isPageMode = false }: Stock
     <div className={cn(
       "flex flex-col bg-[#eeeeee] transition-all duration-300",
       // ✅ LÓGICA HÍBRIDA: Se for PageMode, ocupa o container relativo. Se for Modal, usa absolute inset-0.
-      isPageMode ? "relative w-full h-full rounded-3xl bg-white" : "absolute inset-0 z-10 h-full animate-in slide-in-from-right"
+      isPageMode ? "relative w-full h-full rounded-3xl bg-white overflow-hidden" : "absolute inset-0 z-10 h-full animate-in slide-in-from-right"
     )}>
       <input type="file" ref={cameraInputReference} accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
       <input type="file" ref={galleryInputReference} accept="image/*" className="hidden" onChange={handleFileChange} />

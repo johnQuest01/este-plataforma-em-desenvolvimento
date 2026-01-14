@@ -461,7 +461,7 @@ const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }
         </div>
       </div>
 
-      <div className={cn("flex-1 scrollbar-hide p-3 pb-80 space-y-3", qtyModalOpen ? "overflow-hidden" : "overflow-y-auto")}>
+      <div className={cn("flex-1 scrollbar-hide p-3 space-y-3", qtyModalOpen ? "overflow-hidden" : "overflow-y-auto")} style={{ paddingBottom: '220px' }}>
         
         <div className="md:hidden">
            <MiniPreviewCard draft={draft} />
@@ -662,7 +662,7 @@ const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }
 
       </div>
 
-      <div className="absolute bottom-0 left-0 w-full p-3 pt-4 bg-[#eeeeee] z-20 flex flex-col gap-2 border-t border-gray-200/50 backdrop-blur-sm">
+      <div className="absolute bottom-0 left-0 w-full p-3 pt-4 bg-[#eeeeee] z-30 flex flex-col gap-2 border-t border-gray-200/50 backdrop-blur-sm shadow-[0_-4px_10px_rgba(0,0,0,0.1)]">
         <button onClick={handleAddNew} className="w-full h-11 bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm flex items-center justify-center gap-2 hover:bg-gray-50 active:scale-[0.98] transition-all">
             <Layers size={16} /> <span className="text-xs font-bold uppercase">Adicionar Novo (Manter Dados)</span>
         </button>

@@ -17,7 +17,7 @@ const THEME_PRIMARY = '#5874f6';
 const FOOTER_ITEMS: FooterItem[] = [
   { id: 'footer_cart', icon: 'cart', isVisible: true, route: '/cart' },
   { id: 'footer_heart', icon: 'heart', isVisible: true, route: '/favorites' },
-  { id: 'footer_home', icon: 'sync', isVisible: true, isHighlight: true, route: '/' },
+  { id: 'footer_home', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
   { id: 'footer_verified', icon: 'verified', isVisible: true, route: '/verified' },
   { id: 'footer_package', icon: 'package-check', isVisible: true, route: '/inventory' }
 ];

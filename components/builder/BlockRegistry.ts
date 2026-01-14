@@ -21,6 +21,12 @@ import { UserInfoBlock } from './blocks/UserInfo';
 import { InventoryFeatureBlock } from './blocks/InventoryFeature';
 import { ActionButtonsBlock } from './blocks/ActionButtons';
 import { GridButtonsBlock } from './blocks/GridButtons';
+import { InfiniteCircularFooter } from './blocks/InfiniteCircularFooter';
+import { OrganicPhysicsFooter } from './blocks/OrganicPhysicsFooter';
+import { CollisionPhysicsFooter } from './blocks/CollisionPhysicsFooter';
+import { NavigationFooter } from './blocks/NavigationFooter';
+import { FisheyeFooter } from './blocks/FisheyeFooter';
+import { LiquidDynamicFooter } from './blocks/LiquidDynamicFooter';
 
 // --- Imports de Blocos de Estoque e Catálogo ---
 import { StockHeaderBlock } from './blocks/StockHeader';
@@ -67,6 +73,12 @@ export const COMPONENT_MAP: Record<string, LegoComponent> = {
   // Layout Base
   'header': HeaderBlock,
   'footer': FooterBlock,
+  'infinite-circular-footer': InfiniteCircularFooter,
+  'organic-physics-footer': OrganicPhysicsFooter,
+  'collision-physics-footer': CollisionPhysicsFooter,
+  'navigation-footer': NavigationFooter,
+  'fisheye-footer': FisheyeFooter,
+  'liquid-dynamic-footer': LiquidDynamicFooter,
   'banner': BannerBlock,
   'categories': CategoriesBlock,
 

@@ -14,7 +14,7 @@ export const JeansSessionCard = ({ sessionRefs }: JeansSessionCardProps) => {
     <motion.div 
       initial={{ opacity: 0, scale: 0.9, y: -10 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
-      className="w-full bg-zinc-900 text-white rounded-xl p-4 shadow-xl mb-4 flex flex-col gap-3 border border-zinc-800"
+      className="w-full bg-zinc-900 text-white rounded-xl p-4 md:p-5 shadow-xl mb-2 md:mb-4 flex flex-col gap-3 border border-zinc-800 relative z-10"
     >
       <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
         <span className="text-[10px] font-black uppercase tracking-widest text-yellow-400 flex items-center gap-2">
