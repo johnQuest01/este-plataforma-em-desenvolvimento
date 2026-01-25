@@ -9,6 +9,8 @@ export interface UserData {
   name: string;
   storeName?: string;
   whatsapp: string;
+  isVendedor?: boolean;
+  nameGender?: 'feminino' | 'masculino';
   createdAt: string;
 }
 

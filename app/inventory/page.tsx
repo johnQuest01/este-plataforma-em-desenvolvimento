@@ -14,6 +14,10 @@ import { BlockRenderer } from '@/components/builder/BlockRender';
 import { checkForNewImage } from '@/app/actions';
 import { StoreHeader } from '@/components/builder/blocks/Header';
 import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
+import { LocalDB } from '@/lib/local-db';
+import { AuthorizedSellerBadge } from '@/components/builder/blocks/AuthorizedSellerBadge';
+import { MeusClientesExpandible } from '@/components/builder/blocks/MeusClientesExpandible';
+import { SIZING, SPACING, COLORS, BORDERS, SHADOWS, TYPOGRAPHY } from '@/lib/design-system';
 
 // --- IMPORTS DOS POPUPS ---
 import { StockModal } from '@/components/builder/ui/StockModal';
@@ -32,41 +36,79 @@ const FOOTER_ITEMS: FooterItem[] = [
 function InventoryPageBase() {
   const router = useRouter();
   const [blocks, setBlocks] = useState<BlockConfig[]>(INVENTORY_BLOCKS);
+  const [currentUser, setCurrentUser] = useState<ReturnType<typeof LocalDB.getUser>>(null);
 
   // --- ESTADOS DOS MODAIS ---
   const [isStockModalOpen, setIsStockModalOpen] = useState<boolean>(false);
   const [isCatalogModalOpen, setIsCatalogModalOpen] = useState<boolean>(false);
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState<boolean>(false);
+  
+  // --- ESTADO DO COMPONENTE EXPANSÍVEL ---
+  const [isMeusClientesOpen, setIsMeusClientesOpen] = useState<boolean>(false);
 
-  const [mounted, setMounted] = useState<boolean>(false);
+  // --- CARREGAR DADOS DO USUÁRIO E ATUALIZAR BLOCOS ---
+  useEffect(() => {
+    const user = LocalDB.getUser();
+    setCurrentUser(user);
+    
+    // Atualizar nome do usuário no bloco user-info se não for vendedor
+    const isVendedor = user && typeof user.isVendedor === 'boolean' && user.isVendedor === true;
+    if (user && !isVendedor) {
+      const userName = typeof user.name === 'string' && user.name.trim().length > 0 ? user.name.trim() : 'Usuário';
+      setBlocks(currentBlocks =>
+        currentBlocks.map(block => {
+          if (block.id === 'inv_user_info' && block.data && typeof block.data === 'object') {
+            return {
+              ...block,
+              data: { ...block.data, userName }
+            };
+          }
+          return block;
+        })
+      );
+    }
+  }, []);
 
   // --- EFEITO DE MONITORAMENTO ---
   useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), 0);
+    let isMounted = true;
     const interval = setInterval(async () => {
-      const serverImage = await checkForNewImage();
-      if (serverImage) {
-        setBlocks(currentBlocks =>
-          currentBlocks.map(block => {
-            if (block.type === 'inventory-feature') {
-              if (block.data.boxImage !== serverImage) {
-                console.log("📸 Nova imagem detectada!");
-                return { ...block, data: { ...block.data, boxImage: serverImage } };
+      if (!isMounted) return;
+      try {
+        const serverImage = await checkForNewImage();
+        if (serverImage && isMounted && typeof serverImage === 'string') {
+          setBlocks(currentBlocks =>
+            currentBlocks.map(block => {
+              if (block.type === 'inventory-feature' && block.data && typeof block.data === 'object') {
+                const currentBoxImage = 'boxImage' in block.data && typeof block.data.boxImage === 'string' ? block.data.boxImage : undefined;
+                if (currentBoxImage !== serverImage) {
+                  console.log("📸 Nova imagem detectada!");
+                  return { ...block, data: { ...block.data, boxImage: serverImage } };
+                }
               }
-            }
-            return block;
-          })
-        );
+              return block;
+            })
+          );
+        }
+      } catch (error) {
+        console.error("Erro ao verificar nova imagem:", error);
       }
-    }, 2000);
+    }, 5000);
 
     return () => {
-      clearTimeout(timer);
+      isMounted = false;
       clearInterval(interval);
     };
   }, []);
 
-  const scrollableBlocks = blocks.filter(b => b.type !== 'footer');
+  // Filtrar blocos: remover footer e user-info se for vendedor
+  const scrollableBlocks = blocks.filter(block => {
+    if (block.type === 'footer') return false;
+    if (block.id === 'inv_user_info' && currentUser && typeof currentUser.isVendedor === 'boolean' && currentUser.isVendedor === true) {
+      return false;
+    }
+    return true;
+  });
 
   // Debug temporário para verificar se o bloco está sendo incluído
   if (process.env.NODE_ENV === 'development') {
@@ -76,7 +118,7 @@ function InventoryPageBase() {
         id: actionButtonsBlock.id,
         type: actionButtonsBlock.type,
         isVisible: actionButtonsBlock.isVisible,
-        buttonsCount: Array.isArray(actionButtonsBlock.data.buttons) ? actionButtonsBlock.data.buttons.length : 0
+        buttonsCount: Array.isArray(actionButtonsBlock.data?.buttons) ? actionButtonsBlock.data.buttons.length : 0
       });
     } else {
       console.warn('[InventoryPage] Bloco inv_actions_bottom NÃO encontrado nos blocos!');
@@ -111,10 +153,10 @@ function InventoryPageBase() {
   };
 
   const handleProductRegister = (data: { image?: string }) => {
-    if (data.image) {
+    if (data.image && typeof data.image === 'string') {
       setBlocks(currentBlocks =>
         currentBlocks.map(block => {
-          if (block.type === 'inventory-feature') {
+          if (block.type === 'inventory-feature' && block.data && typeof block.data === 'object') {
             return {
               ...block,
               data: { ...block.data, boxImage: data.image }
@@ -127,19 +169,17 @@ function InventoryPageBase() {
     setIsStockModalOpen(false);
   };
 
-  if (!mounted) return null;
-
   return (
     <main className="w-full h-dvh-real bg-white lg:bg-gray-100 lg:flex lg:justify-center lg:items-center lg:py-8 overflow-hidden">
       <div className={cn(
         "w-full h-full bg-[#eeeeee] flex flex-col relative overflow-hidden",
         "lg:h-[850px] lg:max-h-[90vh] lg:w-full lg:max-w-[420px]",
-        "lg:rounded-[2.5rem] lg:border-[8px] lg:border-gray-900 lg:shadow-2xl",
+        "lg:rounded-[2.5rem] lg:border-8 lg:border-gray-900 lg:shadow-2xl",
         "max-w-[100vw] lg:mx-auto"
       )}>
 
         {/* 1. TOPO FIXO */}
-        <div className="shrink-0 z-[60] bg-[#5874f6] relative border-b border-blue-600/20">
+        <div className="shrink-0 z-60 bg-[#5874f6] relative border-b border-blue-600/20">
           <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-xl pointer-events-none z-50"></div>
           <StoreHeader 
             data={{ title: '', address: 'Inventário Maryland' }} 
@@ -151,6 +191,64 @@ function InventoryPageBase() {
         <div className="flex-1 relative overflow-hidden w-full">
           <div className="absolute inset-0 overflow-y-auto scrollbar-hide overscroll-contain pb-28">
             <div className="flex flex-col pt-0 min-h-full">
+              {/* Badge de Vendedor Autorizado */}
+              {currentUser && typeof currentUser.isVendedor === 'boolean' && currentUser.isVendedor === true && (
+                <>
+                  <div className="w-full px-4 pt-2 pb-1">
+                    <AuthorizedSellerBadge user={currentUser} />
+                  </div>
+                  
+                  {/* Botão Meus Clientes - Usando Design System ✨ */}
+                  <div className={cn(
+                    SPACING.horizontal.md,     // px-4
+                    SPACING.vertical.sm,       // py-2
+                    "w-full"
+                  )}>
+                    <button
+                      onClick={() => setIsMeusClientesOpen(!isMeusClientesOpen)}
+                      className={cn(
+                        "w-full",
+                        SIZING.button.lg,        // h-12 min-w-[120px]
+                        SPACING.horizontal.md,   // px-4
+                        isMeusClientesOpen ? COLORS.bg.success : COLORS.bg.primary, // bg dinâmico
+                        COLORS.text.white,       // text-white
+                        BORDERS.radius.xl,       // rounded-xl
+                        SHADOWS.component.button, // shadow-sm hover:shadow-md
+                        TYPOGRAPHY.button.base,  // text-sm font-semibold
+                        "transition-all duration-200",
+                        "hover:scale-[1.02]",
+                        "active:scale-[0.98]",
+                        "flex items-center justify-center gap-2"
+                      )}
+                    >
+                      {/* Ícone de usuários */}
+                      <svg 
+                        width="20" 
+                        height="20" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                      >
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      </svg>
+                      <span>{isMeusClientesOpen ? 'Fechar Clientes' : 'Meus Clientes'}</span>
+                    </button>
+                  </div>
+
+                  {/* Componente Expansível de Clientes */}
+                  <MeusClientesExpandible 
+                    isOpen={isMeusClientesOpen}
+                    onClose={() => setIsMeusClientesOpen(false)}
+                  />
+                </>
+              )}
+              
               <AnimatePresence mode='popLayout'>
                 {scrollableBlocks.map((block) => (
                   <BlockRenderer
@@ -162,32 +260,35 @@ function InventoryPageBase() {
               </AnimatePresence>
             </div>
           </div>
+        </div>
 
-          {/* MODAL DE ESTOQUE */}
+        {/* MODAIS - Renderizados fora da área de scroll para evitar problemas de z-index */}
+        {isStockModalOpen && (
           <StockModal
             isOpen={isStockModalOpen}
             onClose={() => setIsStockModalOpen(false)}
             blocks={STOCK_BLOCKS}
             onProductRegister={handleProductRegister}
           />
+        )}
 
-          {/* MODAL FAZER PEDIDO (CATÁLOGO/LOJA) */}
+        {isCatalogModalOpen && (
           <CatalogModal
             isOpen={isCatalogModalOpen}
             onClose={() => setIsCatalogModalOpen(false)}
           />
+        )}
 
-          {/* MODAL VER PEDIDOS (STATUS) */}
+        {isOrdersModalOpen && (
           <OrdersModal
             isOpen={isOrdersModalOpen}
             onClose={() => setIsOrdersModalOpen(false)}
           />
-
-        </div>
+        )}
 
         {/* 3. RODAPÉ FIXO - Menu de Navegação (Sempre Visível) - FISHEYE FOOTER */}
         {/* 3. RODAPÉ FIXO - Menu de Navegação (Sempre Visível) */}
-        <div className="absolute bottom-0 left-0 w-full z-[100] pb-safe-bottom bg-transparent pointer-events-none">
+        <div className="absolute bottom-0 left-0 w-full z-100 pb-safe-bottom bg-transparent pointer-events-none">
           <div className="pointer-events-auto">
             <ButtonsFooter items={FOOTER_ITEMS} style={{ bgColor: '#5874f6' }} />
           </div>

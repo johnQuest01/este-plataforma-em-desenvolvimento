@@ -13,9 +13,10 @@ export const PRODUCT_UPDATE_EVENT = 'product_db_updated';
 
 interface ProductGridBlockProps {
   config: BlockConfig;
+  onAction?: (action: string, payload?: unknown) => void; // 🧱 NOVO: Suporte para ações
 }
 
-export const ProductGridBlock = ({ config }: ProductGridBlockProps) => {
+export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps) => {
   const router = useRouter();
   const [products, setProducts] = useState<ProductData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,7 +57,12 @@ export const ProductGridBlock = ({ config }: ProductGridBlockProps) => {
   const title = config.data.title as string;
 
   const handleProductClick = (product: ProductData) => {
-    router.push(`/product/${product.id}`);
+    // 🧱 NOVO: Usa modal se onAction estiver disponível, senão navega
+    if (onAction) {
+      onAction('open_product_details', product.id);
+    } else {
+      router.push(`/product/${product.id}`);
+    }
   };
 
   return (

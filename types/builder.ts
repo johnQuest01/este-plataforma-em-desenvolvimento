@@ -107,6 +107,7 @@ export type BlockType =
   | 'product-grid'
   | 'banner'
   | 'categories'
+  | 'category-section'        // 🧱 CMS DINÂMICO: Seção de categoria auto-gerada
   | 'footer'
   | 'user-info'
   | 'grid-buttons'
@@ -309,6 +310,10 @@ export interface BlockData {
   size?: 'sm' | 'md' | 'lg';
   actionType?: string;
   fullWidthMobile?: boolean;
+
+  // --- CAMPOS ESPECÍFICOS DO CATEGORY-SECTION (CMS DINÂMICO) ---
+  filterTag?: string;          // Tag normalizada para filtro (ex: "camisetas-femininas")
+  categoryName?: string;        // Nome legível da categoria (ex: "Camisetas Femininas")
 
   [key: string]: string | number | boolean | null | undefined | object | unknown;
 }

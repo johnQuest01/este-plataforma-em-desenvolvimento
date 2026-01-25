@@ -69,27 +69,27 @@ export const StoreHeader = ({
   return (
     <>
       <div 
-        className="flex flex-col gap-3 p-4 pb-4 shadow-md relative z-[100] transition-colors duration-300"
+        className="flex flex-col gap-2 px-4 py-2.5 pb-3 shadow-md relative z-[100] transition-colors duration-300"
         style={{ backgroundColor: style.bgColor, color: style.textColor }}
       >
-        <div className="flex items-center justify-between gap-3 pt-safe-top">
+        <div className="flex items-center justify-between gap-2 pt-safe-top">
           {showBack ? (
             <button 
               onClick={onBack}
-              className="p-2 -ml-2 rounded-full hover:bg-white/20 transition-colors active:scale-90 flex items-center gap-1 shrink-0"
+              className="p-1.5 -ml-1 rounded-full hover:bg-white/20 transition-colors active:scale-90 flex items-center gap-1 shrink-0"
               aria-label="Voltar"
             >
-              <ChevronLeft size={28} strokeWidth={2.5} />
+              <ChevronLeft size={24} strokeWidth={2.5} />
               <span className="font-bold text-sm hidden sm:inline">Voltar</span>
             </button>
           ) : (
-            <h1 className="text-2xl font-black tracking-tight shrink-0">
+            <h1 className="text-xl font-black tracking-tight shrink-0">
               {data.title || 'Loja'}
             </h1>
           )}
 
-          <div className="flex-1 h-10 bg-white rounded-full flex items-center px-4 shadow-inner overflow-hidden">
-            <Search size={18} className="text-gray-400 mr-2 shrink-0" />
+          <div className="flex-1 h-9 bg-white rounded-full flex items-center px-3 shadow-inner overflow-hidden">
+            <Search size={16} className="text-gray-400 mr-2 shrink-0" />
             <input 
               type="text"
               placeholder="Buscar na loja..."
@@ -102,12 +102,12 @@ export const StoreHeader = ({
             className="cursor-pointer shrink-0 active:opacity-70 transition-opacity p-1 rounded-full hover:bg-white/10"
             aria-label="Abrir Menu"
           >
-            <Menu size={32} />
+            <Menu size={28} />
           </button>
         </div>
 
-        <div className="flex items-center gap-2 text-sm font-medium opacity-90 pl-1">
-          <MapPin size={18} />
+        <div className="flex items-center gap-1.5 text-sm font-medium opacity-90 pl-0.5">
+          <MapPin size={16} />
           <span className="truncate text-xs sm:text-sm">
             {data.address}
           </span>

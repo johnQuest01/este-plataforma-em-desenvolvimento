@@ -1,0 +1,2934 @@
+
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Esta é uma "Página Completa" - como uma sala inteira do aplicativo
+// 📦 O QUE FAZ: Organiza todos os componentes e lógica de uma tela específica
+// 🔗 CONECTADO A: Componentes filhos, layouts, e rotas do Next.js
+// 🎯 ANALOGIA: É como uma sala completa com móveis (componentes) organizados
+// 💡 DICA: Cada página é uma rota diferente no aplicativo
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/history/page.tsx
+📂 CAMINHO: app/history/page.tsx
+═══════════════════════════════════════════════════════════════════════════════
+
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️ import React, { useState } from 'react';
+⚙️ import { StoreHeader } from '@/components/builder/blocks/Header';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { BlockRenderer } from '@/components/builder/BlockRender';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { FooterItem, SaleRecord } from '@/types/builder';
+
+⚙️ const MOCK_SALES: SaleRecord[] = [
+⚙️   { id: '1', productName: 'Camiseta Oversized Black', totalValue: 380.00, quantity: 2, date: '2025-12-20T14:30:00', sellerName: 'Amanda Costa' },
+⚙️   { id: '2', productName: 'Tênis Urban Sport', totalValue: 1250.90, quantity: 1, date: '2025-12-19T10:15:00', sellerName: 'Mariana Silva' },
+⚙️   { id: '3', productName: 'Calça Cargo Utility', totalValue: 245.00, quantity: 1, date: '2025-12-18T09:45:00', sellerName: 'Amanda Costa' },
+⚙️ ];
+
+⚙️ const THEME_PRIMARY = '#5874f6';
+
+⚙️ const FOOTER_ITEMS: FooterItem[] = [
+⚙️   { id: 'footer_cart', icon: 'cart', isVisible: true, route: '/cart' },
+⚙️   { id: 'footer_heart', icon: 'heart', isVisible: true, route: '/favorites' },
+⚙️   { id: 'footer_home', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
+⚙️   { id: 'footer_verified', icon: 'verified', isVisible: true, route: '/verified' },
+⚙️   { id: 'footer_package', icon: 'package-check', isVisible: true, route: '/inventory' }
+⚙️ ];
+
+⚙️ export default function HistoryPage() {
+// 🟢 VERDE: Hook do React - conecta lógica especial ao componente
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [activeView, setActiveView] = useState<'main' | 'total-sales'>('main');
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [searchQuery, setSearchQuery] = useState('');
+⚙️   const isBrunoFound = searchQuery.toLowerCase().includes('bruno');
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️   const handleAction = (action: string, payload?: unknown) => {
+⚙️     switch (action) {
+⚙️       case 'search_input':
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️         if (typeof payload === 'string') setSearchQuery(payload);
+⚙️       case 'view_total_sales':
+⚙️         setActiveView('total-sales');
+⚙️         break;
+⚙️       case 'back_to_history':
+⚙️         setActiveView('main');
+⚙️         break;
+⚙️       default:
+⚙️         console.log(`Ação: ${action}`, payload);
+⚙️     }
+⚙️   };
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return (
+⚙️       <div className="w-full h-full bg-white flex flex-col relative overflow-hidden lg:h-[850px] lg:max-h-[90vh] lg:w-full lg:max-w-[420px] lg:rounded-[2.5rem] lg:border-[8px] lg:border-gray-900 lg:shadow-2xl">
+        
+⚙️         <StoreHeader
+⚙️           data={{
+⚙️             title: '',
+⚙️             address: activeView === 'main' ? 'Histórico Maryland' : 'Relatório de Vendas'
+⚙️           }}
+⚙️           style={{ bgColor: THEME_PRIMARY, textColor: '#ffffff' }}
+⚙️         />
+
+⚙️         <div className="flex-1 overflow-y-auto scrollbar-hide bg-white pb-24">
+⚙️           {activeView === 'main' ? (
+⚙️             <div className="animate-in fade-in duration-500">
+⚙️               <BlockRenderer
+⚙️                 config={{
+⚙️                   id: 'search_block',
+⚙️                   type: 'history-search',
+⚙️                   isVisible: true,
+⚙️                   style: { bgColor: 'white' },
+⚙️                   data: { title: 'Histórico' }
+⚙️                 }}
+⚙️                 onAction={handleAction}
+⚙️               />
+
+⚙️               {!isBrunoFound && (
+⚙️                 <BlockRenderer
+⚙️                   config={{
+⚙️                     id: 'sales_links_block',
+⚙️                     type: 'history-links',
+⚙️                     isVisible: true,
+⚙️                     style: { bgColor: 'white' },
+⚙️                     data: {}
+⚙️                   }}
+⚙️                   onAction={handleAction}
+⚙️                 />
+⚙️               )}
+
+⚙️               {isBrunoFound && (
+⚙️                 <div className="px-4 animate-in slide-in-from-bottom-4 duration-500 mt-2">
+⚙️                   <BlockRenderer
+⚙️                     config={{
+⚙️                       id: 'result_card_bruno',
+⚙️                       type: 'client-history-card',
+⚙️                       isVisible: true,
+⚙️                       style: { bgColor: 'transparent' },
+⚙️                       data: {
+⚙️                         name: 'Bruno',
+⚙️                         role: 'Lojista: cliente',
+⚙️                         address: 'Rua José',
+⚙️                         since: 'Cliente há 2 anos',
+⚙️                         contact: 'instagram/bruno_dev',
+⚙️                         image: 'https://placehold.co/150x150/e0e0e0/333333?text=B'
+⚙️                       }
+⚙️                     }}
+⚙️                     onAction={handleAction}
+⚙️                   />
+⚙️                 </div>
+⚙️               )}
+⚙️             </div>
+⚙️           ) : (
+⚙️             <div className="animate-in slide-in-from-right-4 duration-300 h-full">
+⚙️               <BlockRenderer
+⚙️                 config={{
+⚙️                   id: 'total_sales_view',
+⚙️                   type: 'total-sales',
+⚙️                   isVisible: true,
+⚙️                   style: { bgColor: '#ffffff', accentColor: THEME_PRIMARY },
+⚙️                   data: { sales: MOCK_SALES }
+⚙️                 }}
+⚙️                 onAction={handleAction}
+⚙️               />
+⚙️             </div>
+⚙️           )}
+⚙️         </div>
+
+⚙️         <div className="absolute bottom-0 left-0 w-full shrink-0 pb-safe-bottom bg-white border-t border-gray-100 z-50">
+⚙️           <ButtonsFooter items={FOOTER_ITEMS} style={{ bgColor: THEME_PRIMARY }} />
+⚙️         </div>
+⚙️       </div>
+⚙️     </main>
+⚙️   );
+⚙️ }
+
+
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Esta é uma "Página Completa" - como uma sala inteira do aplicativo
+// 📦 O QUE FAZ: Organiza todos os componentes e lógica de uma tela específica
+// 🔗 CONECTADO A: Componentes filhos, layouts, e rotas do Next.js
+// 🎯 ANALOGIA: É como uma sala completa com móveis (componentes) organizados
+// 💡 DICA: Cada página é uma rota diferente no aplicativo
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/inventory/page.tsx
+📂 CAMINHO: app/inventory/page.tsx
+═══════════════════════════════════════════════════════════════════════════════
+
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️ import React, { useState, useEffect } from 'react';
+⚙️ import { useRouter } from 'next/navigation';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { AnimatePresence } from 'framer-motion';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { cn } from '@/lib/utils';
+
+// ✅ GUARDIAN: Importação do HOC
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { withGuardian } from "@/components/guardian/GuardianBeacon";
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { BlockConfig, FooterItem } from '@/types/builder';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { INVENTORY_BLOCKS, STOCK_BLOCKS } from '@/data/inventory-state';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { BlockRenderer } from '@/components/builder/BlockRender';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { checkForNewImage } from '@/app/actions';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { StoreHeader } from '@/components/builder/blocks/Header';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
+
+// --- IMPORTS DOS POPUPS ---
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { StockModal } from '@/components/builder/ui/StockModal';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { CatalogModal } from '@/components/builder/ui/CatalogModal';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { OrdersModal } from '@/components/builder/ui/OrdersModal';
+
+// --- CONFIGURAÇÃO DO FOOTER ---
+⚙️ const FOOTER_ITEMS: FooterItem[] = [
+⚙️   { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
+⚙️   { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
+⚙️   { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
+⚙️   { id: 'f4', icon: 'verified', isVisible: true, route: '/verified' },
+⚙️   { id: 'f5', icon: 'package-check', isVisible: true, route: '/inventory' }
+⚙️ ];
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ function InventoryPageBase() {
+⚙️   const router = useRouter();
+// 🟢 VERDE: Hook do React - conecta lógica especial ao componente
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [blocks, setBlocks] = useState<BlockConfig[]>(INVENTORY_BLOCKS);
+  // --- ESTADOS DOS MODAIS ---
+// 🟢 VERDE: Hook do React - conecta lógica especial ao componente
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [isStockModalOpen, setIsStockModalOpen] = useState<boolean>(false);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [isCatalogModalOpen, setIsCatalogModalOpen] = useState<boolean>(false);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState<boolean>(false);
+  // --- EFEITO DE MONITORAMENTO ---
+// 🟢 VERDE: Hook do React - conecta lógica especial ao componente
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Executa código quando o componente aparece, desaparece ou quando algo muda
+// 🧩 ANALOGIA LEGO: É como um assistente que observa e age quando algo acontece
+// 💡 DICA: useEffect é perfeito para buscar dados, configurar timers, ou limpar recursos
+⚙️   useEffect(() => {
+⚙️     const interval = setInterval(async () => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️       if (!isMounted) return;
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Tenta executar código e captura erros se algo der errado
+// 🧩 ANALOGIA LEGO: É como tentar montar uma peça difícil com um plano B se não funcionar
+// 💡 DICA: Sempre use try/catch quando trabalhar com dados externos ou operações que podem falhar
+⚙️       try {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️         const serverImage = await checkForNewImage();
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️         if (serverImage && isMounted && typeof serverImage === 'string') {
+⚙️             currentBlocks.map(block => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️               if (block.type === 'inventory-feature' && block.data && typeof block.data === 'object') {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️                 if (currentBoxImage !== serverImage) {
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️                   return { ...block, data: { ...block.data, boxImage: serverImage } };
+⚙️               }
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️               return block;
+⚙️           );
+⚙️         }
+⚙️       } catch (error) {
+⚙️         console.error("Erro ao verificar nova imagem:", error);
+⚙️       }
+⚙️     }, 5000);
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return () => {
+⚙️       clearInterval(interval);
+⚙️     };
+⚙️   }, []);
+
+⚙️   const scrollableBlocks = blocks.filter(b => b.type !== 'footer');
+
+  // Debug temporário para verificar se o bloco está sendo incluído
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️   if (process.env.NODE_ENV === 'development') {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (actionButtonsBlock) {
+⚙️         id: actionButtonsBlock.id,
+⚙️         type: actionButtonsBlock.type,
+⚙️         isVisible: actionButtonsBlock.isVisible,
+⚙️         buttonsCount: Array.isArray(actionButtonsBlock.data?.buttons) ? actionButtonsBlock.data.buttons.length : 0
+⚙️       });
+⚙️     } else {
+⚙️       console.warn('[InventoryPage] Bloco inv_actions_bottom NÃO encontrado nos blocos!');
+⚙️     }
+⚙️     console.log('[InventoryPage] Total de blocos scrollable:', scrollableBlocks.length);
+⚙️     console.log('[InventoryPage] Tipos de blocos:', scrollableBlocks.map(b => b.type));
+⚙️   }
+
+  // --- GERENCIADOR DE AÇÕES ---
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️   const handleBlockAction = (action: string) => {
+⚙️     switch (action) {
+⚙️       case 'openStockModal':
+        // ✅ LÓGICA HÍBRIDA: Desktop vai para rota dedicada, Mobile abre modal
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️         if (typeof window !== 'undefined' && window.innerWidth > 1024) {
+⚙️         } else {
+⚙️           setIsStockModalOpen(true);
+⚙️         }
+⚙️         break;
+      
+⚙️       case 'openOrders':
+⚙️         setIsOrdersModalOpen(true);
+⚙️         break;
+
+⚙️       case 'openCatalog':
+⚙️         setIsCatalogModalOpen(true);
+⚙️         break;
+
+⚙️       default:
+⚙️         console.log(`Ação: ${action}`);
+⚙️     }
+⚙️   };
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️   const handleProductRegister = (data: { image?: string }) => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (data.image && typeof data.image === 'string') {
+⚙️         currentBlocks.map(block => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️           if (block.type === 'inventory-feature' && block.data && typeof block.data === 'object') {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️             return {
+⚙️               data: { ...block.data, boxImage: data.image }
+⚙️             };
+⚙️           }
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️           return block;
+⚙️       );
+⚙️     }
+⚙️     setIsStockModalOpen(false);
+⚙️   };
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return (
+⚙️       <div className={cn(
+⚙️         "w-full h-full bg-[#eeeeee] flex flex-col relative overflow-hidden",
+⚙️         "lg:h-[850px] lg:max-h-[90vh] lg:w-full lg:max-w-[420px]",
+⚙️         "lg:rounded-[2.5rem] lg:border-8 lg:border-gray-900 lg:shadow-2xl",
+⚙️         "max-w-[100vw] lg:mx-auto"
+⚙️       )}>
+
+⚙️         {/* 1. TOPO FIXO */}
+⚙️         <div className="shrink-0 z-60 bg-[#5874f6] relative border-b border-blue-600/20">
+⚙️           <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-xl pointer-events-none z-50"></div>
+⚙️           <StoreHeader
+⚙️             data={{ title: '', address: 'Inventário Maryland' }}
+⚙️             style={{ bgColor: '#5874f6', textColor: '#ffffff' }}
+⚙️           />
+⚙️         </div>
+
+⚙️         {/* 2. ÁREA CENTRAL */}
+⚙️         <div className="flex-1 relative overflow-hidden w-full">
+⚙️           <div className="absolute inset-0 overflow-y-auto scrollbar-hide overscroll-contain pb-28">
+⚙️             <div className="flex flex-col pt-0 min-h-full">
+⚙️               <AnimatePresence mode='popLayout'>
+⚙️                 {scrollableBlocks.map((block) => (
+⚙️                   <BlockRenderer
+⚙️                     key={block.id}
+⚙️                     config={block}
+⚙️                     onAction={handleBlockAction}
+⚙️                   />
+⚙️                 ))}
+⚙️               </AnimatePresence>
+⚙️             </div>
+⚙️           </div>
+⚙️         </div>
+
+⚙️         {/* MODAIS - Renderizados fora da área de scroll para evitar problemas de z-index */}
+⚙️         {isStockModalOpen && (
+⚙️           <StockModal
+⚙️             isOpen={isStockModalOpen}
+⚙️             onClose={() => setIsStockModalOpen(false)}
+⚙️             blocks={STOCK_BLOCKS}
+⚙️             onProductRegister={handleProductRegister}
+⚙️           />
+⚙️         )}
+
+⚙️         {isCatalogModalOpen && (
+⚙️           <CatalogModal
+⚙️             isOpen={isCatalogModalOpen}
+⚙️             onClose={() => setIsCatalogModalOpen(false)}
+⚙️           />
+⚙️         )}
+
+⚙️         {isOrdersModalOpen && (
+⚙️           <OrdersModal
+⚙️             isOpen={isOrdersModalOpen}
+⚙️             onClose={() => setIsOrdersModalOpen(false)}
+⚙️           />
+⚙️         )}
+
+⚙️         {/* 3. RODAPÉ FIXO - Menu de Navegação (Sempre Visível) - FISHEYE FOOTER */}
+⚙️         {/* 3. RODAPÉ FIXO - Menu de Navegação (Sempre Visível) */}
+⚙️         <div className="absolute bottom-0 left-0 w-full z-100 pb-safe-bottom bg-transparent pointer-events-none">
+⚙️           <div className="pointer-events-auto">
+⚙️             <ButtonsFooter items={FOOTER_ITEMS} style={{ bgColor: '#5874f6' }} />
+⚙️           </div>
+⚙️         </div>
+
+⚙️       </div>
+⚙️     </main>
+⚙️   );
+⚙️ }
+
+// 2. Exportação com a Etiqueta Inteligente (Guardian Beacon)
+⚙️ export default withGuardian(
+⚙️   InventoryPageBase,
+⚙️   "app/inventory/page.tsx",
+⚙️   "LAYOUT",
+⚙️   {
+⚙️     label: "Dashboard de Inventário",
+⚙️     description: "Hub central de controle de estoque. Gerencia navegação para Catálogo, Pedidos e Cadastro.",
+⚙️     orientationNotes: `
+⚙️ 📌 **Estrutura**:
+⚙️ - Layout Mobile-First com container centralizado em Desktop.
+⚙️ - Utiliza 'BlockRenderer' para renderizar componentes dinâmicos (Lego).
+⚙️ - Gerencia estado de 3 Modais principais.
+⚙️ - **Roteamento Híbrido**: Redireciona para /inventory/register em Desktop.
+⚙️     `.trim(),
+⚙️     connectsTo: [
+⚙️       {
+⚙️         target: "components/builder/ui/StockModal.tsx",
+⚙️         type: "COMPONENT",
+⚙️         description: "Modal de Cadastro de Estoque"
+⚙️       },
+⚙️       {
+⚙️         target: "components/builder/ui/CatalogModal.tsx",
+⚙️         type: "COMPONENT",
+⚙️         description: "Modal de Catálogo (Loja)"
+⚙️       },
+⚙️       {
+⚙️         target: "components/builder/ui/OrdersModal.tsx",
+⚙️         type: "COMPONENT",
+⚙️         description: "Modal de Visualização de Pedidos"
+⚙️       },
+⚙️       {
+⚙️         target: "app/actions.ts",
+⚙️         type: "EXTERNAL",
+⚙️         description: "Server Action: checkForNewImage (Polling)"
+⚙️       },
+⚙️       {
+⚙️         target: "app/inventory/register/page.tsx",
+⚙️         type: "ROUTE",
+⚙️         description: "Rota Desktop para Cadastro"
+⚙️       }
+⚙️     ],
+⚙️     tags: ["Main Route", "Dashboard", "Inventory", "Hybrid Routing"]
+⚙️   }
+⚙️ );
+
+
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Esta é uma "Página Completa" - como uma sala inteira do aplicativo
+// 📦 O QUE FAZ: Organiza todos os componentes e lógica de uma tela específica
+// 🔗 CONECTADO A: Componentes filhos, layouts, e rotas do Next.js
+// 🎯 ANALOGIA: É como uma sala completa com móveis (componentes) organizados
+// 💡 DICA: Cada página é uma rota diferente no aplicativo
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/inventory/register/page.tsx
+📂 CAMINHO: app/inventory/register/page.tsx
+═══════════════════════════════════════════════════════════════════════════════
+
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️ import React, { useState, useEffect, useMemo, useCallback } from 'react';
+⚙️ import { useRouter } from 'next/navigation';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { RefreshCw, Home } from 'lucide-react';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { cn } from '@/lib/utils';
+
+// Lógica e Dados
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { STOCK_BLOCKS } from '@/data/inventory-state';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { getProductsAction, ProductData } from '@/app/actions/product';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { withGuardian } from "@/components/guardian/GuardianBeacon";
+
+// Componentes de UI
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { StockRegisterView } from '@/components/builder/ui/StockRegisterView';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { StockModalHeader } from '@/components/builder/ui/stock-modal/StockModalHeader';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { StockProductList } from '@/components/builder/ui/stock-modal/StockProductList';
+
+// ✅ IMPORTAÇÃO DA NAVEGAÇÃO
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { JeansNavigation } from '@/components/builder/blocks/sistemre/JeansNavigation';
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma função interna chamada "InventoryDashboardPage" (só pode ser usada dentro deste arquivo)
+// 🧩 ANALOGIA LEGO: É como uma ferramenta privada que só você pode usar neste arquivo
+// 💡 DICA: Sem "export", esta função não pode ser importada por outros arquivos
+⚙️ const InventoryDashboardPage = () => {
+⚙️   const router = useRouter();
+// 🟢 VERDE: Hook do React - conecta lógica especial ao componente
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [dbProducts, setDbProducts] = useState<ProductData[]>([]);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [searchQuery, setSearchQuery] = useState<string>('');
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [isLoading, setIsLoading] = useState<boolean>(true);
+  // --- 1. Carregamento de Dados ---
+⚙️   const loadData = useCallback(async () => {
+⚙️     setIsLoading(true);
+// 🟢 VERDE: Tenta executar código - se der erro, vai para o "catch"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Tenta executar código e captura erros se algo der errado
+// 🧩 ANALOGIA LEGO: É como tentar montar uma peça difícil com um plano B se não funcionar
+// 💡 DICA: Sempre use try/catch quando trabalhar com dados externos ou operações que podem falhar
+⚙️     try {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️       const data = await getProductsAction();
+⚙️     } catch (error) {
+⚙️       console.error("Erro ao buscar estoque:", error);
+⚙️     } finally {
+⚙️       setIsLoading(false);
+⚙️     }
+⚙️   }, []);
+
+// 🟢 VERDE: Hook do React - conecta lógica especial ao componente
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Executa código quando o componente aparece, desaparece ou quando algo muda
+// 🧩 ANALOGIA LEGO: É como um assistente que observa e age quando algo acontece
+// 💡 DICA: useEffect é perfeito para buscar dados, configurar timers, ou limpar recursos
+⚙️   useEffect(() => {
+⚙️   }, [loadData]);
+
+  // --- 2. Processamento dos Blocos (Lego Architecture) ---
+⚙️   const fixedBlocks = useMemo(() =>
+⚙️     STOCK_BLOCKS.filter(b => b.type === 'stock-header' || b.type === 'stock-search'),
+⚙️   []);
+  
+⚙️   const contentBlocks = useMemo(() =>
+⚙️     STOCK_BLOCKS.filter(b =>
+⚙️       b.type !== 'stock-header' &&
+⚙️       b.type !== 'stock-search' &&
+⚙️       b.type !== 'stock-category-grid'
+⚙️     ),
+⚙️   []);
+
+  // --- 3. Lógica de Filtro (Client-Side) ---
+⚙️   const filteredProducts = useMemo(() => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (!searchQuery) return dbProducts;
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return dbProducts.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  // --- 4. Handlers ---
+⚙️   const handleAction = useCallback((action: string, payload?: unknown) => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (action === 'live_search' && typeof payload === 'string') {
+⚙️     }
+⚙️   }, []);
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️   const handleRegisterSuccess = () => {
+⚙️     loadData();
+⚙️   };
+
+  // ✅ ROTEAMENTO ESTRITO: VOLTAR PARA A TELA DE JEANS (RAIZ)
+  // O conceito de /dashboard foi removido. O fluxo agora é cíclico entre ferramentas.
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️   const handleBackToHome = () => {
+⚙️     router.push('/');
+⚙️   };
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return (
+      
+⚙️       {/* --- HEADER DA PÁGINA --- */}
+⚙️       <div className="w-full max-w-[1600px] flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
+        
+⚙️         {/* Lado Esquerdo: Botão Início Pro (Volta para Jeans) */}
+⚙️         <div className="flex items-center gap-4 shrink-0">
+⚙️           <button
+⚙️             onClick={handleBackToHome}
+⚙️             className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-full shadow-sm text-gray-700 font-bold hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-95 group"
+⚙️           >
+⚙️             <Home size={20} className="text-gray-400 group-hover:text-blue-600 transition-colors" />
+⚙️             <span className="uppercase text-xs tracking-wide">Início Pro</span>
+⚙️           </button>
+⚙️           <h1 className="text-2xl font-black text-gray-800 uppercase tracking-tight hidden xl:block">
+⚙️             Gestão de Estoque
+⚙️           </h1>
+⚙️         </div>
+        
+⚙️         {/* ✅ CENTRO: NAVEGAÇÃO INTEGRADA */}
+⚙️         {/* Exibe apenas PDV e Produção (Estoque oculto automaticamente) */}
+⚙️         <div className="flex-1 flex justify-center w-full md:w-auto -mt-4 md:mt-0">
+⚙️           <div className="scale-90 md:scale-100 origin-center">
+⚙️             <JeansNavigation />
+⚙️           </div>
+⚙️         </div>
+        
+⚙️         {/* Lado Direito: Status e Refresh */}
+⚙️         <div className="flex items-center gap-3 shrink-0">
+⚙️           <div className="px-4 py-2 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col items-end">
+⚙️             <span className="text-[10px] font-bold text-gray-400 uppercase">Total de Itens</span>
+⚙️             <span className="text-lg font-black text-gray-900 leading-none">{dbProducts.length}</span>
+⚙️           </div>
+⚙️           <button
+⚙️             onClick={loadData}
+⚙️             disabled={isLoading}
+⚙️             className="p-3 bg-white border border-gray-200 rounded-xl shadow-sm hover:bg-gray-50 text-blue-600 transition-all active:scale-95 disabled:opacity-50"
+⚙️             title="Atualizar Lista"
+⚙️           >
+⚙️             <RefreshCw size={20} className={cn(isLoading && "animate-spin")} />
+⚙️           </button>
+⚙️         </div>
+⚙️       </div>
+
+⚙️       {/* --- DASHBOARD CARD (SPLIT VIEW) --- */}
+⚙️       <div className="w-full max-w-[1600px] bg-white rounded-[2.5rem] shadow-2xl border border-gray-200 overflow-hidden grid grid-cols-12" style={{ height: '82vh' }}>
+        
+⚙️         {/* LADO ESQUERDO: LISTA DE ESTOQUE (60%) */}
+⚙️         <div className="col-span-12 lg:col-span-7 xl:col-span-8 border-r border-gray-100 flex flex-col bg-[#f8f9fa] h-full overflow-hidden">
+          
+⚙️           {/* Header & Search */}
+⚙️           <div className="shrink-0 px-6 pt-6 pb-2 bg-white border-b border-gray-100 z-10">
+⚙️             <StockModalHeader
+⚙️               blocks={fixedBlocks}
+⚙️               onAction={handleAction}
+⚙️             />
+⚙️           </div>
+
+⚙️           {/* Lista de Produtos - Área com Scroll */}
+⚙️           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-hide" style={{ maxHeight: '100%' }}>
+⚙️             <div className="p-3 md:p-6">
+⚙️               {isLoading ? (
+⚙️                 <div className="flex flex-col items-center justify-center h-64 gap-3 opacity-50">
+⚙️                   <RefreshCw size={32} className="animate-spin text-blue-500" />
+⚙️                   <span className="text-sm font-bold text-gray-400">Carregando estoque...</span>
+⚙️                 </div>
+⚙️               ) : (
+⚙️                 <StockProductList
+⚙️                   searchQuery={searchQuery}
+⚙️                   contentBlocks={contentBlocks}
+⚙️                   filteredProducts={filteredProducts}
+⚙️                   dbProducts={dbProducts}
+⚙️                   onAction={handleAction}
+⚙️                 />
+⚙️               )}
+⚙️             </div>
+⚙️           </div>
+⚙️         </div>
+
+⚙️         {/* LADO DIREITO: FORMULÁRIO DE CADASTRO (40%) */}
+⚙️         <div className="col-span-12 lg:col-span-5 xl:col-span-4 bg-white relative flex flex-col h-full shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.05)] z-20">
+⚙️           <div className="absolute inset-0 overflow-hidden">
+⚙️             <StockRegisterView
+⚙️               onBack={handleBackToHome}
+⚙️               onRegister={handleRegisterSuccess}
+⚙️               isPageMode={true}
+⚙️             />
+⚙️           </div>
+⚙️         </div>
+
+⚙️       </div>
+⚙️     </div>
+⚙️   );
+⚙️ };
+
+// 🛡️ GUARDIAN: Exportação com Rastreamento
+⚙️ export default withGuardian(
+⚙️   InventoryDashboardPage,
+⚙️   "app/inventory/register/page.tsx",
+⚙️   "PAGE",
+⚙️   {
+⚙️     label: "Dashboard de Estoque (Desktop)",
+⚙️     description: "Interface unificada que combina visualização de lista (esquerda) e cadastro rápido (direita). Integra navegação global.",
+⚙️     orientationNotes: `
+⚙️ 📌 **Arquitetura de Navegação**:
+⚙️ - **Início Pro**: Redireciona estritamente para a raiz ('/'), que é a tela de Jeans.
+⚙️ - **Dashboard Geral**: Removido. O fluxo é direto entre as ferramentas de trabalho.
+⚙️ - **Navegação Global**: Integra 'JeansNavigation' no header.
+⚙️     `.trim(),
+⚙️     connectsTo: [
+⚙️       { target: "components/builder/ui/StockRegisterView.tsx", type: "COMPONENT", description: "Painel Direito (Form)" },
+⚙️       { target: "components/builder/ui/stock-modal/StockProductList.tsx", type: "COMPONENT", description: "Painel Esquerdo (Lista)" },
+⚙️       { target: "components/builder/blocks/sistemre/JeansNavigation.tsx", type: "COMPONENT", description: "Barra de Navegação" },
+⚙️       { target: "app/actions/product.ts", type: "EXTERNAL", description: "Fetch & Revalidate" }
+⚙️     ],
+⚙️     tags: ["Desktop", "Inventory", "Navigation", "No-Dashboard"]
+⚙️   }
+⚙️ );
+
+
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+// 💡 DICA: Componentes são reutilizáveis - você pode usar o mesmo componente em vários lugares
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/layout.tsx
+📂 CAMINHO: app/layout.tsx
+═══════════════════════════════════════════════════════════════════════════════
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import type { Metadata, Viewport } from "next";
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { Geist, Geist_Mono } from "next/font/google";
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import "./globals.css";
+
+// ✅ Importamos APENAS o Shell (que já contém o Guardian e Admin)
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { RootLayoutShell } from "@/components/layouts/RootLayoutShell";
+
+⚙️ const geistSans = Geist({
+⚙️   variable: "--font-geist-sans",
+⚙️   subsets: ["latin"],
+⚙️ });
+
+⚙️ const geistMono = Geist_Mono({
+⚙️   variable: "--font-geist-mono",
+⚙️   subsets: ["latin"],
+⚙️ });
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const metadata: Metadata = {
+⚙️   title: "Loja Maryland",
+⚙️   description: "Sua loja virtual exclusiva",
+⚙️   manifest: "/manifest.json",
+⚙️ };
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const viewport: Viewport = {
+⚙️   width: "device-width",
+⚙️   initialScale: 1,
+⚙️   maximumScale: 1,
+⚙️   userScalable: false,
+⚙️   viewportFit: "cover",
+⚙️   themeColor: "#5874f6",
+⚙️ };
+
+⚙️ export default function RootLayout({
+⚙️   children,
+⚙️ }: Readonly<{
+⚙️   children: React.ReactNode;
+⚙️ }>) {
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return (
+⚙️       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-950 text-zinc-200`}>
+⚙️         {/*
+⚙️             ✅ Delegamos a renderização para o Shell Rastreado.
+⚙️             Isso ativará o 'withGuardian' dentro do RootLayoutShell.tsx
+        */}
+⚙️         <RootLayoutShell>
+⚙️           {children}
+⚙️         </RootLayoutShell>
+⚙️       </body>
+⚙️     </html>
+⚙️   );
+⚙️ }
+
+
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+// 💡 DICA: Componentes são reutilizáveis - você pode usar o mesmo componente em vários lugares
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/loading.tsx
+📂 CAMINHO: app/loading.tsx
+═══════════════════════════════════════════════════════════════════════════════
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import React from 'react';
+
+⚙️ export default function Loading() {
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return (
+      
+⚙️       {/* Simulando o App Shell */}
+⚙️       <div className="w-full h-full bg-gray-50 flex flex-col lg:max-w-[420px] lg:h-[850px] lg:rounded-[2.5rem] lg:border-[8px] lg:border-gray-900 lg:shadow-2xl relative">
+        
+⚙️         {/* Header Skeleton */}
+⚙️         <div className="h-24 bg-gray-200 animate-pulse w-full rounded-b-3xl shrink-0" />
+
+⚙️         {/* Content Skeleton */}
+⚙️         <div className="flex-1 p-4 space-y-4 overflow-hidden">
+⚙️            {/* Banner */}
+⚙️            <div className="w-full aspect-[16/10] bg-gray-200 rounded-2xl animate-pulse" />
+           
+⚙️            {/* Bolinhas (Categorias) */}
+⚙️            <div className="flex gap-4 overflow-hidden">
+⚙️               {[1,2,3,4].map(i => (
+⚙️                 <div key={i} className="w-20 h-20 bg-gray-200 rounded-full shrink-0 animate-pulse" />
+⚙️               ))}
+⚙️            </div>
+
+⚙️            {/* Grid Produtos */}
+⚙️            <div className="grid grid-cols-2 gap-3 mt-4">
+⚙️               <div className="h-48 bg-gray-200 rounded-xl animate-pulse" />
+⚙️               <div className="h-48 bg-gray-200 rounded-xl animate-pulse" />
+⚙️            </div>
+⚙️         </div>
+
+⚙️         {/* Footer Skeleton */}
+⚙️         <div className="h-20 bg-white border-t border-gray-200 absolute bottom-0 w-full flex justify-evenly items-center pb-4">
+⚙️            {[1,2,3,4,5].map(i => (
+⚙️              <div key={i} className="w-10 h-10 bg-gray-100 rounded-full animate-pulse" />
+⚙️            ))}
+⚙️         </div>
+
+⚙️       </div>
+⚙️     </div>
+⚙️   );
+⚙️ }
+
+
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Esta é uma "Página Completa" - como uma sala inteira do aplicativo
+// 📦 O QUE FAZ: Organiza todos os componentes e lógica de uma tela específica
+// 🔗 CONECTADO A: Componentes filhos, layouts, e rotas do Next.js
+// 🎯 ANALOGIA: É como uma sala completa com móveis (componentes) organizados
+// 💡 DICA: Cada página é uma rota diferente no aplicativo
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/login/page.tsx
+📂 CAMINHO: app/login/page.tsx
+═══════════════════════════════════════════════════════════════════════════════
+
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️ import React, { useState, useEffect } from 'react';
+⚙️ import { useRouter } from 'next/navigation';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { User, Building2, ArrowRight, ShieldCheck, Store, Phone, UserCircle } from 'lucide-react';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import clsx from 'clsx';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { LocalDB } from '@/lib/local-db';
+
+// --- Máscaras ---
+⚙️ const masks = {
+⚙️   cpf: (v: string) => v.replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4').substring(0, 14),
+⚙️   cnpj: (v: string) => v.replace(/\D/g, '').replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5').substring(0, 18),
+⚙️   phone: (v: string) => v.replace(/\D/g, '').replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3').substring(0, 15),
+⚙️ };
+
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria um tipo chamado PersonType que só aceita valores específicos
+// 🧩 ANALOGIA LEGO: É como um molde que aceita apenas 2 formatos: fisica, juridica;
+// 💡 EXEMPLO: const tipo: PersonType = "fisica"; // ✅ Correto
+// 💡 EXEMPLO: const tipo: PersonType = "OUTRO"; // ❌ Erro! Não está na lista
+⚙️ type PersonType = 'fisica' | 'juridica';
+⚙️ export default function EntryPage() {
+⚙️   const router = useRouter();
+// 🟢 VERDE: Hook do React - conecta lógica especial ao componente
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [isLoading, setIsLoading] = useState(true);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [personType, setPersonType] = useState<PersonType>('fisica');
+  // Estado do Formulário
+// 🟢 VERDE: Hook do React - conecta lógica especial ao componente
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [formData, setFormData] = useState({
+⚙️     document: '',
+⚙️     storeName: '',
+⚙️     whatsapp: ''
+⚙️   });
+
+  // 1. Verifica se já existe cadastro ao iniciar o app
+// 🟢 VERDE: Hook do React - conecta lógica especial ao componente
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Executa código quando o componente aparece, desaparece ou quando algo muda
+// 🧩 ANALOGIA LEGO: É como um assistente que observa e age quando algo acontece
+// 💡 DICA: useEffect é perfeito para buscar dados, configurar timers, ou limpar recursos
+⚙️   useEffect(() => {
+    // Isso evita o erro de "Synchronous State Update" do React.
+⚙️     const checkUser = setTimeout(() => {
+⚙️         const existingUser = LocalDB.getUser();
+        
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️         if (existingUser) {
+⚙️           router.push('/dashboard');
+⚙️         } else {
+⚙️           setIsLoading(false); // Agora seguro, pois roda após o ciclo inicial
+⚙️         }
+⚙️     }, 100); // Um pequeno delay (100ms) ajuda a suavizar a transição visual também
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return () => clearTimeout(checkUser);
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️   const handleChange = (field: string, value: string) => {
+⚙️     let finalValue = value;
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (field === 'document') {
+⚙️     }
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (field === 'whatsapp') {
+⚙️     }
+⚙️     setFormData(prev => ({ ...prev, [field]: finalValue }));
+⚙️   };
+
+⚙️   const handleRegister = async (e: React.FormEvent) => {
+⚙️     e.preventDefault();
+⚙️     setIsLoading(true);
+
+    // Simulação de processamento
+// 🟢 VERDE: Espera uma tarefa assíncrona terminar - como esperar uma peça chegar
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️     await new Promise(resolve => setTimeout(resolve, 1000));
+    // Salva no Banco de Dados Local
+⚙️     LocalDB.saveUser({
+⚙️       type: personType,
+⚙️       name: formData.name,
+⚙️       document: formData.document,
+⚙️       whatsapp: formData.whatsapp,
+⚙️       storeName: personType === 'juridica' ? formData.storeName : undefined
+⚙️     });
+
+⚙️     alert("Cadastro salvo com sucesso! Bem-vindo.");
+⚙️     router.push('/dashboard');
+⚙️   };
+
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️   if (isLoading) {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return (
+⚙️         <div className="animate-pulse flex flex-col items-center gap-4">
+⚙️           <div className="w-16 h-16 bg-gray-200 rounded-full" />
+⚙️           <div className="h-4 w-32 bg-gray-200 rounded" />
+⚙️         </div>
+⚙️       </div>
+⚙️     );
+⚙️   }
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return (
+⚙️       {/* Background Decorativo */}
+⚙️       <div className="absolute top-[-10%] right-[-5%] w-64 h-64 bg-[#5874f6]/10 rounded-full blur-3xl pointer-events-none" />
+⚙️       <div className="absolute bottom-[-10%] left-[-5%] w-64 h-64 bg-[#5874f6]/10 rounded-full blur-3xl pointer-events-none" />
+
+⚙️       <div className="bg-white w-full max-w-[420px] rounded-3xl shadow-2xl border border-gray-100 p-6 sm:p-8 relative z-10">
+        
+⚙️         {/* Header */}
+⚙️         <div className="flex flex-col items-center mb-6 text-center">
+⚙️           <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-3 shadow-sm border border-blue-100">
+⚙️             <ShieldCheck size={28} className="text-[#5874f6]" strokeWidth={2} />
+⚙️           </div>
+⚙️           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Crie sua Conta</h1>
+⚙️           <p className="text-gray-500 text-xs font-medium mt-1">Preencha seus dados para acessar o estoque.</p>
+⚙️         </div>
+
+⚙️         <form onSubmit={handleRegister} className="flex flex-col gap-4">
+          
+⚙️           {/* Toggle Tipo */}
+⚙️           <div className="flex bg-gray-100 rounded-xl p-1 shadow-inner">
+⚙️             <button type="button" onClick={() => { setPersonType('fisica'); setFormData(p => ({...p, document: ''})); }}
+⚙️               className={clsx("flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2", personType === 'fisica' ? "bg-white text-[#5874f6] shadow-sm" : "text-gray-500")}>
+⚙️               <User size={16} /> Pessoa Física
+⚙️             </button>
+⚙️             <button type="button" onClick={() => { setPersonType('juridica'); setFormData(p => ({...p, document: ''})); }}
+⚙️               className={clsx("flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2", personType === 'juridica' ? "bg-white text-[#5874f6] shadow-sm" : "text-gray-500")}>
+⚙️               <Building2 size={16} /> Pessoa Jurídica
+⚙️             </button>
+⚙️           </div>
+
+⚙️           {/* Inputs */}
+⚙️           <div className="space-y-3">
+⚙️             {/* Nome Completo */}
+⚙️             <div className="relative group">
+⚙️               <UserCircle size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+⚙️               <input required type="text" placeholder="Seu Nome Completo"
+⚙️                 value={formData.name} onChange={e => handleChange('name', e.target.value)}
+⚙️                 className="w-full h-12 pl-11 pr-4 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-800 outline-none focus:border-[#5874f6] focus:bg-white transition-all" />
+⚙️             </div>
+
+⚙️             {/* Documento (CPF/CNPJ) */}
+⚙️             <div className="relative group">
+⚙️               <ShieldCheck size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+⚙️               <input required type="text" inputMode="numeric"
+⚙️                 placeholder={personType === 'fisica' ? 'CPF' : 'CNPJ'}
+⚙️                 value={formData.document} onChange={e => handleChange('document', e.target.value)}
+⚙️                 className="w-full h-12 pl-11 pr-4 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-800 outline-none focus:border-[#5874f6] focus:bg-white transition-all" />
+⚙️             </div>
+
+⚙️             {/* WhatsApp */}
+⚙️             <div className="relative group">
+⚙️               <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+⚙️               <input required type="tel" placeholder="WhatsApp / Celular"
+⚙️                 value={formData.whatsapp} onChange={e => handleChange('whatsapp', e.target.value)}
+⚙️                 className="w-full h-12 pl-11 pr-4 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-800 outline-none focus:border-[#5874f6] focus:bg-white transition-all" />
+⚙️             </div>
+
+⚙️             {/* Nome da Loja (Só Jurídica) */}
+⚙️             {personType === 'juridica' && (
+⚙️               <div className="relative group animate-in slide-in-from-top-2">
+⚙️                 <Store size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+⚙️                 <input required type="text" placeholder="Nome Fantasia da Loja"
+⚙️                   value={formData.storeName} onChange={e => handleChange('storeName', e.target.value)}
+⚙️                   className="w-full h-12 pl-11 pr-4 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-800 outline-none focus:border-[#5874f6] focus:bg-white transition-all" />
+⚙️               </div>
+⚙️             )}
+⚙️           </div>
+
+⚙️           <button type="submit" disabled={!formData.name || !formData.document}
+⚙️             className="w-full h-14 mt-2 bg-green-500 text-white rounded-2xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-3 shadow-lg shadow-green-500/30 hover:bg-green-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+⚙️             Cadastrar e Entrar <ArrowRight size={20} />
+⚙️           </button>
+
+⚙️         </form>
+⚙️       </div>
+      
+⚙️       <div className="absolute bottom-4 text-center text-[10px] text-gray-400 font-medium">
+⚙️         <p>© 2024 B2B Engine. Dados salvos localmente.</p>
+⚙️       </div>
+⚙️     </div>
+⚙️   );
+⚙️ }
+
+
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Esta é uma "Página Completa" - como uma sala inteira do aplicativo
+// 📦 O QUE FAZ: Organiza todos os componentes e lógica de uma tela específica
+// 🔗 CONECTADO A: Componentes filhos, layouts, e rotas do Next.js
+// 🎯 ANALOGIA: É como uma sala completa com móveis (componentes) organizados
+// 💡 DICA: Cada página é uma rota diferente no aplicativo
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/page.tsx
+📂 CAMINHO: app/page.tsx
+═══════════════════════════════════════════════════════════════════════════════
+
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️ import React, { useState, useEffect } from 'react';
+⚙️ import { useRouter } from 'next/navigation';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import {
+⚙️   User,
+⚙️   Building2,
+⚙️   ArrowRight,
+⚙️   ShieldCheck,
+⚙️   Store,
+⚙️   Phone,
+⚙️   UserCircle,
+⚙️   BadgeCheck
+⚙️ } from 'lucide-react';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { clsx } from 'clsx';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { twMerge } from 'tailwind-merge';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { LocalDB } from '@/lib/local-db';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { AuthInputField } from '@/components/auth/AuthInputField';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { withGuardian } from "@/components/guardian/GuardianBeacon";
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { FooterItem } from '@/types/builder';
+
+// --- Utilitários de Máscara ---
+⚙️ const masks = {
+⚙️   cpf: (value: string) => value
+⚙️     .replace(/\D/g, '')
+⚙️     .replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+⚙️     .substring(0, 14),
+⚙️   cnpj: (value: string) => value
+⚙️     .replace(/\D/g, '')
+⚙️     .replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')
+⚙️     .substring(0, 18),
+⚙️   phone: (value: string) => value
+⚙️     .replace(/\D/g, '')
+⚙️     .replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
+⚙️     .substring(0, 15),
+⚙️ };
+
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria um tipo chamado PersonType que só aceita valores específicos
+// 🧩 ANALOGIA LEGO: É como um molde que aceita apenas 3 formatos: fisica, juridica, vendedor;
+// 💡 EXEMPLO: const tipo: PersonType = "fisica"; // ✅ Correto
+// 💡 EXEMPLO: const tipo: PersonType = "OUTRO"; // ❌ Erro! Não está na lista
+⚙️ type PersonType = 'fisica' | 'juridica' | 'vendedor';
+⚙️ const FOOTER_ITEMS: FooterItem[] = [
+⚙️   { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
+⚙️   { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
+⚙️   { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
+⚙️   { id: 'f4', icon: 'verified', isVisible: true, route: '/verified' },
+⚙️   { id: 'f5', icon: 'package-check', isVisible: true, route: '/inventory' }
+⚙️ ];
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ function EntryPageBase() {
+⚙️   const router = useRouter();
+// 🟢 VERDE: Hook do React - conecta lógica especial ao componente
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [isLoading, setIsLoading] = useState(true);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [personType, setPersonType] = useState<PersonType>('fisica');
+// 🟢 VERDE: Hook do React - conecta lógica especial ao componente
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [formData, setFormData] = useState({
+⚙️     document: '',
+⚙️     storeName: '',
+⚙️     whatsapp: ''
+⚙️   });
+
+  // 1. Verifica persistência e redireciona para JEANS (Nova Home)
+// 🟢 VERDE: Hook do React - conecta lógica especial ao componente
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Executa código quando o componente aparece, desaparece ou quando algo muda
+// 🧩 ANALOGIA LEGO: É como um assistente que observa e age quando algo acontece
+// 💡 DICA: useEffect é perfeito para buscar dados, configurar timers, ou limpar recursos
+⚙️   useEffect(() => {
+⚙️       const user = LocalDB.getUser();
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️       if (user) {
+⚙️         router.push('/product/jeans');
+⚙️       } else {
+⚙️         setIsLoading(false);
+⚙️       }
+⚙️     }, 100);
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return () => clearTimeout(checkUserTimer);
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️   const handleInputChange = (field: string, value: string) => {
+⚙️     let finalValue = value;
+
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (field === 'document') {
+⚙️       finalValue = isCpfGroup ? masks.cpf(value) : masks.cnpj(value);
+⚙️     }
+
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (field === 'whatsapp') {
+⚙️     }
+
+⚙️     setFormData((previousState) => ({
+⚙️       ...previousState,
+⚙️       [field]: finalValue
+⚙️     }));
+⚙️   };
+
+⚙️   const handleRegisterSubmit = async (event: React.FormEvent) => {
+⚙️     event.preventDefault();
+⚙️     setIsLoading(true);
+
+    // Simulação de processamento
+// 🟢 VERDE: Espera uma tarefa assíncrona terminar - como esperar uma peça chegar
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️     await new Promise((resolvePromise) => setTimeout(resolvePromise, 800));
+    // Persistência Local (LocalDB)
+⚙️     LocalDB.saveUser({
+⚙️       type: personType === 'vendedor' ? 'fisica' : personType,
+⚙️       name: formData.name,
+⚙️       document: formData.document,
+⚙️       whatsapp: formData.whatsapp,
+⚙️       storeName: personType === 'juridica' ? formData.storeName : undefined
+⚙️     });
+
+    // CRITICAL CHANGE: Redireciona para Jeans ao invés de Dashboard
+⚙️     router.push('/product/jeans');
+⚙️   };
+
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️   if (isLoading) {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return (
+⚙️         <div className="flex flex-col items-center gap-4 animate-pulse">
+⚙️           <div className="w-16 h-16 bg-gray-200 rounded-full" />
+⚙️           <div className="h-4 w-32 bg-gray-200 rounded" />
+⚙️         </div>
+⚙️       </div>
+⚙️     );
+⚙️   }
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return (
+⚙️       <div className="absolute top-[-10%] right-[-5%] w-64 h-64 bg-[#5874f6]/10 rounded-full blur-3xl pointer-events-none" />
+⚙️       <div className="absolute bottom-[-10%] left-[-5%] w-64 h-64 bg-[#5874f6]/10 rounded-full blur-3xl pointer-events-none" />
+
+⚙️       <main className="bg-white w-full max-w-[420px] rounded-3xl shadow-2xl border border-gray-100 p-6 sm:p-8 relative z-10 animate-in fade-in zoom-in duration-300">
+        
+⚙️         <div className="flex flex-col items-center mb-6 text-center">
+⚙️           <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-3 shadow-sm border border-blue-100">
+⚙️             <ShieldCheck size={28} className="text-[#5874f6]" strokeWidth={2} />
+⚙️           </div>
+⚙️           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Identifique-se</h1>
+⚙️           <p className="text-gray-500 text-xs font-medium mt-1">Acesse o painel exclusivo.</p>
+⚙️         </div>
+
+⚙️         <form onSubmit={handleRegisterSubmit} className="flex flex-col gap-4">
+          
+⚙️           <div className="flex bg-gray-100 rounded-xl p-1 shadow-inner">
+⚙️             <button
+⚙️               type="button"
+⚙️               onClick={() => {
+⚙️                 setPersonType('fisica');
+⚙️                 setFormData((previous) => ({ ...previous, document: '' }));
+⚙️               }}
+⚙️               className={clsx(
+⚙️                 "flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2",
+⚙️                 personType === 'fisica' ? "bg-white text-[#5874f6] shadow-sm" : "text-gray-500 hover:text-gray-700"
+⚙️               )}
+⚙️             >
+⚙️               <User size={16} /> Pessoa Física
+⚙️             </button>
+⚙️             <button
+⚙️               type="button"
+⚙️               onClick={() => {
+⚙️                 setPersonType('juridica');
+⚙️                 setFormData((previous) => ({ ...previous, document: '' }));
+⚙️               }}
+⚙️               className={clsx(
+⚙️                 "flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2",
+⚙️                 personType === 'juridica' ? "bg-white text-[#5874f6] shadow-sm" : "text-gray-500 hover:text-gray-700"
+⚙️               )}
+⚙️             >
+⚙️               <Building2 size={16} /> Pessoa Jurídica
+⚙️             </button>
+⚙️           </div>
+
+⚙️           <button
+⚙️             type="button"
+⚙️             onClick={() => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️               if (personType === 'vendedor') {
+⚙️               } else {
+⚙️                 setPersonType('vendedor');
+⚙️                 setFormData((previous) => ({ ...previous, document: '' }));
+⚙️               }
+⚙️             }}
+⚙️             className={twMerge(
+⚙️               "w-full h-10 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 border-2",
+⚙️               personType === 'vendedor'
+⚙️                 ? "bg-blue-50 text-[#5874f6] border-[#5874f6] shadow-sm"
+⚙️                 : "bg-white text-gray-500 border-gray-100 hover:bg-gray-50 hover:border-gray-200"
+⚙️             )}
+⚙️           >
+⚙️             <BadgeCheck size={16} />
+⚙️             Sou Vendedor(a)
+⚙️           </button>
+
+⚙️           <div className="space-y-3">
+⚙️             <AuthInputField
+⚙️               icon={UserCircle}
+⚙️               required
+⚙️               placeholder="Seu Nome Completo"
+⚙️               value={formData.name}
+⚙️               onChange={(value) => handleInputChange('name', value)}
+⚙️             />
+
+⚙️             <AuthInputField
+⚙️               icon={ShieldCheck}
+⚙️               required
+⚙️               inputMode="numeric"
+⚙️               placeholder={personType === 'juridica' ? 'CNPJ' : 'CPF'}
+⚙️               value={formData.document}
+⚙️               onChange={(value) => handleInputChange('document', value)}
+⚙️             />
+
+⚙️             <AuthInputField
+⚙️               icon={Phone}
+⚙️               required
+⚙️               type="tel"
+⚙️               placeholder="WhatsApp"
+⚙️               value={formData.whatsapp}
+⚙️               onChange={(value) => handleInputChange('whatsapp', value)}
+⚙️             />
+
+⚙️             {personType === 'juridica' && (
+⚙️               <div className="animate-in slide-in-from-top-2">
+⚙️                 <AuthInputField
+⚙️                   icon={Store}
+⚙️                   required
+⚙️                   placeholder="Nome Fantasia da Loja"
+⚙️                   value={formData.storeName}
+⚙️                   onChange={(value) => handleInputChange('storeName', value)}
+⚙️                 />
+⚙️               </div>
+⚙️             )}
+⚙️           </div>
+
+⚙️           <button
+⚙️             type="submit"
+⚙️             disabled={!formData.name || !formData.document}
+⚙️             className={twMerge(
+⚙️               "w-full h-14 mt-2 bg-[#5874f6] text-white rounded-2xl font-black text-sm uppercase tracking-wider",
+⚙️               "flex items-center justify-center gap-3 shadow-lg hover:bg-[#4a63d6] active:scale-95 transition-all",
+⚙️               "disabled:opacity-50 disabled:cursor-not-allowed"
+⚙️             )}
+⚙️           >
+⚙️             Acessar Sistema <ArrowRight size={20} />
+⚙️           </button>
+
+⚙️         </form>
+⚙️       </main>
+
+⚙️       <footer className="absolute bottom-4 text-center text-[10px] text-gray-400 font-medium">
+⚙️         <p>© 2026 Maryland Gestão.</p>
+⚙️       </footer>
+
+⚙️       {/* FOOTER PADRÃO (Mobile) */}
+⚙️       <div className="md:hidden fixed bottom-0 left-0 w-full z-50 pb-safe-bottom bg-transparent pointer-events-none">
+⚙️         <div className="pointer-events-auto">
+⚙️           <ButtonsFooter items={FOOTER_ITEMS} style={{ bgColor: '#5874f6' }} />
+⚙️         </div>
+⚙️       </div>
+⚙️     </div>
+⚙️   );
+⚙️ }
+
+⚙️ export default withGuardian(
+⚙️   EntryPageBase,
+⚙️   "app/page.tsx",
+⚙️   "PAGE"
+⚙️ );
+
+
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+// 💡 DICA: Componentes são reutilizáveis - você pode usar o mesmo componente em vários lugares
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/pos/components/CartSidebar.tsx
+📂 CAMINHO: app/pos/components/CartSidebar.tsx
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️ import React from 'react';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import Image from 'next/image';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import {
+⚙️   ShoppingBag, Trash2, Plus, Minus, User, FileText, Printer,
+⚙️   QrCode, CreditCard, Banknote, CheckCircle2
+⚙️ } from 'lucide-react';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { cn } from '@/lib/utils';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { CartItem, PaymentMethod } from '@/types/builder';
+
+// --- SUB-COMPONENTES INTERNOS ---
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma função interna chamada "CartItemRow" (só pode ser usada dentro deste arquivo)
+// 🧩 ANALOGIA LEGO: É como uma ferramenta privada que só você pode usar neste arquivo
+// 💡 DICA: Sem "export", esta função não pode ser importada por outros arquivos
+⚙️ const CartItemRow = ({ item, onRemove, onUpdate }: { item: CartItem, onRemove: (id: string) => void, onUpdate: (id: string, d: number) => void }) => {
+    // ✅ CORREÇÃO: Preço agora é number direto
+⚙️     const price = typeof item.product.price === 'number' ? item.product.price : 0;
+⚙️     const totalItemPrice = price * item.quantity;
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return (
+⚙️             <div className="relative w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200">
+⚙️                 {item.product.mainImage && (
+⚙️                   <Image
+⚙️                     src={item.product.mainImage}
+⚙️                     alt={item.product.name}
+⚙️                     fill
+⚙️                     className="object-cover"
+⚙️                     sizes="48px"
+⚙️                   />
+⚙️                 )}
+⚙️             </div>
+⚙️             <div className="flex-1 min-w-0 flex flex-col justify-between">
+⚙️                 <div className="flex justify-between items-start">
+⚙️                     <span className="text-xs font-bold text-gray-900 line-clamp-2 leading-tight">{item.product.name}</span>
+⚙️                     <button onClick={() => onRemove(item.cartId)} className="text-red-400 hover:text-red-600 p-1"><Trash2 size={14} /></button>
+⚙️                 </div>
+⚙️                 <div className="flex justify-between items-end mt-1">
+⚙️                     <span className="text-[10px] text-gray-500 font-medium bg-gray-50 px-1.5 rounded">{item.variationLabel}</span>
+⚙️                     <div className="flex items-center gap-3">
+⚙️                         <div className="flex items-center bg-gray-100 rounded-md h-6">
+⚙️                             <button onClick={() => onUpdate(item.cartId, -1)} className="w-6 flex items-center justify-center hover:bg-gray-200 rounded-l-md text-gray-600"><Minus size={12}/></button>
+⚙️                             <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
+⚙️                             <button onClick={() => onUpdate(item.cartId, 1)} className="w-6 flex items-center justify-center hover:bg-gray-200 rounded-r-md text-gray-600"><Plus size={12}/></button>
+⚙️                         </div>
+⚙️                         <span className="text-sm font-black text-gray-900">
+⚙️                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalItemPrice)}
+⚙️                         </span>
+⚙️                     </div>
+⚙️                 </div>
+⚙️             </div>
+⚙️         </div>
+⚙️     );
+⚙️ };
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma função interna chamada "PaymentButton" (só pode ser usada dentro deste arquivo)
+// 🧩 ANALOGIA LEGO: É como uma ferramenta privada que só você pode usar neste arquivo
+// 💡 DICA: Sem "export", esta função não pode ser importada por outros arquivos
+⚙️ const PaymentButton = ({ icon: Icon, label, active, onClick }: { icon: React.ElementType, label: string, active: boolean, onClick: () => void }) => (
+⚙️     <button onClick={onClick} className={cn("flex flex-col items-center justify-center py-2 rounded-xl border-2 transition-all", active ? "border-[#5874f6] bg-blue-50 text-[#5874f6]" : "border-gray-100 bg-white text-gray-400 hover:border-gray-300")}>
+⚙️         <Icon size={20} strokeWidth={2} className="mb-1" />
+⚙️         <span className="text-[10px] font-bold uppercase">{label}</span>
+⚙️     </button>
+⚙️ );
+
+// --- COMPONENTE PRINCIPAL ---
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ interface CartSidebarProps {
+// 🔴 VERDE: total (OBRIGATÓRIA) - Tipo: number
+//    DEVE ter este valor sempre
+// 🔴 VERDE: total (OBRIGATÓRIA) - Tipo: number
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   total: number;
+⚙️   onRemove: (cartId: string) => void;
+⚙️   onUpdate: (cartId: string, delta: number) => void;
+// 🔴 VERDE: payment (OBRIGATÓRIA) - Tipo: PaymentMethod
+//    DEVE ter este valor sempre
+// 🔴 VERDE: payment (OBRIGATÓRIA) - Tipo: PaymentMethod
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   payment: PaymentMethod;
+⚙️   onFinish: () => void;
+// 🔴 VERDE: processing (OBRIGATÓRIA) - Tipo: boolean
+//    DEVE ter este valor sempre
+// 🔴 VERDE: processing (OBRIGATÓRIA) - Tipo: boolean
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   processing: boolean;
+⚙️   setCustomerName: (v: string) => void;
+// 🔴 VERDE: customerDoc (OBRIGATÓRIA) - Tipo: string
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   customerDoc: string;
+⚙️   setCustomerDoc: (v: string) => void;
+⚙️   emitInvoice: boolean;
+⚙️   setEmitInvoice: (v: boolean) => void;
+⚙️ }
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const CartSidebar = ({
+⚙️   cart, total, itemsCount, onRemove, onUpdate,
+⚙️   payment, setPayment, onFinish, processing,
+⚙️   customerName, setCustomerName,
+⚙️   customerDoc, setCustomerDoc,
+⚙️   emitInvoice, setEmitInvoice,
+⚙️ }: CartSidebarProps) => {
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return (
+⚙️       {/* PAINEL CLIENTE / NOTA */}
+⚙️       <div className="px-6 py-4 border-b border-gray-100 bg-white space-y-3">
+⚙️         <div className="relative group">
+⚙️           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#5874f6] transition-colors"><User size={18} /></div>
+⚙️           <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Nome do Cliente (Opcional)" className="w-full h-10 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-lg text-sm font-bold outline-none focus:border-[#5874f6] focus:bg-white transition-all" />
+⚙️         </div>
+⚙️         <div className="flex gap-2">
+⚙️           <div className="relative group flex-1">
+⚙️             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#5874f6] transition-colors"><FileText size={18} /></div>
+⚙️             <input type="text" value={customerDoc} onChange={(e) => setCustomerDoc(e.target.value)} placeholder="CPF/CNPJ" className="w-full h-10 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-lg text-sm font-bold outline-none focus:border-[#5874f6] focus:bg-white transition-all" />
+⚙️           </div>
+⚙️           <button onClick={() => setEmitInvoice(!emitInvoice)} className={cn("px-3 h-10 rounded-lg border-2 flex items-center justify-center transition-all", emitInvoice ? "bg-green-50 border-green-500 text-green-700" : "bg-gray-50 border-gray-200 text-gray-400")}>
+⚙️             <Printer size={20} />
+⚙️           </button>
+⚙️         </div>
+⚙️       </div>
+
+⚙️       <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-[#f8f9fa]">
+⚙️         {cart.length === 0 ? (
+⚙️           <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-60">
+⚙️             <ShoppingBag size={64} className="mb-4 stroke-1" />
+⚙️             <p className="font-bold">Sacola Vazia</p>
+⚙️             <p className="text-xs text-center px-8">Bipe um produto para iniciar.</p>
+⚙️           </div>
+⚙️         ) : (
+⚙️           cart.map((item) => <div key={item.cartId} className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm"><CartItemRow item={item} onRemove={onRemove} onUpdate={onUpdate} /></div>)
+⚙️         )}
+⚙️       </div>
+
+⚙️       <div className="bg-white p-6 border-t border-gray-200 shadow-[0_-10px_30px_rgba(0,0,0,0.03)] z-10">
+⚙️         <div className="mb-4">
+⚙️           <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">Pagamento</span>
+⚙️           <div className="grid grid-cols-4 gap-2">
+⚙️             <PaymentButton icon={QrCode} label="Pix" active={payment === 'pix'} onClick={() => setPayment('pix')} />
+⚙️             <PaymentButton icon={CreditCard} label="Crédito" active={payment === 'credit'} onClick={() => setPayment('credit')} />
+⚙️             <PaymentButton icon={CreditCard} label="Débito" active={payment === 'debit'} onClick={() => setPayment('debit')} />
+⚙️             <PaymentButton icon={Banknote} label="Dinheiro" active={payment === 'cash'} onClick={() => setPayment('cash')} />
+⚙️           </div>
+⚙️         </div>
+
+⚙️         <div className="flex justify-between items-end mb-4">
+⚙️           <div className="flex flex-col">
+⚙️             <span className="text-sm font-medium text-gray-500">Total a Pagar</span>
+⚙️             <span className="text-3xl font-black text-gray-900 tracking-tight">
+⚙️                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total)}
+⚙️             </span>
+⚙️           </div>
+⚙️           <div className="text-right">
+⚙️             <span className="text-xs font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded-md">{itemsCount} itens</span>
+⚙️           </div>
+⚙️         </div>
+
+⚙️         <button onClick={onFinish} disabled={processing || cart.length === 0} className={cn("w-full h-14 bg-[#00c853] text-white rounded-xl font-black text-base uppercase tracking-widest shadow-lg shadow-green-500/30 flex items-center justify-center gap-2 transition-all hover:bg-[#00b34a] active:scale-95 disabled:opacity-50 disabled:grayscale", processing && "animate-pulse")}>
+⚙️           {processing ? "Processando..." : <><CheckCircle2 size={20} strokeWidth={3} /> {emitInvoice ? "Finalizar e Emitir Nota" : "Finalizar Venda"}</>}
+⚙️         </button>
+⚙️       </div>
+⚙️     </div>
+⚙️   );
+⚙️ };
+
+
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+// 💡 DICA: Componentes são reutilizáveis - você pode usar o mesmo componente em vários lugares
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/pos/components/IncomingStockCard.tsx
+📂 CAMINHO: app/pos/components/IncomingStockCard.tsx
+═══════════════════════════════════════════════════════════════════════════════
+
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️ import React, { useState } from 'react';
+⚙️ import Image from 'next/image';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { ChevronUp, ChevronDown, AlertTriangle, Undo2, Send, PackageCheck } from 'lucide-react';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { ProductionItemData } from '@/types/builder';
+
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ interface IncomingStockCardProps {
+⚙️   onConfirm: (id: string) => void;
+⚙️   onReturn: (id: string, reason: string) => void;
+⚙️ }
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma constante chamada "IncomingStockCard" que guarda uma função
+// 🧩 ANALOGIA LEGO: É como guardar uma ferramenta em uma caixa com nome "IncomingStockCard"
+// 🔗 CONECTADO A: Outros arquivos que importam usando "import { IncomingStockCard }"
+// 💡 DICA: Arrow function (=>) é uma forma mais curta de escrever funções
+⚙️ export const IncomingStockCard = ({ item, onConfirm, onReturn }: IncomingStockCardProps) => {
+// 🟢 VERDE: Hook do React - conecta lógica especial ao componente
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [showDetails, setShowDetails] = useState(true);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [isReturning, setIsReturning] = useState(false);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [returnReason, setReturnReason] = useState("");
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️   const handleReturnClick = () => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (!returnReason.trim()) return alert("⚠️ Digite o motivo da devolução.");
+⚙️     setIsReturning(false);
+⚙️     setReturnReason("");
+⚙️   };
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return (
+⚙️       {/* Header */}
+⚙️       <div className="flex gap-4 w-full">
+⚙️         <div className="relative w-24 h-32 bg-gray-100 rounded-xl overflow-hidden shrink-0 border border-gray-200 shadow-sm">
+⚙️           {item.productImage ? (
+⚙️              <Image
+⚙️                src={item.productImage}
+⚙️                alt={item.productName}
+⚙️                fill
+⚙️                className="object-cover"
+⚙️                sizes="96px"
+⚙️              />
+⚙️           ) : (
+⚙️              <div className="w-full h-full flex items-center justify-center bg-slate-200 text-slate-400">
+⚙️                <PackageCheck size={24} />
+⚙️              </div>
+⚙️           )}
+⚙️           <div className="absolute bottom-0 right-0 bg-blue-600 text-white text-xs font-black px-2 py-1 rounded-tl-lg z-10">
+⚙️             {item.quantity} un
+⚙️           </div>
+⚙️         </div>
+
+⚙️         <div className="flex-1 min-w-0 flex flex-col justify-center">
+⚙️           <h4 className="font-black text-gray-900 text-lg lg:text-xl uppercase leading-tight mb-2 break-words">
+⚙️             {item.productName}
+⚙️           </h4>
+⚙️           <span className="text-xs font-bold text-orange-700 bg-orange-100 px-2 py-1 rounded-md w-fit block mb-2 border border-orange-200">
+⚙️             AGUARDANDO LIBERAÇÃO
+⚙️           </span>
+
+⚙️           {!isReturning && (
+⚙️             <button
+⚙️               onClick={() => setShowDetails(!showDetails)}
+⚙️               className="mt-auto flex items-center gap-1.5 text-xs lg:text-sm text-gray-600 font-bold hover:text-blue-600 transition-colors bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 w-fit"
+⚙️             >
+⚙️               {showDetails ? "Ocultar Grade" : "Ver Grade Completa"}
+⚙️               {showDetails ? <ChevronUp size={16}/> : <ChevronDown size={16}/>}
+⚙️             </button>
+⚙️           )}
+⚙️         </div>
+⚙️       </div>
+
+⚙️       {/* Return Mode */}
+⚙️       {isReturning ? (
+⚙️         <div className="bg-red-50 p-4 rounded-xl border border-red-200 animate-in fade-in zoom-in-95 duration-200 w-full">
+⚙️           <div className="flex items-center gap-2 mb-2 text-red-600 font-black uppercase text-xs tracking-wider">
+⚙️             <AlertTriangle size={16} /> Devolver para Produção
+⚙️           </div>
+⚙️           <textarea
+⚙️             value={returnReason}
+⚙️             onChange={(e) => setReturnReason(e.target.value)}
+⚙️             placeholder="Descreva o problema..."
+⚙️             className="w-full h-20 p-3 rounded-lg border border-red-200 text-sm font-bold text-gray-800 placeholder:text-red-300 focus:outline-none focus:border-red-500 bg-white mb-3 resize-none"
+⚙️           />
+⚙️           <div className="flex gap-2">
+⚙️             <button onClick={() => setIsReturning(false)} className="flex-1 h-10 bg-white border border-red-200 text-red-400 font-bold text-xs uppercase rounded-lg hover:bg-red-50 transition-colors">
+⚙️               Cancelar
+⚙️             </button>
+⚙️             <button onClick={handleReturnClick} className="flex-[2] h-10 bg-red-600 text-white font-bold text-xs uppercase rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2 shadow-sm">
+⚙️               <Send size={14} /> Enviar
+⚙️             </button>
+⚙️           </div>
+⚙️         </div>
+⚙️       ) : (
+⚙️         <>
+⚙️           {showDetails && item.variationsDetail && (
+⚙️             <div className="bg-blue-50/50 rounded-xl p-3 border border-blue-100 flex flex-col gap-2 max-h-60 overflow-y-auto w-full">
+⚙️               <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest px-1">Conferência</span>
+⚙️               {item.variationsDetail.map((v, idx) => (
+⚙️                 <div key={idx} className="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 shadow-sm w-full">
+⚙️                   <div className="flex items-center gap-3 flex-1 min-w-0 pr-2">
+⚙️                     <span className="bg-gray-900 text-white font-black text-sm w-8 h-8 flex items-center justify-center rounded-lg shadow-sm shrink-0">
+⚙️                       {v.size}
+⚙️                     </span>
+⚙️                     <div className="flex flex-col min-w-0">
+⚙️                       <span className="text-sm font-bold text-gray-800 uppercase leading-tight break-words whitespace-normal">{v.color}</span>
+⚙️                       {v.type && <span className="text-xs text-gray-500 italic mt-0.5 break-words whitespace-normal">{v.type}</span>}
+⚙️                     </div>
+⚙️                   </div>
+⚙️                   <span className="font-black text-base text-blue-600 shrink-0 whitespace-nowrap">{v.qty} un</span>
+⚙️                 </div>
+⚙️               ))}
+⚙️             </div>
+⚙️           )}
+⚙️           <div className="flex gap-2 pt-2 border-t border-gray-100 w-full">
+⚙️             <button onClick={() => setIsReturning(true)} className="h-12 px-4 border-2 border-red-100 text-red-500 rounded-xl font-black text-xs uppercase tracking-wide flex items-center justify-center gap-2 hover:bg-red-50 hover:border-red-200 transition-colors shrink-0" title="Devolver para Produção">
+⚙️               <Undo2 size={20} />
+⚙️             </button>
+⚙️             <button onClick={() => onConfirm(item.id)} className="flex-1 h-12 bg-green-600 hover:bg-green-700 text-white rounded-xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 min-w-0 truncate">
+⚙️               <PackageCheck size={20} className="shrink-0" /> <span className="truncate">Liberar Mercadoria</span>
+⚙️             </button>
+⚙️           </div>
+⚙️         </>
+⚙️       )}
+⚙️     </div>
+⚙️   );
+⚙️ };
+
+
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+// 💡 DICA: Componentes são reutilizáveis - você pode usar o mesmo componente em vários lugares
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/pos/components/POSModals.tsx
+📂 CAMINHO: app/pos/components/POSModals.tsx
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️ import React from 'react';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { motion, AnimatePresence } from 'framer-motion';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { Lock, LogOut, History, X, FileText, PackageCheck, ClipboardList } from 'lucide-react';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { ProductionItemData } from '@/types/builder';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { IncomingStockCard } from './IncomingStockCard';
+
+// --- INTERFACES ---
+
+// Explicit Interface for the UI Component (Decoupled from DB)
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ export interface HistoryOrder {
+// 🔴 VERDE: title (OBRIGATÓRIA) - Tipo: string
+//    DEVE ter este valor sempre
+// 🔴 VERDE: title (OBRIGATÓRIA) - Tipo: string
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   title: string;
+// 🔴 VERDE: createdAt (OBRIGATÓRIA) - Tipo: string | Date
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   createdAt: string | Date; // Accepts both formats
+// 🔵 VERDE: paymentMethod (OPCIONAL) - Tipo: string
+//    Pode não ter este valor
+// 🔵 VERDE: paymentMethod (OPCIONAL) - Tipo: string
+//    📦 O QUE FAZ: Propriedade opcional do componente
+//    🧩 ANALOGIA LEGO: É como uma peça extra que pode ou não ser usada
+//    💡 DICA: Pode não ter este valor
+⚙️   paymentMethod?: string;
+// 🔵 VERDE: hasInvoice (OPCIONAL) - Tipo: boolean
+//    Pode não ter este valor
+// 🔵 VERDE: hasInvoice (OPCIONAL) - Tipo: boolean
+//    📦 O QUE FAZ: Propriedade opcional do componente
+//    🧩 ANALOGIA LEGO: É como uma peça extra que pode ou não ser usada
+//    💡 DICA: Pode não ter este valor
+⚙️   hasInvoice?: boolean;
+
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ interface BaseModalProps {
+⚙️   onClose: () => void;
+⚙️ }
+
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ interface CashModalProps {
+// 🔴 VERDE: value (OBRIGATÓRIA) - Tipo: string
+//    DEVE ter este valor sempre
+// 🔴 VERDE: value (OBRIGATÓRIA) - Tipo: string
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   value: string;
+⚙️   onConfirm: () => void;
+// 🔵 VERDE: onClose (OPCIONAL) - Tipo: () => void
+//    Pode não ter este valor
+⚙️   onClose?: () => void;
+
+// --- MODAL ABRIR CAIXA ---
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma constante chamada "OpenCashModal" que guarda uma função
+// 🧩 ANALOGIA LEGO: É como guardar uma ferramenta em uma caixa com nome "OpenCashModal"
+// 🔗 CONECTADO A: Outros arquivos que importam usando "import { OpenCashModal }"
+// 💡 DICA: Arrow function (=>) é uma forma mais curta de escrever funções
+⚙️ export const OpenCashModal = ({ isOpen, value, onChange, onConfirm }: CashModalProps) => (
+⚙️   <AnimatePresence>
+⚙️     {isOpen && (
+⚙️       <div className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+⚙️         <motion.div initial={{scale: 0.9, opacity: 0}} animate={{scale: 1, opacity: 1}} className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl flex flex-col gap-4 text-center">
+⚙️           <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mb-2"><Lock size={32} /></div>
+⚙️           <h2 className="text-2xl font-black text-gray-900">Abrir Caixa</h2>
+⚙️           <p className="text-sm text-gray-500">Informe o fundo de troco.</p>
+⚙️           <input type="number" value={value} onChange={(e) => onChange(e.target.value)} placeholder="0.00" autoFocus className="w-full h-12 border-2 border-gray-200 rounded-xl px-4 text-xl font-bold focus:border-[#5874f6] outline-none transition-all" />
+⚙️           <button onClick={onConfirm} className="w-full h-12 bg-[#5874f6] text-white font-black uppercase rounded-xl hover:bg-blue-600 active:scale-95 transition-all shadow-lg">Iniciar</button>
+⚙️         </motion.div>
+⚙️       </div>
+⚙️     )}
+⚙️   </AnimatePresence>
+⚙️ );
+
+// --- MODAL FECHAR CAIXA ---
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma constante chamada "CloseCashModal" que guarda uma função
+// 🧩 ANALOGIA LEGO: É como guardar uma ferramenta em uma caixa com nome "CloseCashModal"
+// 🔗 CONECTADO A: Outros arquivos que importam usando "import { CloseCashModal }"
+// 💡 DICA: Arrow function (=>) é uma forma mais curta de escrever funções
+⚙️ export const CloseCashModal = ({ isOpen, onClose, value, onChange, onConfirm }: CashModalProps) => (
+⚙️   <AnimatePresence>
+⚙️     {isOpen && (
+⚙️       <div className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+⚙️         <motion.div initial={{scale: 0.9, opacity: 0}} animate={{scale: 1, opacity: 1}} exit={{scale: 0.9, opacity: 0}} className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl flex flex-col gap-4 text-center">
+⚙️           <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-red-600 mb-2"><LogOut size={32} /></div>
+⚙️           <h2 className="text-2xl font-black text-gray-900">Fechar Caixa</h2>
+⚙️           <p className="text-sm text-gray-500">Conte o dinheiro e informe o valor total.</p>
+⚙️           <input type="number" value={value} onChange={(e) => onChange(e.target.value)} placeholder="0.00" autoFocus className="w-full h-12 border-2 border-gray-200 rounded-xl px-4 text-xl font-bold focus:border-red-500 outline-none transition-all" />
+⚙️           <div className="flex gap-2">
+⚙️             <button onClick={onClose} className="flex-1 h-12 border border-gray-300 text-gray-600 font-bold rounded-xl hover:bg-gray-50">Cancelar</button>
+⚙️             <button onClick={onConfirm} className="flex-1 h-12 bg-red-600 text-white font-black uppercase rounded-xl hover:bg-red-700 shadow-lg">Fechar</button>
+⚙️           </div>
+⚙️         </motion.div>
+⚙️       </div>
+⚙️     )}
+⚙️   </AnimatePresence>
+⚙️ );
+
+// --- MODAL HISTÓRICO ---
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ interface HistoryModalProps extends BaseModalProps {
+⚙️ }
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma constante chamada "HistoryModal" que guarda uma função
+// 🧩 ANALOGIA LEGO: É como guardar uma ferramenta em uma caixa com nome "HistoryModal"
+// 🔗 CONECTADO A: Outros arquivos que importam usando "import { HistoryModal }"
+// 💡 DICA: Arrow function (=>) é uma forma mais curta de escrever funções
+⚙️ export const HistoryModal = ({ isOpen, onClose, history }: HistoryModalProps) => (
+⚙️   <AnimatePresence>
+⚙️     {isOpen && (
+⚙️       <div className="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm flex items-center justify-end">
+⚙️         <motion.div initial={{x: "100%"}} animate={{x: 0}} exit={{x: "100%"}} className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col">
+⚙️           <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+⚙️             <h2 className="font-black text-lg flex items-center gap-2"><History size={20}/> Histórico de Vendas</h2>
+⚙️             <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full"><X size={20}/></button>
+⚙️           </div>
+⚙️           <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#f8f9fa]">
+⚙️             {history.length === 0 ? <p className="text-center text-gray-400 mt-10">Nenhuma venda hoje.</p> : history.map(sale => (
+⚙️               <div key={sale.id} className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
+⚙️                 <div className="flex justify-between font-bold text-sm">
+⚙️                   <span>{sale.title}</span>
+⚙️                   <span className="text-[#5874f6]">
+⚙️                     {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(sale.total))}
+⚙️                   </span>
+⚙️                 </div>
+⚙️                 <div className="flex justify-between text-xs text-gray-500 mt-1">
+⚙️                   <span>
+⚙️                     {new Date(sale.createdAt).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
+⚙️                   </span>
+⚙️                   <span>{sale.paymentMethod?.toUpperCase()}</span>
+⚙️                 </div>
+⚙️                 {sale.customerDoc && <div className="text-[10px] text-gray-400 mt-1">CPF: {sale.customerDoc}</div>}
+⚙️                 {sale.hasInvoice && <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-md w-fit"><FileText size={10}/> Nota Emitida</div>}
+⚙️               </div>
+⚙️             ))}
+⚙️           </div>
+⚙️         </motion.div>
+⚙️       </div>
+⚙️     )}
+⚙️   </AnimatePresence>
+⚙️ );
+
+// --- MODAL RECEBIMENTO (PRODUÇÃO) ---
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ interface IncomingItemsModalProps extends BaseModalProps {
+⚙️   onConfirm: (id: string) => void;
+⚙️   onReturn: (id: string, reason: string) => void;
+⚙️ }
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma constante chamada "IncomingItemsModal" que guarda uma função
+// 🧩 ANALOGIA LEGO: É como guardar uma ferramenta em uma caixa com nome "IncomingItemsModal"
+// 🔗 CONECTADO A: Outros arquivos que importam usando "import { IncomingItemsModal }"
+// 💡 DICA: Arrow function (=>) é uma forma mais curta de escrever funções
+⚙️ export const IncomingItemsModal = ({ isOpen, onClose, items, onConfirm, onReturn }: IncomingItemsModalProps) => (
+⚙️   <AnimatePresence>
+⚙️     {isOpen && (
+⚙️       <>
+⚙️         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-black/50 z-[100] backdrop-blur-sm" />
+⚙️         <motion.div initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }} className="fixed left-0 top-0 h-full w-full max-w-lg bg-[#f8f9fa] shadow-2xl z-[110] border-r border-gray-200 flex flex-col">
+⚙️           <div className="p-5 bg-white border-b border-gray-200 flex items-center justify-between">
+⚙️             <h2 className="font-black text-xl text-gray-900 flex items-center gap-2"><PackageCheck size={24} className="text-blue-600"/> Recebimento de Lotes</h2>
+⚙️             <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full"><X size={24}/></button>
+⚙️           </div>
+⚙️           <div className="flex-1 overflow-y-auto p-5 space-y-5">
+⚙️             {items.length === 0 ? (
+⚙️               <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+⚙️                 <ClipboardList size={60} className="mb-4 opacity-50"/>
+⚙️                 <p className="text-base font-bold">Nenhum lote pendente</p>
+⚙️                 <p className="text-sm text-center">Aguardando envios da produção.</p>
+⚙️               </div>
+⚙️             ) : (
+⚙️               items.map(item => <IncomingStockCard key={item.id} item={item} onConfirm={onConfirm} onReturn={onReturn} />)
+⚙️             )}
+⚙️           </div>
+⚙️         </motion.div>
+⚙️       </>
+⚙️     )}
+⚙️   </AnimatePresence>
+⚙️ );
+
+
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Esta é uma "Página Completa" - como uma sala inteira do aplicativo
+// 📦 O QUE FAZ: Organiza todos os componentes e lógica de uma tela específica
+// 🔗 CONECTADO A: Componentes filhos, layouts, e rotas do Next.js
+// 🎯 ANALOGIA: É como uma sala completa com móveis (componentes) organizados
+// 💡 DICA: Cada página é uma rota diferente no aplicativo
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/pos/page.tsx
+📂 CAMINHO: app/pos/page.tsx
+═══════════════════════════════════════════════════════════════════════════════
+
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️ import React, { useState, useEffect, useRef, useMemo } from 'react';
+⚙️ import { useRouter } from 'next/navigation';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import Image from 'next/image';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { ShoppingBag, X, ChevronLeft, PackageCheck, History, LogOut, Barcode } from 'lucide-react';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { cn } from '@/lib/utils';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { motion, AnimatePresence } from 'framer-motion';
+
+// ACTIONS
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { ProductData, getProductsAction } from '@/app/actions/product';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { createOrderAction, getOrdersAction } from '@/app/actions/order';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { getCashRegisterStatus, openCashRegister, closeCashRegister, CashRegisterData } from '@/app/actions/cash';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { getReadyForStoreItemsAction, dispatchFromStoreAction, returnToProductionAction } from '@/app/actions/production';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { CartItem, PaymentMethod, ProductionItemData, CartVariation, CartProduct, FooterItem } from '@/types/builder'; // Import CartProduct e CartVariation
+
+// COMPONENTES
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { CartSidebar } from './components/CartSidebar';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import {
+⚙️   OpenCashModal,
+⚙️   CloseCashModal,
+⚙️   HistoryModal,
+⚙️   IncomingItemsModal,
+⚙️   HistoryOrder
+⚙️ } from './components/POSModals';
+
+⚙️ export default function POSPage() {
+⚙️   const router = useRouter();
+
+  // --- ESTADOS ---
+// 🟢 VERDE: Hook do React - conecta lógica especial ao componente
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [products, setProducts] = useState<ProductData[]>([]);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [cart, setCart] = useState<CartItem[]>([]);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [searchQuery, setSearchQuery] = useState('');
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('pix');
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [customerName, setCustomerName] = useState('');
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [customerDoc, setCustomerDoc] = useState('');
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [emitInvoice, setEmitInvoice] = useState(true);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [isProcessing, setIsProcessing] = useState(false);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
+  // Caixa e Modais
+// 🟢 VERDE: Hook do React - conecta lógica especial ao componente
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [cashStatus, setCashStatus] = useState<CashRegisterData | null>(null);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [isCashModalOpen, setIsCashModalOpen] = useState(false);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [isCloseRegisterOpen, setIsCloseRegisterOpen] = useState(false);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [cashInput, setCashInput] = useState('');
+  // Typed History State
+// 🟢 VERDE: Hook do React - conecta lógica especial ao componente
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [salesHistory, setSalesHistory] = useState<HistoryOrder[]>([]);
+  // Produção
+// 🟢 VERDE: Hook do React - conecta lógica especial ao componente
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [incomingItems, setIncomingItems] = useState<ProductionItemData[]>([]);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [isIncomingModalOpen, setIsIncomingModalOpen] = useState(false);
+
+  // --- CONFIGURAÇÃO DO FOOTER ---
+⚙️   const FOOTER_ITEMS: FooterItem[] = [
+⚙️     { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
+⚙️     { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
+⚙️     { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
+⚙️     { id: 'f4', icon: 'verified', isVisible: true, route: '/verified' },
+⚙️     { id: 'f5', icon: 'package-check', isVisible: true, route: '/inventory' }
+⚙️   ];
+
+  // --- LOGICA E EFEITOS ---
+⚙️   const fetchIncomingItems = async () => {
+// 🟢 VERDE: Tenta executar código - se der erro, vai para o "catch"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Tenta executar código e captura erros se algo der errado
+// 🧩 ANALOGIA LEGO: É como tentar montar uma peça difícil com um plano B se não funcionar
+// 💡 DICA: Sempre use try/catch quando trabalhar com dados externos ou operações que podem falhar
+⚙️     try {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️       const items = await getReadyForStoreItemsAction();
+⚙️     } catch (e) { console.error("Erro ao buscar produção", e); }
+⚙️   };
+
+⚙️   const handleConfirmArrival = async (id: string) => {
+⚙️     if(!confirm("Liberar Mercadoria para o estoque e remover da produção?")) return;
+// 🟢 VERDE: Espera uma tarefa assíncrona terminar - como esperar uma peça chegar
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️     await dispatchFromStoreAction(id);
+// 🟢 VERDE: Espera uma tarefa assíncrona terminar - como esperar uma peça chegar
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️     const prodData = await getProductsAction();
+⚙️     alert("✅ Mercadoria Liberada! Produto removido da Produção.");
+⚙️   };
+
+⚙️   const handleReturnToProduction = async (id: string, reason: string) => {
+// 🟢 VERDE: Tenta executar código - se der erro, vai para o "catch"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Tenta executar código e captura erros se algo der errado
+// 🧩 ANALOGIA LEGO: É como tentar montar uma peça difícil com um plano B se não funcionar
+// 💡 DICA: Sempre use try/catch quando trabalhar com dados externos ou operações que podem falhar
+⚙️     try {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️       const result = await returnToProductionAction(id, reason);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️       if (result.success) {
+⚙️         alert("↩️ Lote devolvido para a produção com sucesso!");
+⚙️       } else {
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️         const errorMsg = (result as { message?: string }).message || 'Erro desconhecido';
+⚙️         alert("❌ Erro ao devolver lote: " + errorMsg);
+⚙️       }
+⚙️     } catch (e) { console.error(e); alert("Erro de conexão."); }
+⚙️   };
+
+// 🟢 VERDE: Hook do React - conecta lógica especial ao componente
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Executa código quando o componente aparece, desaparece ou quando algo muda
+// 🧩 ANALOGIA LEGO: É como um assistente que observa e age quando algo acontece
+// 💡 DICA: useEffect é perfeito para buscar dados, configurar timers, ou limpar recursos
+⚙️   useEffect(() => {
+// 🟢 VERDE: Espera uma tarefa assíncrona terminar - como esperar uma peça chegar
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️       const prodData = await getProductsAction();
+// 🟢 VERDE: Espera uma tarefa assíncrona terminar - como esperar uma peça chegar
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️       const status = await getCashRegisterStatus();
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️       if (!status.isOpen) setIsCashModalOpen(true);
+⚙️       fetchIncomingItems();
+⚙️     };
+⚙️     init();
+⚙️     const interval = setInterval(fetchIncomingItems, 5000);
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return () => clearInterval(interval);
+
+⚙️   const handleOpenCash = async () => {
+⚙️     const amount = parseFloat(cashInput.replace(',', '.') || '0');
+// 🟢 VERDE: Espera uma tarefa assíncrona terminar - como esperar uma peça chegar
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️     const result = await openCashRegister(amount, 'Admin');
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (result.success && result.data) {
+⚙️       setIsCashModalOpen(false);
+⚙️       setCashInput('');
+⚙️       setTimeout(() => searchInputRef.current?.focus(), 500);
+⚙️     } else alert("Erro ao abrir caixa: " + result.message);
+⚙️   };
+
+⚙️   const handleCloseCash = async () => {
+⚙️     const amount = parseFloat(cashInput.replace(',', '.') || '0');
+// 🟢 VERDE: Espera uma tarefa assíncrona terminar - como esperar uma peça chegar
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️     const result = await closeCashRegister(amount);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (result.success) {
+⚙️       const statusMsg = diff === 0 ? "✅ Caixa bateu!" : diff > 0 ? `⚠️ Sobra: R$ ${diff.toFixed(2)}` : `❌ Falta: R$ ${Math.abs(diff).toFixed(2)}`;
+⚙️       alert(`Caixa Fechado!\n\n${statusMsg}`);
+⚙️       setCashStatus(prev => prev ? { ...prev, isOpen: false } : null);
+⚙️       setIsCloseRegisterOpen(false);
+⚙️       setIsCashModalOpen(true);
+⚙️       setCashInput('');
+⚙️     } else alert("Erro ao fechar caixa.");
+⚙️   };
+
+⚙️   const handleOpenHistory = async () => {
+⚙️     setIsHistoryOpen(true);
+// 🟢 VERDE: Espera uma tarefa assíncrona terminar - como esperar uma peça chegar
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️     const orders = await getOrdersAction();
+⚙️     const mappedHistory: HistoryOrder[] = orders.map(order => ({
+⚙️       id: order.id,
+⚙️       title: order.title,
+⚙️       total: order.total,
+⚙️       createdAt: order.createdAt,
+⚙️       paymentMethod: order.paymentMethod,
+⚙️       customerDoc: order.customerDoc || undefined,
+⚙️       hasInvoice: order.hasInvoice
+⚙️     }));
+    
+⚙️     setSalesHistory(mappedHistory);
+⚙️   };
+
+⚙️   const filteredProducts = useMemo(() => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (!searchQuery) return products;
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return products.filter(p => p.name.toLowerCase().includes(lower) || p.id.toLowerCase().includes(lower));
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️   const addToCart = (product: ProductData) => {
+⚙️     const existingItem = cart.find(item => item.product.id === product.id);
+⚙️     const variants = product.variants || [];
+⚙️     const totalStock = variants.reduce((acc: number, v) => acc + (v.stock || 0), 0);
+⚙️     const currentInCart = existingItem ? existingItem.quantity : 0;
+
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (currentInCart + 1 > totalStock) return alert("⚠️ Estoque insuficiente.");
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (existingItem) {
+⚙️     } else {
+⚙️       const defaultVar = variants[0];
+      
+      // ✅ CORREÇÃO: Mapeamento explícito para CartProduct
+⚙️       const cartProduct: CartProduct = {
+⚙️         id: product.id,
+⚙️         name: product.name,
+        // Garante que price seja number
+⚙️         price: typeof product.price === 'number' ? product.price : Number(product.price),
+⚙️         mainImage: product.imageUrl || '',
+        // Mapeia as variações do ProductData para CartVariation
+⚙️         variations: (product.variants || []).map(v => ({
+⚙️             qty: v.stock,
+⚙️             size: v.size || undefined,
+⚙️             color: v.color || undefined
+⚙️         }))
+⚙️       };
+
+⚙️       const newCartItem: CartItem = {
+⚙️         cartId: Math.random().toString(36).substr(2, 9),
+⚙️         product: cartProduct,
+⚙️         quantity: 1,
+⚙️         variationLabel: defaultVar ? defaultVar.name || 'Padrão' : 'Padrão'
+⚙️       };
+⚙️       setCart(prev => [...prev, newCartItem]);
+⚙️     }
+⚙️     setSearchQuery('');
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (window.innerWidth >= 1024) searchInputRef.current?.focus();
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️   const updateQty = (cartId: string, delta: number) => {
+⚙️     setCart(prev => prev.map(item => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️       if (item.cartId === cartId) {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️         if (delta > 0) {
+⚙️           const vars = item.product.variations as CartVariation[];
+⚙️           const maxStock = vars ? vars.reduce((acc, v) => acc + (v.qty || 0), 0) : 0;
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️           if (newQty > maxStock) return item;
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️         return { ...item, quantity: Math.max(1, newQty) };
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️       return item;
+⚙️   };
+
+  // ✅ CORREÇÃO: Cálculo direto com number
+⚙️   const subtotal = cart.reduce((acc, item) => {
+    // Garante que price seja tratado como number
+⚙️     const price = typeof item.product.price === 'number' ? item.product.price : Number(item.product.price);
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return acc + (price * item.quantity);
+
+⚙️   const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
+
+⚙️   const handleFinishSale = async () => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (cart.length === 0) return alert("Carrinho vazio!");
+// 🟢 VERDE: Espera uma tarefa assíncrona terminar - como esperar uma peça chegar
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️     const result = await createOrderAction({
+⚙️       total: subtotal,
+⚙️       itemsCount: totalItems,
+⚙️       items: cart.map(c => ({ productId: c.product.id, quantity: c.quantity })),
+⚙️       paymentMethod: selectedPayment,
+⚙️       customerName: customerName || 'Cliente Balcão',
+⚙️       customerDoc,
+⚙️       emitInvoice
+⚙️     });
+
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (result.success) {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️       if (emitInvoice) msg += "\n📄 Nota Fiscal Emitida (Simulação).";
+⚙️       setCart([]); setCustomerName(''); setCustomerDoc('');
+// 🟢 VERDE: Espera uma tarefa assíncrona terminar - como esperar uma peça chegar
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️       const updatedProducts = await getProductsAction();
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️       if (selectedPayment === 'cash' && cashStatus) setCashStatus({ ...cashStatus, currentBalance: cashStatus.currentBalance + subtotal });
+⚙️     setIsProcessing(false);
+⚙️     setIsMobileCartOpen(false);
+⚙️     searchInputRef.current?.focus();
+⚙️   };
+
+  // --- RENDER ---
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return (
+      
+⚙️       {/* --- MODAIS --- */}
+⚙️       <OpenCashModal isOpen={isCashModalOpen} value={cashInput} onChange={setCashInput} onConfirm={handleOpenCash} />
+⚙️       <CloseCashModal isOpen={isCloseRegisterOpen} onClose={() => setIsCloseRegisterOpen(false)} value={cashInput} onChange={setCashInput} onConfirm={handleCloseCash} />
+⚙️       <HistoryModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} history={salesHistory} />
+⚙️       <IncomingItemsModal isOpen={isIncomingModalOpen} onClose={() => setIsIncomingModalOpen(false)} items={incomingItems} onConfirm={handleConfirmArrival} onReturn={handleReturnToProduction} />
+
+⚙️       {/* --- LADO ESQUERDO: PRODUTOS --- */}
+⚙️       <div className="flex-1 flex flex-col h-full relative z-0">
+⚙️         <header className="bg-white px-6 py-4 flex items-center justify-between shadow-sm shrink-0 z-20">
+⚙️           <div className="flex items-center gap-3">
+⚙️             <button onClick={() => router.push('/inventory')} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors">
+⚙️               <ChevronLeft size={20} />
+⚙️             </button>
+⚙️             <div>
+⚙️               <h1 className="text-xl font-black text-[#5874f6] tracking-tight leading-none">PDV</h1>
+⚙️               <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+⚙️                 {cashStatus?.isOpen ? `Op: ${cashStatus.operator}` : 'Fechado'}
+⚙️               </span>
+⚙️             </div>
+⚙️           </div>
+
+⚙️           <div className="flex items-center gap-2">
+⚙️             <button
+⚙️               onClick={() => setIsIncomingModalOpen(true)}
+⚙️               className="relative flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-2 rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors font-bold text-xs"
+⚙️             >
+⚙️               <PackageCheck size={16} />
+⚙️               <span className="hidden lg:inline">Recebimento</span>
+⚙️               {incomingItems.length > 0 && (
+⚙️                 <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white animate-bounce">
+⚙️                   {incomingItems.length}
+⚙️                 </span>
+⚙️               )}
+⚙️             </button>
+⚙️             <button
+⚙️               onClick={handleOpenHistory}
+⚙️               className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg font-bold text-xs hover:bg-blue-100 transition-colors"
+⚙️             >
+⚙️               <History size={16}/> <span className="hidden sm:inline">Histórico</span>
+⚙️             </button>
+⚙️             <button
+⚙️               onClick={() => { setCashInput(''); setIsCloseRegisterOpen(true); }}
+⚙️               className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-lg font-bold text-xs hover:bg-red-100 transition-colors"
+⚙️             >
+⚙️               <LogOut size={16}/> <span className="hidden sm:inline">Fechar Caixa</span>
+⚙️             </button>
+⚙️           </div>
+⚙️         </header>
+
+⚙️         <div className="px-4 lg:px-6 py-4 bg-white border-b border-gray-100">
+⚙️           <div className="relative group">
+⚙️             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#5874f6] transition-colors">
+⚙️               <Barcode size={24} />
+⚙️             </div>
+⚙️             <input
+⚙️               ref={searchInputRef}
+⚙️               type="text"
+⚙️               value={searchQuery}
+⚙️               onChange={(e) => setSearchQuery(e.target.value)}
+⚙️               onKeyDown={(e) => { if (e.key === 'Enter' && filteredProducts.length === 1) addToCart(filteredProducts[0]); }}
+⚙️               disabled={!cashStatus?.isOpen}
+⚙️               placeholder={cashStatus?.isOpen ? "Bipar código ou digitar nome..." : "Caixa Fechado"}
+⚙️               className="w-full h-14 pl-12 pr-4 bg-gray-100 border-2 border-transparent focus:bg-white focus:border-[#5874f6] rounded-xl text-lg font-bold outline-none transition-all disabled:opacity-50"
+⚙️             />
+⚙️           </div>
+⚙️         </div>
+
+⚙️         <div className="flex-1 overflow-y-auto p-4 lg:p-6 scrollbar-hide">
+⚙️           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-4 pb-24 lg:pb-0">
+⚙️             {filteredProducts.map(product => {
+⚙️               const variants = product.variants || [];
+⚙️               const totalStock = variants.reduce((acc: number, v) => acc + (v.stock || 0), 0);
+              
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️               return (
+⚙️                   key={product.id}
+⚙️                   onClick={() => addToCart(product)}
+⚙️                   disabled={!cashStatus?.isOpen || totalStock === 0}
+⚙️                   className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm hover:border-[#5874f6] hover:shadow-md transition-all active:scale-95 flex flex-col gap-2 group text-left h-full disabled:opacity-50"
+⚙️                 >
+⚙️                   <div className="aspect-square bg-gray-50 rounded-xl overflow-hidden relative">
+⚙️                     {product.imageUrl ? (
+⚙️                         <Image
+⚙️                           src={product.imageUrl}
+⚙️                           alt={product.name}
+⚙️                           fill
+⚙️                           className="object-cover group-hover:scale-105 transition-transform duration-500"
+⚙️                           sizes="(max-width: 768px) 50vw, 20vw"
+⚙️                         />
+⚙️                     ) : (
+⚙️                         <div className="w-full h-full flex items-center justify-center text-gray-300">
+⚙️                           <PackageCheck size={32}/>
+⚙️                         </div>
+⚙️                     )}
+⚙️                     <div className={cn("absolute top-2 right-2 text-white text-[10px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm", totalStock > 0 ? "bg-black/60" : "bg-red-500")}>
+⚙️                       {totalStock > 0 ? `${totalStock} un` : 'Esgotado'}
+⚙️                     </div>
+⚙️                   </div>
+⚙️                   <div className="flex flex-col gap-0.5">
+⚙️                     <span className="text-xs lg:text-sm font-bold text-gray-800 line-clamp-2 leading-tight min-h-[2.5em]">
+⚙️                       {product.name}
+⚙️                     </span>
+⚙️                     <span className="text-sm lg:text-base font-black text-[#5874f6]">
+⚙️                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(product.price))}
+⚙️                     </span>
+⚙️                   </div>
+⚙️                 </button>
+⚙️               );
+⚙️             })}
+⚙️           </div>
+⚙️         </div>
+⚙️       </div>
+
+⚙️       {/* --- LADO DIREITO: CARRINHO (DESKTOP) --- */}
+⚙️       <div className="hidden lg:flex w-[400px] bg-white border-l border-gray-200 flex-col shadow-2xl z-30 h-full">
+⚙️         <CartSidebar
+⚙️           cart={cart}
+⚙️           total={subtotal}
+⚙️           itemsCount={totalItems}
+⚙️           onRemove={(id) => setCart(p => p.filter(i => i.cartId !== id))}
+⚙️           onUpdate={updateQty}
+⚙️           payment={selectedPayment}
+⚙️           setPayment={setSelectedPayment}
+⚙️           onFinish={handleFinishSale}
+⚙️           processing={isProcessing}
+⚙️           customerName={customerName}
+⚙️           setCustomerName={setCustomerName}
+⚙️           customerDoc={customerDoc}
+⚙️           setCustomerDoc={setCustomerDoc}
+⚙️           emitInvoice={emitInvoice}
+⚙️           setEmitInvoice={setEmitInvoice}
+⚙️         />
+⚙️       </div>
+
+⚙️       {/* --- MOBILE BAR (PDV específico) --- */}
+⚙️       <div className="lg:hidden fixed bottom-[80px] left-0 w-full bg-white border-t border-gray-200 p-4 pb-safe-bottom z-40 flex items-center justify-between shadow-[0_-5px_20px_rgba(0,0,0,0.1)]">
+⚙️         <div className="flex flex-col" onClick={() => setIsMobileCartOpen(true)}>
+⚙️           <span className="text-xs font-bold text-gray-400 uppercase">Total</span>
+⚙️           <span className="text-xl font-black text-gray-900">
+⚙️             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(subtotal)}
+⚙️           </span>
+⚙️         </div>
+⚙️         <button
+⚙️           onClick={() => setIsMobileCartOpen(true)}
+⚙️           className="bg-[#5874f6] text-white px-6 py-3 rounded-xl font-bold shadow-lg active:scale-95 flex items-center gap-2"
+⚙️         >
+⚙️           <ShoppingBag size={20} /> <span>Ver Sacola</span>
+⚙️         </button>
+⚙️       </div>
+
+⚙️       {/* --- FOOTER PADRÃO (Mobile) --- */}
+⚙️       <div className="lg:hidden fixed bottom-0 left-0 w-full z-50 pb-safe-bottom bg-transparent pointer-events-none">
+⚙️         <div className="pointer-events-auto">
+⚙️           <ButtonsFooter items={FOOTER_ITEMS} style={{ bgColor: '#5874f6' }} />
+⚙️         </div>
+⚙️       </div>
+
+⚙️       {/* --- DRAWER MOBILE --- */}
+⚙️       <AnimatePresence>
+⚙️         {isMobileCartOpen && (
+⚙️           <div className="fixed inset-0 z-[100] lg:hidden flex flex-col justify-end">
+⚙️             <motion.div
+⚙️               initial={{ opacity: 0 }}
+⚙️               animate={{ opacity: 1 }}
+⚙️               exit={{ opacity: 0 }}
+⚙️               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+⚙️               onClick={() => setIsMobileCartOpen(false)}
+⚙️             />
+⚙️             <motion.div
+⚙️               initial={{ y: "100%" }}
+⚙️               animate={{ y: 0 }}
+⚙️               exit={{ y: "100%" }}
+⚙️               className="bg-white w-full h-[90vh] rounded-t-[2rem] flex flex-col relative z-10 overflow-hidden"
+⚙️             >
+⚙️               <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+⚙️                 <h2 className="font-black text-lg text-gray-800 flex items-center gap-2">
+⚙️                   <ShoppingBag size={20} className="text-[#5874f6]" /> Sacola
+⚙️                 </h2>
+⚙️                 <button onClick={() => setIsMobileCartOpen(false)} className="p-2 bg-white rounded-full border shadow-sm">
+⚙️                   <X size={20} />
+⚙️                 </button>
+⚙️               </div>
+⚙️               <div className="flex-1 overflow-hidden">
+⚙️                 <CartSidebar
+⚙️                   cart={cart}
+⚙️                   total={subtotal}
+⚙️                   itemsCount={totalItems}
+⚙️                   onRemove={(id) => setCart(p => p.filter(i => i.cartId !== id))}
+⚙️                   onUpdate={updateQty}
+⚙️                   payment={selectedPayment}
+⚙️                   setPayment={setSelectedPayment}
+⚙️                   onFinish={handleFinishSale}
+⚙️                   processing={isProcessing}
+⚙️                   customerName={customerName}
+⚙️                   setCustomerName={setCustomerName}
+⚙️                   customerDoc={customerDoc}
+⚙️                   setCustomerDoc={setCustomerDoc}
+⚙️                   emitInvoice={emitInvoice}
+⚙️                   setEmitInvoice={setEmitInvoice}
+⚙️                 />
+⚙️               </div>
+⚙️             </motion.div>
+⚙️           </div>
+⚙️         )}
+⚙️       </AnimatePresence>
+⚙️     </main>
+⚙️   );
+⚙️ }

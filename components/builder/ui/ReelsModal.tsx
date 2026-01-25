@@ -3,6 +3,10 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShoppingBag, Volume2, VolumeX, Loader2 } from 'lucide-react';
+
+// 🛡️ GUARDIAN: Importação do HOC
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
+
 import { cn } from '@/lib/utils';
 import { CategoryItem } from '@/types/builder';
 
@@ -12,7 +16,7 @@ interface ReelsModalProps {
   item: CategoryItem | null;
 }
 
-export const ReelsModal = ({ isOpen, onClose, item }: ReelsModalProps) => {
+const ReelsModalBase = ({ isOpen, onClose, item }: ReelsModalProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   
   // --- ESTADOS ---
@@ -286,3 +290,29 @@ export const ReelsModal = ({ isOpen, onClose, item }: ReelsModalProps) => {
     </AnimatePresence>
   );
 };
+
+// 🛡️ GUARDIAN: Exportação com metadados
+export const ReelsModal = withGuardian(
+  ReelsModalBase,
+  "components/builder/ui/ReelsModal.tsx",
+  "POPUP",
+  {
+    label: "Modal de Reels/Stories",
+    description: "Modal fullscreen estilo Instagram Reels para visualização de vídeos de produtos com navegação por gestos.",
+    orientationNotes: `
+⚠️ **Pontos de Atenção**:
+- **Z-Index**: z-[9999] (máxima prioridade - fullscreen overlay)
+- **Dependências**: CategoryItem (vídeos)
+- **UX**: Controle de áudio (mute/unmute), navegação por toque, autoplay, progress bar
+- **Performance**: Memoização de stories, cleanup de vídeo ao desmontar
+- **Fluxo**: Acionado ao clicar em item com videoUrl no catálogo
+    `.trim(),
+    connectsTo: [
+      {
+        target: "types/builder.ts",
+        type: "EXTERNAL",
+        description: "Interface CategoryItem com videoUrl"
+      }
+    ]
+  }
+);

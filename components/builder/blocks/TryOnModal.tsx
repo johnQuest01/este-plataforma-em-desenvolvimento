@@ -4,6 +4,10 @@ import React, { useState, useRef } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Camera, Sparkles, Share2, Upload, Loader2 } from 'lucide-react';
+
+// 🛡️ GUARDIAN: Importação do HOC
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
+
 import { generateVirtualTryOn } from '@/app/actions/try-on';
 import { addWatermarkToImage } from '@/lib/watermark-helper';
 
@@ -36,7 +40,7 @@ const getIACategory = (name: string, category?: string): 'upper_body' | 'lower_b
   return 'upper_body';
 };
 
-export const TryOnModal = ({ isOpen, onClose, productImage, productName, productCategory }: TryOnModalProps) => {
+const TryOnModalBase = ({ isOpen, onClose, productImage, productName, productCategory }: TryOnModalProps) => {
   const [step, setStep] = useState<Step>('upload');
   const [userPreview, setUserPreview] = useState<string | null>(null);
   const [resultImage, setResultImage] = useState<string | null>(null);
@@ -284,3 +288,34 @@ export const TryOnModal = ({ isOpen, onClose, productImage, productName, product
     </AnimatePresence>
   );
 };
+
+// 🛡️ GUARDIAN: Exportação com metadados
+export const TryOnModal = withGuardian(
+  TryOnModalBase,
+  "components/builder/blocks/TryOnModal.tsx",
+  "POPUP",
+  {
+    label: "Modal de Prova Virtual (AI Try-On)",
+    description: "Modal que permite ao usuário fazer prova virtual de roupas usando IA, gerando imagem com o produto vestido.",
+    orientationNotes: `
+⚠️ **Pontos de Atenção**:
+- **Z-Index**: z-[200] fullscreen overlay
+- **Dependências**: generateVirtualTryOn (Server Action), addWatermarkToImage
+- **UX**: 3 steps (upload, processing, result), compressão de imagem
+- **Fluxo**: Upload de foto do usuário → IA processa → Exibe resultado com watermark
+- **Performance**: Compressão de imagens antes de enviar para API
+    `.trim(),
+    connectsTo: [
+      {
+        target: "app/actions/try-on.ts",
+        type: "EXTERNAL",
+        description: "Processa prova virtual via API de IA"
+      },
+      {
+        target: "lib/watermark-helper.ts",
+        type: "HOOK",
+        description: "Adiciona marca d'água na imagem resultante"
+      }
+    ]
+  }
+);

@@ -18,6 +18,8 @@ import { ReelsModal } from '@/components/builder/ui/ReelsModal';
 import { StoreHeader } from '@/components/builder/blocks/Header';
 import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
 import { FooterItem } from '@/types/builder';
+import { getHomeLayoutAction } from '@/app/actions/ui-config'; // 🧱 CMS DINÂMICO
+// REMOVIDO: Imports de modal - Agora navega para página /product/[id]
 // REMOVIDO: import { HealthMonitorBlock } ... (Já está no RootLayoutShell)
 
 const FOOTER_ITEMS: FooterItem[] = [
@@ -31,12 +33,34 @@ const FOOTER_ITEMS: FooterItem[] = [
 export default function DashboardPage() {
   const router = useRouter();
 
-  // Estado inicial carrega apenas os blocos de conteúdo
-  const [blocks, setBlocks] = useState<BlockConfig[]>(CLOTHING);
+  // 🧱 CMS DINÂMICO: Estado inicial será carregado do banco
+  const [blocks, setBlocks] = useState<BlockConfig[]>([]);
+  const [isLoadingLayout, setIsLoadingLayout] = useState(true);
   const [currentTheme, setCurrentTheme] = useState('clothing');
   const [showAdmin, setShowAdmin] = useState(false);
   const [activeReelsItem, setActiveReelsItem] = useState<CategoryItem | null>(null);
   const [isReady, setIsReady] = useState(false);
+  // REMOVIDO: Estados de modal de produto - Agora usa navegação
+
+  // 🧱 CMS DINÂMICO: Carrega layout do banco de dados
+  useEffect(() => {
+    const loadDynamicLayout = async () => {
+      try {
+        setIsLoadingLayout(true);
+        const layout = await getHomeLayoutAction();
+        setBlocks(layout);
+        console.log('🏠 [Dashboard] Layout carregado:', layout.length, 'blocos');
+      } catch (error) {
+        console.error('❌ [Dashboard] Erro ao carregar layout:', error);
+        // Fallback para template inicial
+        setBlocks(CLOTHING);
+      } finally {
+        setIsLoadingLayout(false);
+      }
+    };
+
+    loadDynamicLayout();
+  }, []); // Executa apenas uma vez no mount
 
   useEffect(() => {
     const checkAuth = () => {
@@ -53,14 +77,25 @@ export default function DashboardPage() {
   /**
    * Troca de Temas
    */
-  const switchTheme = (theme: string) => {
+  const switchTheme = async (theme: string) => {
     setCurrentTheme(theme);
     let newBlocks: BlockConfig[] = [];
 
-    if (theme === 'clothing') newBlocks = CLOTHING;
-    if (theme === 'barber') newBlocks = BARBER;
-    if (theme === 'tech') newBlocks = TECH;
-    if (theme === 'xmas') newBlocks = XMAS;
+    if (theme === 'clothing') {
+      // 🧱 CMS DINÂMICO: Recarrega layout do banco quando volta para clothing
+      try {
+        newBlocks = await getHomeLayoutAction();
+        console.log('🔄 [Dashboard] Layout dinâmico recarregado');
+      } catch (error) {
+        console.error('❌ [Dashboard] Erro ao recarregar:', error);
+        newBlocks = CLOTHING;
+      }
+    } else {
+      // Templates estáticos
+      if (theme === 'barber') newBlocks = BARBER;
+      if (theme === 'tech') newBlocks = TECH;
+      if (theme === 'xmas') newBlocks = XMAS;
+    }
 
     setBlocks(newBlocks);
     setShowAdmin(false);
@@ -86,6 +121,17 @@ export default function DashboardPage() {
     if (action === 'openReels' && payload) {
       setActiveReelsItem(payload as CategoryItem);
     }
+    
+    // 🧱 NOVO: Handler para navegar para página de produto
+    if (action === 'open_product_details' && payload) {
+      const productId = payload as string;
+      handleOpenProductDetails(productId);
+    }
+  };
+
+  // 🧱 NOVO: Função para navegar para página de produto
+  const handleOpenProductDetails = (productId: string) => {
+    router.push(`/product/${productId}`);
   };
 
   const handleOpenGlobalAdmin = () => {
@@ -93,7 +139,16 @@ export default function DashboardPage() {
     setShowAdmin(false);
   };
 
-  if (!isReady) return null;
+  if (!isReady || isLoadingLayout) {
+    return (
+      <main className="w-full h-dvh-real bg-gray-900 flex items-center justify-center">
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-sm">Carregando...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="w-full h-dvh-real bg-gray-900 lg:flex lg:justify-center lg:items-center lg:py-8 overflow-hidden relative">
@@ -115,6 +170,12 @@ export default function DashboardPage() {
               className="text-left px-3 py-2 hover:bg-gray-100 rounded-lg text-xs font-bold text-purple-600 border border-purple-100 bg-purple-50 mb-1"
             >
               ⚙️ Painel Admin
+            </button>
+            <button
+              onClick={() => router.push('/admin/database')}
+              className="text-left px-3 py-2 hover:bg-gray-100 rounded-lg text-xs font-bold text-red-600 border border-red-100 bg-red-50"
+            >
+              🗑️ Gerenciar Dados
             </button>
             <div className="h-px bg-gray-200 my-1" />
             <span className="text-[10px] font-bold text-gray-400 uppercase px-2">Temas</span>
@@ -182,6 +243,8 @@ export default function DashboardPage() {
         </div>
 
         <ReelsModal isOpen={!!activeReelsItem} item={activeReelsItem} onClose={() => setActiveReelsItem(null)} />
+        
+        {/* REMOVIDO: Modal de produto - Agora usa navegação para /product/[id] */}
       </div>
     </main>
   );

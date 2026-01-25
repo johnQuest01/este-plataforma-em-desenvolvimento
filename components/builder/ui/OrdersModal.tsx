@@ -4,6 +4,10 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle2, Package, ShoppingBag } from 'lucide-react';
+
+// 🛡️ GUARDIAN: Importação do HOC
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
+
 import { cn } from '@/lib/utils';
 import { getOrdersAction, OrderData } from '@/app/actions/order';
 
@@ -12,7 +16,7 @@ interface OrdersModalProps {
   onClose: () => void;
 }
 
-export const OrdersModal = ({ isOpen, onClose }: OrdersModalProps) => {
+const OrdersModalBase = ({ isOpen, onClose }: OrdersModalProps) => {
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -177,3 +181,28 @@ export const OrdersModal = ({ isOpen, onClose }: OrdersModalProps) => {
     </AnimatePresence>
   );
 };
+
+// 🛡️ GUARDIAN: Exportação com metadados
+export const OrdersModal = withGuardian(
+  OrdersModalBase,
+  "components/builder/ui/OrdersModal.tsx",
+  "POPUP",
+  {
+    label: "Modal de Pedidos",
+    description: "Modal que exibe lista de pedidos realizados com status de processamento e embalagem.",
+    orientationNotes: `
+⚠️ **Pontos de Atenção**:
+- **Z-Index**: z-200 para sobrepor elementos principais
+- **Dependências**: getOrdersAction (Server Action)
+- **UX**: Loading state durante busca de dados
+- **Fluxo**: Busca pedidos via Server Action ao abrir o modal
+    `.trim(),
+    connectsTo: [
+      {
+        target: "app/actions/order.ts",
+        type: "DATABASE",
+        description: "Busca lista de pedidos do banco de dados"
+      }
+    ]
+  }
+);

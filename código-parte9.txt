@@ -1,0 +1,737 @@
+
+// 🧩 LEGO: Este é um "Molde de Validação" - como uma forma de bolo que garante o formato certo
+// 📦 O QUE FAZ: Define regras e formatos que os dados devem seguir
+// 🔗 CONECTADO A: Ações do servidor, formulários, e banco de dados
+// 🎯 ANALOGIA: É como um gabarito que garante que todas as peças tenham o formato correto
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Molde de Validação" - como uma forma de bolo que garante o formato certo
+// 📦 O QUE FAZ: Define regras e formatos que os dados devem seguir antes de serem usados
+// 🔗 CONECTADO A: Ações do servidor, formulários, e banco de dados
+// 🎯 ANALOGIA: É como um gabarito que garante que todas as peças tenham o formato correto
+// 💡 DICA: Schemas previnem erros validando dados antes de salvá-los
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: schemas/jeans-registration-schema.ts
+📂 CAMINHO: schemas/jeans-registration-schema.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { z } from 'zod';
+
+/** * Mapper para converter Decimal do Prisma para Number 
+ * Evita erros de serialização no Server Action 
+ */
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma constante chamada "decimalToNumber" que guarda uma função
+// 🧩 ANALOGIA LEGO: É como guardar uma ferramenta em uma caixa com nome "decimalToNumber"
+// 🔗 CONECTADO A: Outros arquivos que importam usando "import { decimalToNumber }"
+// 💡 DICA: Arrow function (=>) é uma forma mais curta de escrever funções
+⚙️ export const decimalToNumber = (value: unknown): number => {
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return value ? Number(value.toString()) : 0;
+
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ export interface RegisteredProductResult {
+// 🔴 VERDE: name (OBRIGATÓRIA) - Tipo: string
+//    DEVE ter este valor sempre
+// 🔴 VERDE: name (OBRIGATÓRIA) - Tipo: string
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   name: string;
+// 🔴 VERDE: imageUrl (OBRIGATÓRIA) - Tipo: string
+//    DEVE ter este valor sempre
+// 🔴 VERDE: imageUrl (OBRIGATÓRIA) - Tipo: string
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   imageUrl: string;
+// 🔴 VERDE: totalQty (OBRIGATÓRIA) - Tipo: number
+//    DEVE ter este valor sempre
+// 🔴 VERDE: totalQty (OBRIGATÓRIA) - Tipo: number
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   totalQty: number;
+// 🔴 VERDE: size (OBRIGATÓRIA) - Tipo: string
+//    DEVE ter este valor sempre
+// 🔴 VERDE: size (OBRIGATÓRIA) - Tipo: string
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️     size: string;
+// 🔴 VERDE: color (OBRIGATÓRIA) - Tipo: string
+//    DEVE ter este valor sempre
+// 🔴 VERDE: color (OBRIGATÓRIA) - Tipo: string
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️     color: string;
+⚙️ }
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const LinkImageSchema = z.object({
+⚙️   reference: z.string().min(1, "Referência obrigatória"),
+⚙️   imageUrl: z.string().url("URL inválida"),
+⚙️   storeSlug: z.string()
+⚙️ });
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const BulkTextSchema = z.object({
+⚙️   rawText: z.string().min(1, "Texto vazio"),
+⚙️   storeSlug: z.string()
+⚙️ });
+
+⚙️ export type LinkImageInput = z.infer<typeof LinkImageSchema>;
+⚙️ export type BulkTextInput = z.infer<typeof BulkTextSchema>;
+
+
+// 🧩 LEGO: Este é um "Molde de Validação" - como uma forma de bolo que garante o formato certo
+// 📦 O QUE FAZ: Define regras e formatos que os dados devem seguir
+// 🔗 CONECTADO A: Ações do servidor, formulários, e banco de dados
+// 🎯 ANALOGIA: É como um gabarito que garante que todas as peças tenham o formato correto
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Molde de Validação" - como uma forma de bolo que garante o formato certo
+// 📦 O QUE FAZ: Define regras e formatos que os dados devem seguir antes de serem usados
+// 🔗 CONECTADO A: Ações do servidor, formulários, e banco de dados
+// 🎯 ANALOGIA: É como um gabarito que garante que todas as peças tenham o formato correto
+// 💡 DICA: Schemas previnem erros validando dados antes de salvá-los
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: schemas/user-preferences-schema.ts
+📂 CAMINHO: schemas/user-preferences-schema.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️ import { z } from "zod";
+
+// Enum base para temas
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const ThemePreferenceSchema = z.enum(["light", "dark", "system"]);
+
+// Alias para compatibilidade com a Action (GuardianTheme)
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const GuardianTheme = ThemePreferenceSchema;
+⚙️ export type GuardianTheme = z.infer<typeof GuardianTheme>;
+
+// Schema para atualização de tema (usado na Action)
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const UpdateThemeSchema = z.object({
+⚙️   theme: GuardianTheme,
+⚙️ });
+
+// Schema completo de preferências do usuário
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const UserPreferencesSchema = z.object({
+⚙️   theme: ThemePreferenceSchema,
+⚙️   reducedMotion: z.boolean().default(false),
+⚙️ });
+
+⚙️ export type ThemePreference = z.infer<typeof ThemePreferenceSchema>;
+⚙️ export type UserPreferences = z.infer<typeof UserPreferencesSchema>;
+
+⚙️ tsconfig.json
+⚙️ {
+⚙️   "compilerOptions": {
+⚙️     "target": "ES2017",
+⚙️     "baseUrl": ".",  // <--- ADICIONE ESTA LINHA
+⚙️     "lib": ["dom", "dom.iterable", "esnext"],
+⚙️     "allowJs": true,
+⚙️     "skipLibCheck": true,
+⚙️     "strict": true,
+⚙️     "noEmit": true,
+⚙️     "esModuleInterop": true,
+⚙️     "module": "esnext",
+⚙️     "moduleResolution": "bundler",
+⚙️     "resolveJsonModule": true,
+⚙️     "isolatedModules": true,
+⚙️     "jsx": "react-jsx",
+⚙️     "incremental": true,
+⚙️     "plugins": [
+⚙️       {
+⚙️         "name": "next"
+⚙️       }
+⚙️     ],
+⚙️     "paths": {
+⚙️       "@/*": ["./*"]
+⚙️     }
+⚙️   },
+⚙️   "include": [
+⚙️     "next-env.d.ts",
+⚙️     "**/*.ts",
+⚙️     "**/*.tsx",
+⚙️     ".next/types/**/*.ts",
+⚙️     ".next/dev/types/**/*.ts",
+⚙️     "**/*.mts"
+⚙️   ],
+⚙️   "exclude": ["node_modules"]
+⚙️ }
+
+
+
+// 🧩 LEGO: Este é um "Manual de Instruções" - define como as peças devem ser
+// 📦 O QUE FAZ: Define formatos e estruturas de dados que o TypeScript usa
+// 🔗 CONECTADO A: Componentes, ações, e schemas que usam esses tipos
+// 🎯 ANALOGIA: É como um manual que diz "esta peça deve ter esse formato"
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Manual de Instruções" - define como as peças devem ser
+// 📦 O QUE FAZ: Define formatos e estruturas de dados que o TypeScript usa
+// 🔗 CONECTADO A: Componentes, ações, e schemas que usam esses tipos
+// 🎯 ANALOGIA: É como um manual que diz "esta peça deve ter esse formato"
+// 💡 DICA: Types ajudam a evitar erros mostrando o que cada variável deve conter
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: types/footer-blocks.ts
+📂 CAMINHO: types/footer-blocks.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { z } from 'zod';
+
+/**
+ * Schema Zod para validação de ícones do footer
+ */
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const IconNameSchema = z.enum([
+⚙️     'cart',
+⚙️     'heart',
+⚙️     'sync',
+⚙️     'verified',
+⚙️     'package-check',
+⚙️     'inventory',
+⚙️     'box',
+⚙️     'check',
+⚙️     'help-circle'
+⚙️ ]);
+
+/**
+ * Schema Zod para validação de botão do LiquidDynamicFooter
+ */
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const LiquidFooterButtonSchema = z.object({
+⚙️     id: z.string().min(1, "ID do botão é obrigatório"),
+⚙️     label: z.string().min(1, "Label do botão é obrigatório"),
+⚙️     icon: IconNameSchema,
+⚙️     route: z.string().optional().describe("Rota de navegação (ex: '/pos', '/cart')"),
+⚙️     actionId: z.string().optional().describe("ID da ação customizada"),
+⚙️     color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Cor deve estar no formato hexadecimal (#RRGGBB)").optional(),
+⚙️ });
+
+/**
+ * Schema Zod para validação dos dados do LiquidDynamicFooter
+ */
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const LiquidDynamicFooterDataSchema = z.object({
+⚙️     buttons: z.array(LiquidFooterButtonSchema).min(1, "Pelo menos um botão é obrigatório"),
+⚙️     backgroundColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Cor de fundo deve estar no formato hexadecimal").optional(),
+⚙️     repulsionRadius: z.number().min(50).max(200).default(84).describe("Raio de repulsão (buttonSize * 1.5)"),
+⚙️     repulsionStrength: z.number().min(0.01).max(1.0).default(0.15).describe("Força de repulsão"),
+⚙️     attractionStrength: z.number().min(0.001).max(0.1).default(0.02).describe("Força de atração"),
+⚙️     dampingFactor: z.number().min(0.8).max(0.99).default(0.92).describe("Fator de amortecimento"),
+⚙️     centerScale: z.number().min(1.0).max(3.0).default(1.8).describe("Escala no centro"),
+⚙️     edgeScale: z.number().min(0.3).max(1.0).default(0.6).describe("Escala nas bordas"),
+⚙️     centerOpacity: z.number().min(0.5).max(1.0).default(1.0).describe("Opacidade no centro"),
+⚙️     edgeOpacity: z.number().min(0.1).max(0.8).default(0.5).describe("Opacidade nas bordas"),
+⚙️ });
+
+/**
+ * Types TypeScript derivados dos Schemas Zod
+ */
+⚙️ export type IconName = z.infer<typeof IconNameSchema>;
+⚙️ export type LiquidFooterButton = z.infer<typeof LiquidFooterButtonSchema>;
+⚙️ export type LiquidDynamicFooterData = z.infer<typeof LiquidDynamicFooterDataSchema>;
+
+
+
+// 🧩 LEGO: Este é um "Manual de Instruções" - define como as peças devem ser
+// 📦 O QUE FAZ: Define formatos e estruturas de dados que o TypeScript usa
+// 🔗 CONECTADO A: Componentes, ações, e schemas que usam esses tipos
+// 🎯 ANALOGIA: É como um manual que diz "esta peça deve ter esse formato"
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Manual de Instruções" - define como as peças devem ser
+// 📦 O QUE FAZ: Define formatos e estruturas de dados que o TypeScript usa
+// 🔗 CONECTADO A: Componentes, ações, e schemas que usam esses tipos
+// 🎯 ANALOGIA: É como um manual que diz "esta peça deve ter esse formato"
+// 💡 DICA: Types ajudam a evitar erros mostrando o que cada variável deve conter
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: types/footer.ts
+📂 CAMINHO: types/footer.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { z } from 'zod';
+
+/**
+ * Schema Zod para validação de botões do InfiniteCircularFooter
+ * Seguindo Zero-Any Policy e Tipagem Estrita
+ */
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const CircularFooterButtonSchema = z.object({
+⚙️   id: z.string().min(1, "ID do botão é obrigatório"),
+⚙️   label: z.string().min(1, "Label do botão é obrigatório"),
+⚙️   icon: z.string().min(1, "Nome do ícone é obrigatório"),
+⚙️   route: z.string().optional().describe("Rota de navegação (ex: '/pos', '/cart')"),
+⚙️   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Cor deve estar no formato hexadecimal (#RRGGBB)").optional(),
+⚙️   isVisible: z.boolean().default(true),
+⚙️   isHighlight: z.boolean().default(false)
+⚙️ });
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const InfiniteCircularFooterDataSchema = z.object({
+⚙️   buttons: z.array(CircularFooterButtonSchema).min(1, "Pelo menos um botão é obrigatório"),
+⚙️   enableLongPressNavigation: z.boolean().default(true),
+⚙️   longPressThreshold: z.number().min(100).max(300).default(150).describe("Threshold em pixels para navegação via long press"),
+⚙️   backgroundColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Cor de fundo deve estar no formato hexadecimal").optional(),
+⚙️   centerScale: z.number().min(1).max(2).default(1.3).describe("Scale dos botões no centro"),
+⚙️   edgeScale: z.number().min(0.3).max(1).default(0.7).describe("Scale dos botões nas extremidades"),
+⚙️   centerOpacity: z.number().min(0).max(1).default(1).describe("Opacidade dos botões no centro"),
+⚙️   edgeOpacity: z.number().min(0).max(1).default(0.4).describe("Opacidade dos botões nas extremidades")
+⚙️ });
+
+/**
+ * Types TypeScript derivados dos Schemas Zod
+ */
+⚙️ export type CircularFooterButton = z.infer<typeof CircularFooterButtonSchema>;
+⚙️ export type InfiniteCircularFooterData = z.infer<typeof InfiniteCircularFooterDataSchema>;
+
+
+
+// 🧩 LEGO: Este é um "Manual de Instruções" - define como as peças devem ser
+// 📦 O QUE FAZ: Define formatos e estruturas de dados que o TypeScript usa
+// 🔗 CONECTADO A: Componentes, ações, e schemas que usam esses tipos
+// 🎯 ANALOGIA: É como um manual que diz "esta peça deve ter esse formato"
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Manual de Instruções" - define como as peças devem ser
+// 📦 O QUE FAZ: Define formatos e estruturas de dados que o TypeScript usa
+// 🔗 CONECTADO A: Componentes, ações, e schemas que usam esses tipos
+// 🎯 ANALOGIA: É como um manual que diz "esta peça deve ter esse formato"
+// 💡 DICA: Types ajudam a evitar erros mostrando o que cada variável deve conter
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: types/inventory.ts
+📂 CAMINHO: types/inventory.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ export interface Variation {
+// 🔴 VERDE: size (OBRIGATÓRIA) - Tipo: string
+//    DEVE ter este valor sempre
+// 🔴 VERDE: size (OBRIGATÓRIA) - Tipo: string
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   size: string;
+// 🔴 VERDE: type (OBRIGATÓRIA) - Tipo: string
+//    📦 O QUE FAZ: Define qual tipo de componente é (UI_COMPONENT, POPUP, etc)
+//    🧩 ANALOGIA LEGO: É como uma etiqueta que diz "esta é uma peça de tipo X"
+//    💡 DICA: DEVE ter sempre - precisa saber o tipo do componente
+⚙️   type: string; // ex: Regata, Manga Longa
+// 🔴 VERDE: quantity (OBRIGATÓRIA) - Tipo: number
+//    DEVE ter este valor sempre
+// 🔴 VERDE: quantity (OBRIGATÓRIA) - Tipo: number
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   quantity: number;
+⚙️ }
+
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ export interface Product {
+// 🔴 VERDE: name (OBRIGATÓRIA) - Tipo: string
+//    DEVE ter este valor sempre
+// 🔴 VERDE: name (OBRIGATÓRIA) - Tipo: string
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   name: string;
+// 🔴 VERDE: variations (OBRIGATÓRIA) - Tipo: Variation[]
+//    DEVE ter este valor sempre
+// 🔴 VERDE: variations (OBRIGATÓRIA) - Tipo: Variation[]
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   variations: Variation[];
+
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ export interface Seller {
+// 🔴 VERDE: name (OBRIGATÓRIA) - Tipo: string
+//    DEVE ter este valor sempre
+// 🔴 VERDE: name (OBRIGATÓRIA) - Tipo: string
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   name: string;
+
+
+// 🧩 LEGO: Esta é uma "Caixa de Ferramentas" - funções úteis para todo o app
+// 📦 O QUE FAZ: Contém funções auxiliares que podem ser usadas em qualquer lugar
+// 🔗 CONECTADO A: Qualquer arquivo que precise dessas ferramentas
+// 🎯 ANALOGIA: É como uma caixa de ferramentas que todos podem usar
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Esta é uma "Caixa de Ferramentas" - funções úteis para todo o app
+// 📦 O QUE FAZ: Contém funções auxiliares que podem ser usadas em qualquer lugar
+// 🔗 CONECTADO A: Qualquer arquivo que precise dessas ferramentas
+// 🎯 ANALOGIA: É como uma caixa de ferramentas que todos podem usar
+// 💡 DICA: Utils são funções puras que sempre fazem a mesma coisa com os mesmos dados
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: utils/image-helper.ts
+📂 CAMINHO: utils/image-helper.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+
+/**
+ * Recebe um arquivo (File - JPG ou PNG), redimensiona para no máx 1024px,
+ * e converte para WebP mantendo a transparência se houver.
+ */
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma constante chamada "compressImage" que guarda uma função
+// 🧩 ANALOGIA LEGO: É como guardar uma ferramenta em uma caixa com nome "compressImage"
+// 🔗 CONECTADO A: Outros arquivos que importam usando "import { compressImage }"
+// 💡 DICA: Arrow function (=>) é uma forma mais curta de escrever funções
+⚙️ export const compressImage = (file: File): Promise<string> => {
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return new Promise((resolve, reject) => {
+⚙️     reader.readAsDataURL(file);
+
+⚙️     reader.onload = (event) => {
+⚙️       const img = new Image();
+⚙️       img.src = event.target?.result as string;
+
+⚙️       img.onload = () => {
+⚙️         const canvas = document.createElement('canvas');
+
+        // Lógica de Redimensionamento (Max 1024px)
+⚙️         const MAX_WIDTH = 1024;
+⚙️         const scaleSize = MAX_WIDTH / img.width;
+⚙️         const finalScale = scaleSize < 1 ? scaleSize : 1;
+
+⚙️         canvas.width = img.width * finalScale;
+⚙️         canvas.height = img.height * finalScale;
+
+⚙️         const ctx = canvas.getContext('2d');
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️         if (!ctx) {
+⚙️           return;
+⚙️         }
+
+        // Desenha a imagem (se for PNG transparente, o canvas respeita)
+⚙️         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // Exporta como WebP.
+        // WebP suporta transparência E compressão[cite: 4625].
+⚙️         const webpBase64 = canvas.toDataURL('image/webp', 0.85);
+⚙️         resolve(webpBase64);
+⚙️       };
+
+⚙️       img.onerror = (err) => reject(err);
+⚙️     };
+
+⚙️     reader.onerror = (err) => reject(err);
+⚙️   });
+⚙️ };
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const fileToBase64 = compressImage; // Alias para a função de compressão [cite: 4634]
+
+
+// 🧩 LEGO: Esta é uma "Caixa de Ferramentas" - funções úteis para todo o app
+// 📦 O QUE FAZ: Contém funções auxiliares que podem ser usadas em qualquer lugar
+// 🔗 CONECTADO A: Qualquer arquivo que precise dessas ferramentas
+// 🎯 ANALOGIA: É como uma caixa de ferramentas que todos podem usar
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Esta é uma "Caixa de Ferramentas" - funções úteis para todo o app
+// 📦 O QUE FAZ: Contém funções auxiliares que podem ser usadas em qualquer lugar
+// 🔗 CONECTADO A: Qualquer arquivo que precise dessas ferramentas
+// 🎯 ANALOGIA: É como uma caixa de ferramentas que todos podem usar
+// 💡 DICA: Utils são funções puras que sempre fazem a mesma coisa com os mesmos dados
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: utils/order-config-helper.ts
+📂 CAMINHO: utils/order-config-helper.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { BlockConfig, VariantOption } from '@/types/builder';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { ProductData } from '@/app/actions/product';
+
+// 🛡️ GUARDIAN: Safe Property Access Helper
+// Prevents TS2339 errors when accessing properties that might exist at runtime 
+// but are missing from the strict Prisma type definition.
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ function getSafeString(item: unknown, key: string): string | undefined {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️   if (typeof item === 'object' && item !== null && key in item) {
+⚙️     const val = (item as Record<string, unknown>)[key];
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return typeof val === 'string' ? val : undefined;
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return undefined;
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma constante chamada "generateOrderModalBlocks" que guarda uma função
+// 🧩 ANALOGIA LEGO: É como guardar uma ferramenta em uma caixa com nome "generateOrderModalBlocks"
+// 🔗 CONECTADO A: Outros arquivos que importam usando "import { generateOrderModalBlocks }"
+// 💡 DICA: Arrow function (=>) é uma forma mais curta de escrever funções
+⚙️ export const generateOrderModalBlocks = (product: ProductData): BlockConfig[] => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️   if (!product) return [];
+  // --- 1. INTELIGÊNCIA DE GRUPOS DINÂMICA ---
+  // Mapeamos os campos do banco para estruturas genéricas de UI
+⚙️   const groups: Record<string, VariantOption[]> = {
+⚙️     color: [],
+⚙️     model: [], // Grupo para o "Tipo"
+⚙️     size: [],
+⚙️   };
+
+⚙️   const uniqueValues = {
+⚙️     color: new Set<string>(),
+⚙️     model: new Set<string>(),
+⚙️     size: new Set<string>(),
+⚙️   };
+
+  // FIX: Changed 'variations' to 'variants' to match ProductData type
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️   if (product.variants && Array.isArray(product.variants)) {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️       if (v.color) uniqueValues.color.add(v.color.trim());
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️       if (v.size) uniqueValues.size.add(v.size.trim());
+      // Mapeia tanto 'variation' (novo/runtime) quanto 'type' (antigo/typed) para o grupo MODELO
+      // Uses safe helper for 'variation' to avoid "Property does not exist" TS error
+⚙️       const runtimeVariation = getSafeString(v, 'variation');
+⚙️       const typeVal = runtimeVariation || v.type;
+      
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️       if (typeVal) uniqueValues.model.add(typeVal.trim());
+⚙️   }
+
+  // --- CONSTRUÇÃO DAS OPÇÕES ---
+
+  // 1. Cores
+⚙️   groups.color = Array.from(uniqueValues.color).map(val => ({
+⚙️     label: val,
+⚙️     qtyAvailable: 1, // O controle real de qtd é feito no OrderContext
+⚙️     type: 'color', // Chave usada no OrderContext para filtrar
+⚙️     groupName: 'Cor'
+⚙️   }));
+
+  // 2. Tipos (Variação)
+⚙️   groups.model = Array.from(uniqueValues.model).map(val => ({
+⚙️     label: val,
+⚙️     qtyAvailable: 1,
+⚙️     type: 'model', // Chave usada no OrderContext
+⚙️     groupName: 'Tipo / Variação'
+⚙️   }));
+
+  // 3. Tamanhos (Com ordenação personalizada)
+⚙️   const sizeOrder = ['PP', 'P', 'M', 'G', 'GG', 'XG', '33', '34', '35', '36', '37', '38', '39', '40', '41', '42', '44', '46', '48'];
+  
+⚙️   groups.size = Array.from(uniqueValues.size).map(val => ({
+⚙️     label: val,
+⚙️     qtyAvailable: 1,
+⚙️     type: 'size', // Chave usada no OrderContext
+⚙️     groupName: 'Tamanho'
+⚙️   }));
+
+  // Ordena os tamanhos logicamente
+⚙️   groups.size.sort((a, b) => {
+⚙️     const indexA = sizeOrder.indexOf(a.label.toUpperCase());
+⚙️     const indexB = sizeOrder.indexOf(b.label.toUpperCase());
+    
+    // Se ambos estão na lista de ordem conhecida
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (indexA !== -1) return -1;
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (indexB !== -1) return 1;
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return a.label.localeCompare(b.label);
+
+  // --- 2. CONSTRUÇÃO DOS BLOCOS (LEGO) ---
+  // Inicia com os blocos padrão (Header e Info do Produto)
+⚙️   const blocks: BlockConfig[] = [
+⚙️     {
+⚙️       id: 'order_header',
+⚙️       type: 'order-header',
+⚙️       isVisible: true,
+⚙️       data: { title: 'Detalhes do Pedido' },
+⚙️       style: { bgColor: '#ffffff', textColor: '#000000' }
+⚙️     },
+⚙️     {
+⚙️       id: 'order_info',
+⚙️       type: 'order-product-info',
+⚙️       isVisible: true,
+⚙️       data: {
+⚙️         productName: product.name,
+        // Usa imagem principal ou a primeira da variação
+        // FIX: Changed 'variations' to 'variants' and added safe chaining
+⚙️         productImage: product.mainImage || (product.variants?.[0]?.images?.[0]),
+⚙️         vendorName: 'Loja Oficial',
+⚙️       },
+⚙️       style: { bgColor: '#ffffff' }
+⚙️     }
+⚙️   ];
+
+  // --- ADICIONA OS SELETORES DINAMICAMENTE ---
+  // Ordem sugerida: Cor -> Tipo -> Tamanho
+
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️   if (groups.color.length > 0) {
+⚙️       id: 'sel_colors',
+⚙️       type: 'order-variant-selector',
+⚙️       isVisible: true,
+⚙️       data: { title: 'Selecione a Cor', variantOptions: groups.color },
+⚙️       style: { bgColor: '#ffffff' }
+⚙️     });
+⚙️   }
+
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️   if (groups.model.length > 0) {
+⚙️       id: 'sel_models',
+⚙️       type: 'order-variant-selector',
+⚙️       isVisible: true,
+⚙️       data: { title: 'Selecione o Tipo', variantOptions: groups.model },
+⚙️       style: { bgColor: '#ffffff' }
+⚙️     });
+⚙️   }
+
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️   if (groups.size.length > 0) {
+⚙️       id: 'sel_sizes',
+⚙️       type: 'order-variant-selector',
+⚙️       isVisible: true,
+⚙️       data: { title: 'Selecione o Tamanho', variantOptions: groups.size },
+⚙️       style: { bgColor: '#ffffff' }
+⚙️     });
+⚙️   }
+
+  // --- FOOTER (Resumo e Botão Confirmar) ---
+⚙️   blocks.push({
+⚙️     id: 'order_footer',
+⚙️     type: 'order-summary-footer',
+⚙️     isVisible: true,
+⚙️     data: {},
+⚙️     style: { bgColor: '#ffffff' }
+⚙️   });
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return blocks;

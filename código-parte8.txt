@@ -1,0 +1,975 @@
+
+// 🧩 LEGO: Este é um "Manual de Configuração" - ajustes do sistema
+// 📦 O QUE FAZ: Configura como o sistema (Next.js, TypeScript, etc) deve funcionar
+// 🔗 CONECTADO A: Todo o projeto - afeta como tudo funciona
+// 🎯 ANALOGIA: É como o manual de configuração de uma máquina complexa
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Manual de Configuração" - ajustes do sistema
+// 📦 O QUE FAZ: Configura como o sistema (Next.js, TypeScript, etc) deve funcionar
+// 🔗 CONECTADO A: Todo o projeto - afeta como tudo funciona
+// 🎯 ANALOGIA: É como o manual de configuração de uma máquina complexa
+// 💡 DICA: Mudanças aqui afetam todo o projeto, então cuidado!
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: prisma/migrations/20260110002532_add_ui_config_model/migration.sql
+📂 CAMINHO: prisma/migrations/20260110002532_add_ui_config_model/migration.sql
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️ CREATE TABLE "User" (
+⚙️     "id" TEXT NOT NULL,
+⚙️     "email" TEXT,
+⚙️     "document" TEXT NOT NULL,
+⚙️     "name" TEXT,
+⚙️     "whatsapp" TEXT,
+⚙️     "role" TEXT NOT NULL DEFAULT 'customer',
+⚙️     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+⚙️     "updatedAt" TIMESTAMP(3) NOT NULL,
+
+⚙️     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+⚙️ );
+
+⚙️ -- CreateTable
+⚙️ CREATE TABLE "Store" (
+⚙️     "id" TEXT NOT NULL,
+⚙️     "name" TEXT NOT NULL,
+⚙️     "slug" TEXT NOT NULL,
+⚙️     "nicheType" TEXT NOT NULL DEFAULT 'clothing',
+⚙️     "features" JSONB NOT NULL DEFAULT '{}',
+⚙️     "layoutConfig" JSONB DEFAULT '[]',
+⚙️     "themeConfig" JSONB DEFAULT '{}',
+⚙️     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+⚙️     "updatedAt" TIMESTAMP(3) NOT NULL,
+⚙️     "ownerId" TEXT NOT NULL,
+
+⚙️     CONSTRAINT "Store_pkey" PRIMARY KEY ("id")
+⚙️ );
+
+⚙️ -- CreateTable
+⚙️ CREATE TABLE "Product" (
+⚙️     "id" TEXT NOT NULL,
+⚙️     "name" TEXT NOT NULL,
+⚙️     "description" TEXT,
+⚙️     "price" DECIMAL(10,2) NOT NULL,
+⚙️     "reference" TEXT,
+⚙️     "imageColor" TEXT,
+⚙️     "imageUrl" TEXT,
+⚙️     "tags" TEXT[],
+⚙️     "isVisible" BOOLEAN NOT NULL DEFAULT true,
+⚙️     "stock" INTEGER NOT NULL DEFAULT 0,
+⚙️     "storeId" TEXT NOT NULL,
+⚙️     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+⚙️     "updatedAt" TIMESTAMP(3) NOT NULL,
+
+⚙️     CONSTRAINT "Product_pkey" PRIMARY KEY ("id")
+⚙️ );
+
+⚙️ -- CreateTable
+⚙️ CREATE TABLE "ProductVariant" (
+⚙️     "id" TEXT NOT NULL,
+⚙️     "name" TEXT NOT NULL,
+⚙️     "sku" TEXT,
+⚙️     "price" DECIMAL(10,2),
+⚙️     "stock" INTEGER NOT NULL DEFAULT 0,
+⚙️     "images" TEXT[],
+⚙️     "productId" TEXT NOT NULL,
+
+⚙️     CONSTRAINT "ProductVariant_pkey" PRIMARY KEY ("id")
+⚙️ );
+
+⚙️ -- CreateTable
+⚙️ CREATE TABLE "ProductionOrder" (
+⚙️     "id" TEXT NOT NULL,
+⚙️     "productName" TEXT NOT NULL,
+⚙️     "image" TEXT NOT NULL,
+⚙️     "status" TEXT NOT NULL DEFAULT 'PENDING',
+⚙️     "storeId" TEXT,
+⚙️     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+⚙️     "updatedAt" TIMESTAMP(3) NOT NULL,
+
+⚙️     CONSTRAINT "ProductionOrder_pkey" PRIMARY KEY ("id")
+⚙️ );
+
+⚙️ -- CreateTable
+⚙️ CREATE TABLE "Variation" (
+⚙️     "id" TEXT NOT NULL,
+⚙️     "name" TEXT NOT NULL,
+⚙️     "category" TEXT,
+⚙️     "color" TEXT NOT NULL,
+⚙️     "size" TEXT NOT NULL,
+⚙️     "qty" INTEGER NOT NULL,
+⚙️     "stockLocations" TEXT[],
+⚙️     "images" TEXT[],
+⚙️     "productionOrderId" TEXT NOT NULL,
+⚙️     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+⚙️     CONSTRAINT "Variation_pkey" PRIMARY KEY ("id")
+⚙️ );
+
+⚙️ -- CreateTable
+⚙️ CREATE TABLE "ProductionItem" (
+⚙️     "id" TEXT NOT NULL,
+⚙️     "status" TEXT NOT NULL DEFAULT 'PENDING',
+⚙️     "priority" INTEGER NOT NULL DEFAULT 0,
+⚙️     "notes" TEXT,
+⚙️     "storeId" TEXT NOT NULL,
+⚙️     "productId" TEXT NOT NULL,
+⚙️     "orderItemId" TEXT,
+⚙️     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+⚙️     "updatedAt" TIMESTAMP(3) NOT NULL,
+
+⚙️     CONSTRAINT "ProductionItem_pkey" PRIMARY KEY ("id")
+⚙️ );
+
+⚙️ -- CreateTable
+⚙️ CREATE TABLE "Order" (
+⚙️     "id" TEXT NOT NULL,
+⚙️     "status" TEXT NOT NULL DEFAULT 'PENDING',
+⚙️     "total" DECIMAL(10,2) NOT NULL,
+⚙️     "customerName" TEXT,
+⚙️     "customerPhone" TEXT,
+⚙️     "storeId" TEXT NOT NULL,
+⚙️     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+⚙️     CONSTRAINT "Order_pkey" PRIMARY KEY ("id")
+⚙️ );
+
+⚙️ -- CreateTable
+⚙️ CREATE TABLE "OrderItem" (
+⚙️     "id" TEXT NOT NULL,
+⚙️     "quantity" INTEGER NOT NULL,
+⚙️     "price" DECIMAL(10,2) NOT NULL,
+⚙️     "orderId" TEXT NOT NULL,
+⚙️     "productId" TEXT NOT NULL,
+
+⚙️     CONSTRAINT "OrderItem_pkey" PRIMARY KEY ("id")
+⚙️ );
+
+⚙️ -- CreateTable
+⚙️ CREATE TABLE "GuardianConfig" (
+⚙️     "id" TEXT NOT NULL,
+⚙️     "key" TEXT NOT NULL,
+⚙️     "value" TEXT NOT NULL,
+⚙️     "updatedAt" TIMESTAMP(3) NOT NULL,
+⚙️     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+⚙️     CONSTRAINT "GuardianConfig_pkey" PRIMARY KEY ("id")
+⚙️ );
+
+⚙️ -- CreateTable
+⚙️ CREATE TABLE "UIConfig" (
+⚙️     "id" TEXT NOT NULL,
+⚙️     "pageSlug" TEXT NOT NULL,
+⚙️     "layout" JSONB NOT NULL DEFAULT '[]',
+⚙️     "updatedAt" TIMESTAMP(3) NOT NULL,
+⚙️     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+⚙️     CONSTRAINT "UIConfig_pkey" PRIMARY KEY ("id")
+⚙️ );
+
+⚙️ -- CreateIndex
+⚙️ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+⚙️ -- CreateIndex
+⚙️ CREATE UNIQUE INDEX "User_document_key" ON "User"("document");
+
+⚙️ -- CreateIndex
+⚙️ CREATE UNIQUE INDEX "Store_slug_key" ON "Store"("slug");
+
+⚙️ -- CreateIndex
+⚙️ CREATE INDEX "Product_reference_idx" ON "Product"("reference");
+
+⚙️ -- CreateIndex
+⚙️ CREATE UNIQUE INDEX "ProductVariant_sku_key" ON "ProductVariant"("sku");
+
+⚙️ -- CreateIndex
+⚙️ CREATE UNIQUE INDEX "ProductionItem_orderItemId_key" ON "ProductionItem"("orderItemId");
+
+⚙️ -- CreateIndex
+⚙️ CREATE UNIQUE INDEX "GuardianConfig_key_key" ON "GuardianConfig"("key");
+
+⚙️ -- CreateIndex
+⚙️ CREATE UNIQUE INDEX "UIConfig_pageSlug_key" ON "UIConfig"("pageSlug");
+
+⚙️ -- AddForeignKey
+⚙️ ALTER TABLE "Store" ADD CONSTRAINT "Store_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+⚙️ -- AddForeignKey
+⚙️ ALTER TABLE "Product" ADD CONSTRAINT "Product_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+⚙️ -- AddForeignKey
+⚙️ ALTER TABLE "ProductVariant" ADD CONSTRAINT "ProductVariant_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+⚙️ -- AddForeignKey
+⚙️ ALTER TABLE "ProductionOrder" ADD CONSTRAINT "ProductionOrder_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+⚙️ -- AddForeignKey
+⚙️ ALTER TABLE "Variation" ADD CONSTRAINT "Variation_productionOrderId_fkey" FOREIGN KEY ("productionOrderId") REFERENCES "ProductionOrder"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+⚙️ -- AddForeignKey
+⚙️ ALTER TABLE "ProductionItem" ADD CONSTRAINT "ProductionItem_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+⚙️ -- AddForeignKey
+⚙️ ALTER TABLE "ProductionItem" ADD CONSTRAINT "ProductionItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+⚙️ -- AddForeignKey
+⚙️ ALTER TABLE "ProductionItem" ADD CONSTRAINT "ProductionItem_orderItemId_fkey" FOREIGN KEY ("orderItemId") REFERENCES "OrderItem"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+⚙️ -- AddForeignKey
+⚙️ ALTER TABLE "Order" ADD CONSTRAINT "Order_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+⚙️ -- AddForeignKey
+⚙️ ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+⚙️ -- AddForeignKey
+⚙️ ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+
+
+// 🧩 LEGO: Este é um "Bloco de Código" - uma peça importante do sistema
+// 📦 O QUE FAZ: Contém código que faz parte do funcionamento do aplicativo
+// 🔗 CONECTADO A: Outros arquivos do projeto que trabalham juntos
+// 🎯 ANALOGIA: É como uma peça de um grande quebra-cabeça
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é o "Projeto do Banco de Dados" - como plantas de uma casa
+// 📦 O QUE FAZ: Define como os dados são organizados e armazenados
+// 🔗 CONECTADO A: Todas as ações do servidor que salvam/buscam dados
+// 🎯 ANALOGIA: É como um projeto arquitetônico que mostra como organizar os dados
+// 💡 DICA: Schema define tabelas, campos e relacionamentos do banco de dados
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: prisma/migrations/20260114045818_add_development_card_percentage/migration.sql
+📂 CAMINHO: prisma/migrations/20260114045818_add_development_card_percentage/migration.sql
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️ CREATE TABLE "DevelopmentCardPercentage" (
+⚙️     "id" TEXT NOT NULL DEFAULT 'development-card-single-record',
+⚙️     "percentage" INTEGER NOT NULL DEFAULT 69,
+⚙️     "isManual" BOOLEAN NOT NULL DEFAULT false,
+⚙️     "lastManualUpdate" TIMESTAMP(3),
+⚙️     "lastAutoUpdate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+⚙️     "updatedAt" TIMESTAMP(3) NOT NULL,
+⚙️     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+⚙️     CONSTRAINT "DevelopmentCardPercentage_pkey" PRIMARY KEY ("id")
+⚙️ );
+
+
+
+// 🧩 LEGO: Este é um "Molde de Validação" - como uma forma de bolo que garante o formato certo
+// 📦 O QUE FAZ: Define regras e formatos que os dados devem seguir
+// 🔗 CONECTADO A: Ações do servidor, formulários, e banco de dados
+// 🎯 ANALOGIA: É como um gabarito que garante que todas as peças tenham o formato correto
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Molde de Validação" - como uma forma de bolo que garante o formato certo
+// 📦 O QUE FAZ: Define regras e formatos que os dados devem seguir antes de serem usados
+// 🔗 CONECTADO A: Ações do servidor, formulários, e banco de dados
+// 🎯 ANALOGIA: É como um gabarito que garante que todas as peças tenham o formato correto
+// 💡 DICA: Schemas previnem erros validando dados antes de salvá-los
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: prisma/schema.prisma
+📂 CAMINHO: prisma/schema.prisma
+═══════════════════════════════════════════════════════════════════════════════
+
+
+⚙️ generator client {
+⚙️   provider        = "prisma-client-js"
+⚙️   previewFeatures = ["driverAdapters"]
+⚙️ }
+
+⚙️ datasource db {
+⚙️   provider = "postgresql"
+⚙️   url      = env("DATABASE_URL")
+⚙️ }
+
+// --- MODELOS DE USUÁRIO E LOJA ---
+
+⚙️ model User {
+⚙️   id        String   @id @default(cuid())
+⚙️   email     String?  @unique
+⚙️   document  String   @unique
+⚙️   name      String?
+⚙️   whatsapp  String?
+⚙️   role      String   @default("customer")
+⚙️   stores    Store[]
+⚙️   createdAt DateTime @default(now())
+⚙️   updatedAt DateTime @updatedAt
+⚙️ }
+
+⚙️ model Store {
+⚙️   id               String            @id @default(cuid())
+⚙️   name             String
+⚙️   slug             String            @unique
+⚙️   nicheType        String            @default("clothing")
+⚙️   features         Json              @default("{}")
+⚙️   layoutConfig     Json?             @default("[]")
+⚙️   themeConfig      Json?             @default("{}")
+⚙️   createdAt        DateTime          @default(now())
+⚙️   updatedAt        DateTime          @updatedAt
+⚙️   ownerId          String
+⚙️   owner            User              @relation(fields: [ownerId], references: [id])
+⚙️   products         Product[]
+⚙️   orders           Order[]
+⚙️   productionItems  ProductionItem[]
+⚙️   productionOrders ProductionOrder[]
+⚙️ }
+
+// --- MODELOS DE PRODUTO ATUALIZADOS ---
+
+⚙️ model Product {
+⚙️   id              String           @id @default(cuid())
+⚙️   name            String
+⚙️   description     String?
+⚙️   price           Decimal          @db.Decimal(10, 2)
+ 
+  // Campo essencial para o cadastro inteligente
+⚙️   reference       String?
+ 
+⚙️   imageColor      String?
+⚙️   imageUrl        String?
+⚙️   tags            String[]
+⚙️   isVisible       Boolean          @default(true)
+⚙️   stock           Int              @default(0)
+⚙️   variants        ProductVariant[]
+⚙️   storeId         String
+⚙️   store           Store            @relation(fields: [storeId], references: [id])
+⚙️   createdAt       DateTime         @default(now())
+⚙️   updatedAt       DateTime         @updatedAt
+⚙️   orderItems      OrderItem[]
+⚙️   productionItems ProductionItem[]
+
+  // Índice para busca rápida no upload em massa
+⚙️   @@index([reference])
+⚙️ }
+
+⚙️ model ProductVariant {
+⚙️   id        String   @id @default(cuid())
+⚙️   name      String
+⚙️   sku       String?  @unique
+⚙️   price     Decimal? @db.Decimal(10, 2)
+⚙️   stock     Int      @default(0)
+⚙️   images    String[]
+⚙️   productId String
+⚙️   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+⚙️ }
+
+// --- DEMAIS MODELOS ---
+
+⚙️ model ProductionOrder {
+⚙️   id          String      @id @default(cuid())
+⚙️   productName String
+⚙️   image       String      @db.Text
+⚙️   status      String      @default("PENDING")
+⚙️   storeId     String?
+⚙️   store       Store?      @relation(fields: [storeId], references: [id])
+⚙️   variations  Variation[]
+⚙️   createdAt   DateTime    @default(now())
+⚙️   updatedAt   DateTime    @updatedAt
+⚙️ }
+
+⚙️ model Variation {
+⚙️   id                String          @id @default(cuid())
+⚙️   name              String
+⚙️   category          String?
+⚙️   color             String
+⚙️   size              String
+⚙️   qty               Int
+⚙️   stockLocations    String[]
+⚙️   images            String[]
+⚙️   productionOrderId String
+⚙️   productionOrder   ProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
+⚙️   createdAt         DateTime        @default(now())
+⚙️ }
+
+⚙️ model ProductionItem {
+⚙️   id          String     @id @default(cuid())
+⚙️   status      String     @default("PENDING")
+⚙️   priority    Int        @default(0)
+⚙️   notes       String?
+⚙️   storeId     String
+⚙️   store       Store      @relation(fields: [storeId], references: [id])
+⚙️   productId   String
+⚙️   product     Product    @relation(fields: [productId], references: [id])
+⚙️   orderItemId String?    @unique
+⚙️   orderItem   OrderItem? @relation(fields: [orderItemId], references: [id])
+⚙️   createdAt   DateTime   @default(now())
+⚙️   updatedAt   DateTime   @updatedAt
+⚙️ }
+
+⚙️ model Order {
+⚙️   id            String      @id @default(cuid())
+⚙️   status        String      @default("PENDING")
+⚙️   total         Decimal     @db.Decimal(10, 2)
+⚙️   customerName  String?
+⚙️   customerPhone String?
+⚙️   storeId       String
+⚙️   store         Store       @relation(fields: [storeId], references: [id])
+⚙️   items         OrderItem[]
+⚙️   createdAt     DateTime    @default(now())
+⚙️ }
+
+⚙️ model OrderItem {
+⚙️   id         String          @id @default(cuid())
+⚙️   quantity   Int
+⚙️   price      Decimal         @db.Decimal(10, 2)
+⚙️   orderId    String
+⚙️   order      Order           @relation(fields: [orderId], references: [id])
+⚙️   productId  String
+⚙️   product    Product         @relation(fields: [productId], references: [id])
+⚙️   production ProductionItem?
+⚙️ }
+
+⚙️ model GuardianConfig {
+⚙️   id        String   @id @default(cuid())
+⚙️   key       String   @unique
+⚙️   value     String
+⚙️   updatedAt DateTime @updatedAt
+⚙️   createdAt DateTime @default(now())
+⚙️ }
+
+// --- CONFIGURAÇÃO DE LAYOUT LEGO (FIX BUILD ERROR) ---
+⚙️ model UIConfig {
+⚙️   id        String   @id @default(cuid())
+⚙️   pageSlug  String   @unique // ex: 'home', 'pos', 'inventory'
+⚙️   layout    Json     @default("[]") // Onde ficam os blocos Lego
+⚙️   updatedAt DateTime @updatedAt
+⚙️   createdAt DateTime @default(now())
+⚙️ }
+
+// --- DEVELOPMENT CARD PERCENTAGE (Sincronização entre dispositivos) ---
+⚙️ model DevelopmentCardPercentage {
+⚙️   id             String   @id @default("development-card-single-record")
+⚙️   percentage     Int      @default(69) // Valor entre 0 e 100
+⚙️   isManual       Boolean  @default(false) // Se foi alterado manualmente
+⚙️   lastManualUpdate DateTime? // Última vez que foi alterado manualmente
+⚙️   lastAutoUpdate  DateTime  @default(now()) // Última vez que foi atualizado automaticamente
+⚙️   updatedAt      DateTime  @updatedAt
+⚙️   createdAt      DateTime  @default(now())
+⚙️ }
+
+
+// 🧩 LEGO: Este é um "Bloco de Código" - uma peça importante do sistema
+// 📦 O QUE FAZ: Contém código que faz parte do funcionamento do aplicativo
+// 🔗 CONECTADO A: Outros arquivos do projeto que trabalham juntos
+// 🎯 ANALOGIA: É como uma peça de um grande quebra-cabeça
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é o "Projeto do Banco de Dados" - como plantas de uma casa
+// 📦 O QUE FAZ: Define como os dados são organizados e armazenados
+// 🔗 CONECTADO A: Todas as ações do servidor que salvam/buscam dados
+// 🎯 ANALOGIA: É como um projeto arquitetônico que mostra como organizar os dados
+// 💡 DICA: Schema define tabelas, campos e relacionamentos do banco de dados
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: prisma/seed.ts
+📂 CAMINHO: prisma/seed.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️ import { PrismaClient } from '@prisma/client';
+
+⚙️ const prisma = new PrismaClient();
+
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define uma função assíncrona que pode esperar tarefas terminarem
+// 🧩 ANALOGIA LEGO: É como um trabalhador que pode esperar uma peça chegar antes de continuar
+// 💡 DICA: Funções async sempre retornam uma Promise (promessa de resultado futuro)
+⚙️ async function main() {
+  // Você pode adicionar criação de usuários ou lojas padrão aqui no futuro.
+⚙️ }
+
+⚙️ main()
+⚙️   .catch((e) => {
+⚙️     console.error(e);
+⚙️     process.exit(1);
+⚙️   })
+⚙️   .finally(async () => {
+// 🟢 VERDE: Espera uma tarefa assíncrona terminar - como esperar uma peça chegar
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️     await prisma.$disconnect();
+
+
+// 🧩 LEGO: Este é um "Bloco de Código" - uma peça importante do sistema
+// 📦 O QUE FAZ: Contém código que faz parte do funcionamento do aplicativo
+// 🔗 CONECTADO A: Outros arquivos do projeto que trabalham juntos
+// 🎯 ANALOGIA: É como uma peça de um grande quebra-cabeça
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 📦 O QUE FAZ: Contém código que faz parte do funcionamento do aplicativo
+// 🔗 CONECTADO A: Outros arquivos do projeto que trabalham juntos
+// 🎯 ANALOGIA: É como uma peça de um grande quebra-cabeça
+// 💡 DICA: Cada arquivo tem um propósito específico no sistema
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: public/manifest.json
+📂 CAMINHO: public/manifest.json
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️   "name": "Loja Maryland",
+⚙️   "short_name": "Maryland",
+⚙️   "description": "Web App de Loja Virtual",
+⚙️   "start_url": "/",
+⚙️   "display": "standalone",
+⚙️   "background_color": "#ffffff",
+⚙️   "theme_color": "#5874f6",
+⚙️   "orientation": "portrait",
+⚙️   "icons": [
+⚙️     {
+⚙️       "src": "/icons/icon-192x192.png",
+⚙️       "sizes": "192x192",
+⚙️       "type": "image/png"
+⚙️     },
+⚙️     {
+⚙️       "src": "/icons/icon-512x512.png",
+⚙️       "sizes": "512x512",
+⚙️       "type": "image/png"
+⚙️     }
+⚙️   ]
+⚙️ }
+
+
+// 🧩 LEGO: Este é um "Bloco de Código" - uma peça importante do sistema
+// 📦 O QUE FAZ: Contém código que faz parte do funcionamento do aplicativo
+// 🔗 CONECTADO A: Outros arquivos do projeto que trabalham juntos
+// 🎯 ANALOGIA: É como uma peça de um grande quebra-cabeça
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 📦 O QUE FAZ: Contém código que faz parte do funcionamento do aplicativo
+// 🔗 CONECTADO A: Outros arquivos do projeto que trabalham juntos
+// 🎯 ANALOGIA: É como uma peça de um grande quebra-cabeça
+// 💡 DICA: Cada arquivo tem um propósito específico no sistema
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: public/sw.js
+📂 CAMINHO: public/sw.js
+═══════════════════════════════════════════════════════════════════════════════
+
+
+
+
+// 🧩 LEGO: Este é um "Molde de Validação" - como uma forma de bolo que garante o formato certo
+// 📦 O QUE FAZ: Define regras e formatos que os dados devem seguir
+// 🔗 CONECTADO A: Ações do servidor, formulários, e banco de dados
+// 🎯 ANALOGIA: É como um gabarito que garante que todas as peças tenham o formato correto
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Molde de Validação" - como uma forma de bolo que garante o formato certo
+// 📦 O QUE FAZ: Define regras e formatos que os dados devem seguir antes de serem usados
+// 🔗 CONECTADO A: Ações do servidor, formulários, e banco de dados
+// 🎯 ANALOGIA: É como um gabarito que garante que todas as peças tenham o formato correto
+// 💡 DICA: Schemas previnem erros validando dados antes de salvá-los
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: schemas/blocks/button-schema.ts
+📂 CAMINHO: schemas/blocks/button-schema.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { z } from "zod";
+
+/**
+ * Enumeração local de ações possíveis para um botão.
+ * Substitui a dependência externa removida para manter o módulo autocontido.
+ */
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const ButtonActionTypeEnum = z.enum([
+⚙️   "NAVIGATION_PUSH",   // Redirecionar (Link)
+⚙️   "FORM_SUBMIT",       // Submeter formulário nativo
+⚙️   "MODAL_OPEN",        // Abrir um popup/modal via ID
+⚙️   "SERVER_ACTION",     // Disparar uma Server Action customizada
+⚙️   "NONE"               // Apenas visual ou controlado via onClick manual
+⚙️ ]);
+
+⚙️ export type ButtonActionType = z.infer<typeof ButtonActionTypeEnum>;
+
+/**
+ * Contrato de dados para o componente StandardButton.
+ * Atualizado para suportar ícones, estados de carregamento e ações autocontidas (Lego Architecture 2026).
+ */
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const StandardButtonDataSchema = z.object({
+  // --- Conteúdo ---
+⚙️   label: z.string().min(1, "Texto do botão é obrigatório"),
+⚙️   icon: z.string().optional().describe("Nome do ícone Lucide (ex: 'ShoppingCart', 'ArrowRight')"),
+  
+  // --- Estilo Visual ---
+⚙️   variant: z.enum(["primary", "secondary", "outline", "ghost", "danger", "link"]).default("primary"),
+⚙️   size: z.enum(["sm", "md", "lg", "icon"]).default("md"),
+⚙️   fullWidthMobile: z.boolean().default(true),
+⚙️   className: z.string().optional().describe("Classes utilitárias para ajustes finos de layout (margens)"),
+
+  // --- Comportamento ---
+  /**
+   * Define o que o botão faz ao ser clicado.
+   * Agora utiliza a definição local ButtonActionTypeEnum.
+   */
+⚙️   actionType: ButtonActionTypeEnum.default("NONE"),
+  
+  /**
+   * Alvo da ação.
+   * - Se NAVIGATION_PUSH: URL de destino.
+   * - Se MODAL_OPEN: ID do Modal.
+   * - Se SERVER_ACTION: Nome da Action.
+   */
+⚙️   actionTarget: z.string().optional(),
+
+⚙️   disabled: z.boolean().default(false),
+⚙️   loading: z.boolean().default(false).describe("Se true, exibe spinner e bloqueia cliques"),
+
+  /**
+   * Payload Tipado para Server Actions ou Contexto.
+   * O Zod valida a estrutura do JSON que será enviado ao servidor ou evento.
+   */
+⚙️   payload: z.record(z.string(), z.unknown()).optional(),
+⚙️ });
+
+⚙️ export type StandardButtonData = z.infer<typeof StandardButtonDataSchema>;
+
+
+// 🧩 LEGO: Este é um "Molde de Validação" - como uma forma de bolo que garante o formato certo
+// 📦 O QUE FAZ: Define regras e formatos que os dados devem seguir
+// 🔗 CONECTADO A: Ações do servidor, formulários, e banco de dados
+// 🎯 ANALOGIA: É como um gabarito que garante que todas as peças tenham o formato correto
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Molde de Validação" - como uma forma de bolo que garante o formato certo
+// 📦 O QUE FAZ: Define regras e formatos que os dados devem seguir antes de serem usados
+// 🔗 CONECTADO A: Ações do servidor, formulários, e banco de dados
+// 🎯 ANALOGIA: É como um gabarito que garante que todas as peças tenham o formato correto
+// 💡 DICA: Schemas previnem erros validando dados antes de salvá-los
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: schemas/blocks/database-status-schema.ts
+📂 CAMINHO: schemas/blocks/database-status-schema.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️ import { z } from "zod";
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const DatabaseStatusSchema = z.object({
+⚙️   provider: z.literal("neon"),
+⚙️   region: z.string(),
+⚙️   latencyMs: z.number().nonnegative(),
+⚙️   isOnline: z.boolean(),
+⚙️ });
+
+⚙️ export type DatabaseStatus = z.infer<typeof DatabaseStatusSchema>;
+
+
+// 🧩 LEGO: Este é um "Molde de Validação" - como uma forma de bolo que garante o formato certo
+// 📦 O QUE FAZ: Define regras e formatos que os dados devem seguir
+// 🔗 CONECTADO A: Ações do servidor, formulários, e banco de dados
+// 🎯 ANALOGIA: É como um gabarito que garante que todas as peças tenham o formato correto
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Molde de Validação" - como uma forma de bolo que garante o formato certo
+// 📦 O QUE FAZ: Define regras e formatos que os dados devem seguir antes de serem usados
+// 🔗 CONECTADO A: Ações do servidor, formulários, e banco de dados
+// 🎯 ANALOGIA: É como um gabarito que garante que todas as peças tenham o formato correto
+// 💡 DICA: Schemas previnem erros validando dados antes de salvá-los
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: schemas/development-card-schema.ts
+📂 CAMINHO: schemas/development-card-schema.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️ import { z } from 'zod';
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const DevelopmentCardPercentageSchema = z.object({
+⚙️   percentage: z.number().int().min(0).max(100),
+⚙️   isManual: z.boolean(),
+⚙️   lastManualUpdate: z.date().nullable(),
+⚙️   lastAutoUpdate: z.date(),
+⚙️ });
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const UpdateDevelopmentCardPercentageSchema = z.object({
+⚙️   percentage: z.number().int().min(0).max(100),
+⚙️ });
+
+⚙️ export type DevelopmentCardPercentage = z.infer<typeof DevelopmentCardPercentageSchema>;
+⚙️ export type UpdateDevelopmentCardPercentage = z.infer<typeof UpdateDevelopmentCardPercentageSchema>;
+
+
+
+// 🧩 LEGO: Este é um "Molde de Validação" - como uma forma de bolo que garante o formato certo
+// 📦 O QUE FAZ: Define regras e formatos que os dados devem seguir
+// 🔗 CONECTADO A: Ações do servidor, formulários, e banco de dados
+// 🎯 ANALOGIA: É como um gabarito que garante que todas as peças tenham o formato correto
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Molde de Validação" - como uma forma de bolo que garante o formato certo
+// 📦 O QUE FAZ: Define regras e formatos que os dados devem seguir antes de serem usados
+// 🔗 CONECTADO A: Ações do servidor, formulários, e banco de dados
+// 🎯 ANALOGIA: É como um gabarito que garante que todas as peças tenham o formato correto
+// 💡 DICA: Schemas previnem erros validando dados antes de salvá-los
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: schemas/guardian-runtime-schema.ts
+📂 CAMINHO: schemas/guardian-runtime-schema.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { z } from "zod";
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const RuntimeElementStateEnum = z.enum([
+⚙️   "MOUNTED",
+⚙️   "VISIBLE",
+⚙️   "HIDDEN",
+⚙️   "UNMOUNTED"
+⚙️ ]);
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const UIMetricsSchema = z.object({
+⚙️   width: z.number(),
+⚙️   height: z.number(),
+⚙️   aspectRatio: z.string(),
+⚙️   isFlex: z.boolean(),
+⚙️   flexDirection: z.string(),
+⚙️   isGrid: z.boolean(),
+⚙️   computedDisplay: z.string(),
+⚙️   isResponsiveIssue: z.boolean(),
+⚙️   elementCount: z.object({
+⚙️     buttons: z.number(),
+⚙️     inputs: z.number(),
+⚙️     images: z.number(),
+⚙️     textNodes: z.number(),
+⚙️   }),
+⚙️   contentMap: z.object({
+⚙️     buttonLabels: z.array(z.string()),
+⚙️     headings: z.array(z.string()),
+⚙️     inputPlaceholders: z.array(z.string()),
+⚙️   })
+⚙️ });
+
+/**
+ * ✅ NOVO: Schema de Inteligência Semântica
+ * Permite ao desenvolvedor descrever o comportamento e conexões do componente.
+ */
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const GuardianSmartMetadataSchema = z.object({
+⚙️   label: z.string().optional().describe("Nome amigável para exibição no mapa"),
+⚙️   description: z.string().optional().describe("O que este componente faz em 1 frase"),
+  
+  // Conexões Lógicas (Quem chama quem, ou quem depende de quem)
+⚙️   connectsTo: z.array(z.object({
+⚙️     target: z.string(), // Ex: "StockRegisterView", "ProductService"
+⚙️     type: z.enum(["ROUTE", "COMPONENT", "DATABASE", "EXTERNAL", "HOOK"]),
+⚙️     description: z.string().optional() // Ex: "Atualiza a lista após salvar"
+⚙️   })).optional(),
+
+  // Orientação para o time
+⚙️   orientationNotes: z.string().optional().describe("Notas técnicas, alertas de z-index, regras de negócio"),
+  
+  // Tags para filtragem rápida
+⚙️   tags: z.array(z.string()).optional() // Ex: ["Critical", "Inventory"]
+⚙️ });
+
+⚙️ export type GuardianSmartMetadata = z.infer<typeof GuardianSmartMetadataSchema>;
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const RuntimeTrackerSchema = z.object({
+⚙️   elementId: z.string(),
+⚙️   componentName: z.string(),
+⚙️   responsibleFile: z.string(),
+⚙️   isPopup: z.boolean(),
+⚙️   zIndex: z.number(),
+⚙️   state: RuntimeElementStateEnum,
+⚙️   timestamp: z.string(),
+⚙️   childComponents: z.array(z.string()),
+⚙️   metrics: UIMetricsSchema.optional(),
+  
+  // ✅ Campo Novo: Metadados Semânticos injetados pelo HOC
+⚙️   semanticMetadata: GuardianSmartMetadataSchema.optional(),
+  
+⚙️   metadata: z.record(z.string(), z.unknown()).optional(),
+⚙️ });
+
+// Definição recursiva para ComponentNode (Árvore de Arquivos)
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const ComponentNodeSchema: z.ZodType<ComponentNode> = z.lazy(() =>
+⚙️   z.object({
+⚙️     name: z.string(),
+⚙️     file: z.string().optional(),
+⚙️     children: z.array(ComponentNodeSchema),
+⚙️   })
+⚙️ );
+
+⚙️ export type ComponentNode = {
+⚙️   name: string;
+⚙️   file?: string;
+⚙️   children: ComponentNode[];
+⚙️ };
+
+⚙️ export type RuntimeElementState = z.infer<typeof RuntimeElementStateEnum>;
+⚙️ export type RuntimeTracker = z.infer<typeof RuntimeTrackerSchema>;
+⚙️ export type UIMetrics = z.infer<typeof UIMetricsSchema>;
+
+
+// 🧩 LEGO: Este é um "Molde de Validação" - como uma forma de bolo que garante o formato certo
+// 📦 O QUE FAZ: Define regras e formatos que os dados devem seguir
+// 🔗 CONECTADO A: Ações do servidor, formulários, e banco de dados
+// 🎯 ANALOGIA: É como um gabarito que garante que todas as peças tenham o formato correto
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Molde de Validação" - como uma forma de bolo que garante o formato certo
+// 📦 O QUE FAZ: Define regras e formatos que os dados devem seguir antes de serem usados
+// 🔗 CONECTADO A: Ações do servidor, formulários, e banco de dados
+// 🎯 ANALOGIA: É como um gabarito que garante que todas as peças tenham o formato correto
+// 💡 DICA: Schemas previnem erros validando dados antes de salvá-los
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: schemas/guardian-schema.ts
+📂 CAMINHO: schemas/guardian-schema.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { z } from "zod";
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const DiagnosticLayerEnum = z.enum([
+⚙️   "UI_PROPORTION",
+⚙️   "UI_STYLING",
+⚙️   "BACKEND_LOGIC",
+⚙️   "INPUT_VALIDATION",
+⚙️   "DISCOVERY",
+⚙️   "ARCHITECTURE",
+⚙️   "DATABASE",
+⚙️   "SECURITY",
+⚙️   "PERFORMANCE",
+⚙️ ]);
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const FileTypeEnum = z.enum([
+⚙️   "PAGE", "COMPONENT", "ACTION", "HOOK", "SCHEMA", "CONFIG",
+⚙️   "PRISMA", "STYLE", "TYPE", "UTIL", "ASSET", "MARKDOWN", "OTHER"
+⚙️ ]);
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const ProjectFileSchema = z.object({
+⚙️   path: z.string(),
+⚙️   name: z.string(),
+⚙️   type: FileTypeEnum,
+⚙️   size: z.number(),
+⚙️   lastModified: z.string(),
+⚙️   linesOfCode: z.number(),
+⚙️ });
+
+// ✅ NOVO: Schema para representar uma conexão real entre arquivos
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const DependencyLinkSchema = z.object({
+⚙️   source: z.string(), // Quem importa (ex: components/StockModal.tsx)
+⚙️   target: z.string(), // Quem é importado (ex: types/builder.ts)
+⚙️   type: z.enum(["IMPORT", "DYNAMIC_IMPORT", "USAGE"]),
+⚙️ });
+
+// ✅ DEFINIÇÃO DE SNIPPETS PARA O REX X-RAY (CÓDIGO REAL)
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const CodeSnippetSchema = z.object({
+⚙️   type: z.enum(["BUTTON", "INPUT", "LAYOUT_CARD", "LAYOUT_PROPORTION", "TEXT", "POPUP_STRUCTURE"]),
+⚙️   content: z.string(), // O código JSX real extraído do arquivo
+⚙️   preview: z.string(), // Título descritivo para o cabeçalho do bloco
+⚙️ });
+
+// ✅ NOVO: Schema para Documentação Automática (AutoDoc)
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const AutoDocSchema = z.object({
+⚙️   summary: z.string(),
+⚙️   stateVariables: z.array(z.string()),
+⚙️   renderedComponents: z.array(z.string()),
+⚙️   complexityLevel: z.enum(["Baixa", "Média", "Alta", "Crítica"]),
+⚙️ });
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const ScreenMetadataSchema = z.object({
+⚙️   pathname: z.string(),
+⚙️   responsibleFile: z.string(),
+⚙️   focusMode: z.boolean(),
+⚙️   lastModified: z.string(),
+⚙️   elements: z.object({
+⚙️     buttons: z.number(),
+⚙️     inputs: z.number(),
+⚙️     logicHooks: z.number(),
+⚙️     serverActions: z.number(),
+⚙️   }),
+⚙️   relatedFiles: z.object({
+⚙️     ui: z.array(z.string()),
+⚙️     logic: z.array(z.string()),
+⚙️   }),
+  // ✅ NOVO: Lista detalhada de dependências para o mapa de conexão
+⚙️   dependencies: z.array(DependencyLinkSchema).default([]),
+ 
+⚙️   potentialPopups: z.array(z.string()),
+⚙️   connectivity: z.object({
+⚙️     connected: z.array(z.string()),
+⚙️     disconnected: z.array(z.string()),
+⚙️   }),
+⚙️   database: z.object({
+⚙️     models: z.array(z.string()),
+⚙️     connection: z.string().optional(),
+⚙️   }),
+⚙️   projectStructure: z.array(ProjectFileSchema).default([]),
+  // ✅ codeMap agora é parte oficial do contrato Rex
+⚙️   codeMap: z.record(z.string(), z.array(CodeSnippetSchema)).optional(),
+⚙️ });
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const DiagnosticIssueSchema = z.object({
+⚙️   id: z.string(),
+⚙️   layer: DiagnosticLayerEnum,
+⚙️   file: z.string(),
+⚙️   message: z.string(),
+⚙️   severity: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]),
+⚙️   suggestion: z.string(),
+⚙️   timestamp: z.string(),
+⚙️   snippet: z.string().optional(),
+⚙️ });
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const GuardianAuditResponseSchema = z.object({
+⚙️   issues: z.array(DiagnosticIssueSchema),
+⚙️   categorizedFiles: z.object({
+⚙️     ui: z.array(z.string()),
+⚙️     logic: z.array(z.string()),
+⚙️   }),
+⚙️   screenMetadata: ScreenMetadataSchema,
+⚙️ });
+
+⚙️ export type DiagnosticIssue = z.infer<typeof DiagnosticIssueSchema>;
+⚙️ export type DiagnosticLayer = z.infer<typeof DiagnosticLayerEnum>;
+⚙️ export type ScreenMetadata = z.infer<typeof ScreenMetadataSchema>;
+⚙️ export type GuardianAuditResponse = z.infer<typeof GuardianAuditResponseSchema>;
+⚙️ export type ProjectFile = z.infer<typeof ProjectFileSchema>;
+⚙️ export type FileType = z.infer<typeof FileTypeEnum>;
+⚙️ export type CodeSnippet = z.infer<typeof CodeSnippetSchema>;
+⚙️ export type DependencyLink = z.infer<typeof DependencyLinkSchema>;
+⚙️ export type AutoDoc = z.infer<typeof AutoDocSchema>;

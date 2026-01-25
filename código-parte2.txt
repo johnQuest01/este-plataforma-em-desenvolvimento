@@ -1,0 +1,2088 @@
+
+// 🧩 LEGO: Este é um "Bloco de Código" - uma peça importante do sistema
+// 📦 O QUE FAZ: Contém código que faz parte do funcionamento do aplicativo
+// 🔗 CONECTADO A: Outros arquivos do projeto que trabalham juntos
+// 🎯 ANALOGIA: É como uma peça de um grande quebra-cabeça
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Servidor de Ações" - como uma caixa de ferramentas que o servidor usa
+// 📦 O QUE FAZ: Recebe comandos do cliente (celular/navegador) e executa tarefas no servidor
+// 🔗 CONECTADO A: Banco de dados (Prisma), outras ações do servidor, e componentes React
+// 🎯 ANALOGIA: É como um garçom que recebe pedidos e vai buscar no estoque (banco de dados)
+// 💡 DICA: Essas funções só rodam no servidor, nunca no navegador do usuário
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/actions/product-external.ts
+📂 CAMINHO: app/actions/product-external.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️ 'use server';
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { prisma } from '@/lib/prisma';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { revalidatePath } from 'next/cache';
+
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define uma função assíncrona que pode esperar tarefas terminarem
+// 🧩 ANALOGIA LEGO: É como um trabalhador que pode esperar uma peça chegar antes de continuar
+// 💡 DICA: Funções async sempre retornam uma Promise (promessa de resultado futuro)
+⚙️ export async function registerProductAndProduction(formData: {
+⚙️   name: string;
+⚙️   description?: string;
+⚙️   price: number;
+⚙️   imageUrl?: string;
+⚙️   variations: { name: string; qty: number }[];
+⚙️   notes?: string;
+⚙️ }) {
+// 🟢 VERDE: Tenta executar código - se der erro, vai para o "catch"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Tenta executar código e captura erros se algo der errado
+// 🧩 ANALOGIA LEGO: É como tentar montar uma peça difícil com um plano B se não funcionar
+// 💡 DICA: Sempre use try/catch quando trabalhar com dados externos ou operações que podem falhar
+⚙️   try {
+// 🟢 VERDE: Espera uma tarefa assíncrona terminar - como esperar uma peça chegar
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️     const store = await prisma.store.findUnique({
+⚙️     });
+
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (!store) {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️       return { success: false, message: "Loja não encontrada." };
+
+    // 2. Criar o Produto e suas Variações
+// 🟢 VERDE: Espera uma tarefa assíncrona terminar - como esperar uma peça chegar
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️     const product = await prisma.product.create({
+⚙️         name: formData.name,
+⚙️         description: formData.description,
+⚙️         price: formData.price,
+⚙️         imageUrl: formData.imageUrl,
+⚙️         storeId: store.id,
+⚙️         variants: {
+⚙️           create: formData.variations.map(v => ({
+⚙️             name: v.name,
+⚙️             stock: v.qty, // Inicialmente o estoque da variante é o que vai para produção
+⚙️           }))
+⚙️         }
+⚙️       },
+⚙️       include: {
+⚙️         variants: true
+⚙️       }
+⚙️     });
+
+    // 3. Criar a entrada na Fila de Produção
+⚙️     const totalQty = formData.variations.reduce((acc, v) => acc + v.qty, 0);
+    
+// 🟢 VERDE: Espera uma tarefa assíncrona terminar - como esperar uma peça chegar
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️     await prisma.productionItem.create({
+⚙️         status: 'PENDING',
+⚙️         priority: 1,
+⚙️         notes: formData.notes || `Cadastro via link preview. Total: ${totalQty}`,
+⚙️         storeId: store.id,
+⚙️         productId: product.id,
+⚙️       }
+⚙️     });
+
+⚙️     revalidatePath('/production');
+⚙️     revalidatePath('/inventory');
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return {
+⚙️       message: "Produto cadastrado e enviado para produção!",
+⚙️       productId: product.id
+⚙️     };
+
+⚙️   } catch (error) {
+⚙️     console.error("Erro no cadastro externo:", error);
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return { success: false, message: "Erro interno ao cadastrar." };
+⚙️ }
+
+
+
+// 🧩 LEGO: Este é um "Molde de Validação" - como uma forma de bolo que garante o formato certo
+// 📦 O QUE FAZ: Define regras e formatos que os dados devem seguir
+// 🔗 CONECTADO A: Ações do servidor, formulários, e banco de dados
+// 🎯 ANALOGIA: É como um gabarito que garante que todas as peças tenham o formato correto
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Molde de Validação" - como uma forma de bolo que garante o formato certo
+// 📦 O QUE FAZ: Define regras e formatos que os dados devem seguir antes de serem usados
+// 🔗 CONECTADO A: Ações do servidor, formulários, e banco de dados
+// 🎯 ANALOGIA: É como um gabarito que garante que todas as peças tenham o formato correto
+// 💡 DICA: Schemas previnem erros validando dados antes de salvá-los
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/actions/product.schema.ts
+📂 CAMINHO: app/actions/product.schema.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️ import { z } from 'zod';
+
+// --- SCHEMAS DE VALIDAÇÃO (ZOD) ---
+
+// Schema base para variante (Híbrido: Aceita Input da UI e Output do Banco)
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const ProductVariantSchema = z.object({
+⚙️   id: z.string().optional(),
+⚙️   name: z.string().optional(),
+  
+  // ATUALIZAÇÃO: Aceita string (do input mask) OU number (do banco já convertido)
+⚙️   price: z.union([z.string(), z.number()]).nullable().optional(),
+  
+  // Compatibilidade UI/Banco para estoque
+⚙️   stock: z.number().int().nonnegative().default(0),
+⚙️   qty: z.number().int().nonnegative().default(0),
+
+⚙️   sku: z.string().nullable().optional(),
+⚙️   images: z.array(z.string()).default([]),
+⚙️   color: z.string().optional(),
+⚙️   size: z.string().optional(),
+⚙️   type: z.string().optional(),
+⚙️ });
+
+// Schema de Dados do Produto (Output para o Frontend)
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const ProductDataSchema = z.object({
+⚙️   id: z.string(),
+⚙️   name: z.string(),
+⚙️   description: z.string().nullable(),
+  
+  // ATUALIZAÇÃO: Agora é estritamente number para facilitar cálculos no front
+⚙️   price: z.number(),
+  
+⚙️   imageUrl: z.string().nullable(),
+⚙️   isVisible: z.boolean(),
+⚙️   stock: z.number(),
+⚙️   storeId: z.string(),
+⚙️   createdAt: z.string(),
+⚙️   updatedAt: z.string(),
+  
+⚙️   variants: z.array(ProductVariantSchema),
+  
+  // Campos opcionais para compatibilidade com UI
+⚙️   mainImage: z.string().optional(),
+⚙️   tag: z.string().optional(),
+⚙️   imageColor: z.string().optional(),
+⚙️ });
+
+// Schema de Entrada para Criação (Input do Formulário)
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const CreateProductInputSchema = z.object({
+⚙️   name: z.string().min(1, "Nome é obrigatório"),
+  
+  // O preço principal vem como string do input mask (ex: "R$ 100,00")
+⚙️   price: z.string().min(1, "Preço é obrigatório"),
+  
+⚙️   variations: z.array(ProductVariantSchema),
+⚙️   visibility: z.string(),
+⚙️   image: z.string().optional(),
+⚙️   storeId: z.string().optional(),
+⚙️ });
+
+// Tipos inferidos automaticamente
+⚙️ export type ProductData = z.infer<typeof ProductDataSchema>;
+⚙️ export type ProductVariantData = z.infer<typeof ProductVariantSchema>;
+⚙️ export type CreateProductInput = z.infer<typeof CreateProductInputSchema>;
+
+
+// 🧩 LEGO: Este é um "Bloco de Código" - uma peça importante do sistema
+// 📦 O QUE FAZ: Contém código que faz parte do funcionamento do aplicativo
+// 🔗 CONECTADO A: Outros arquivos do projeto que trabalham juntos
+// 🎯 ANALOGIA: É como uma peça de um grande quebra-cabeça
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Servidor de Ações" - como uma caixa de ferramentas que o servidor usa
+// 📦 O QUE FAZ: Recebe comandos do cliente (celular/navegador) e executa tarefas no servidor
+// 🔗 CONECTADO A: Banco de dados (Prisma), outras ações do servidor, e componentes React
+// 🎯 ANALOGIA: É como um garçom que recebe pedidos e vai buscar no estoque (banco de dados)
+// 💡 DICA: Essas funções só rodam no servidor, nunca no navegador do usuário
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/actions/product.ts
+📂 CAMINHO: app/actions/product.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+
+/**
+ * 🧱 BLOCO LEGO: Sistema de Produtos (Product Management)
+ * 
+ * Este arquivo é como uma "caixa de peças LEGO" especializada em criar e gerenciar produtos.
+ * Cada função é uma "peça LEGO" que se encaixa perfeitamente com outras peças do sistema.
+ * 
+ * 📦 CONTEXTO DO APP:
+ * Este é um sistema POS (Point of Sale) - como uma caixa registradora moderna.
+ * Quando um vendedor quer cadastrar um novo produto na loja, este módulo:
+ * 1. Valida os dados do produto (nome, preço, estoque, etc.)
+ * 2. Faz upload da imagem do produto para a nuvem
+ * 3. Cria o produto no banco de dados com todas as variações (cores, tamanhos)
+ * 4. Gera SKU (código único) para cada variação
+ * 
+ * 🎯 ARQUITETURA LEGO:
+ * - Cada Server Action é uma "peça LEGO" independente
+ * - Helpers são "peças auxiliares" que ajudam outras peças
+ * - Mappers transformam dados do banco para o formato da tela
+ */
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { revalidatePath } from 'next/cache';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { prisma } from '@/lib/prisma';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { uploadImageToCloud } from '@/lib/upload-service';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { Prisma } from '@prisma/client';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { parseBrazilianCurrency } from '@/lib/utils/currency';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { z } from 'zod';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import {
+⚙️   CreateProductInput,
+⚙️   ProductData,
+⚙️   CreateProductInputSchema
+⚙️ } from './product.schema';
+
+⚙️ export type { ProductData, ProductVariantData, CreateProductInput } from './product.schema';
+
+// --- HELPERS INTERNOS ---
+/**
+ * 🛠️ PEÇAS LEGO AUXILIARES (Helper Functions):
+ * 
+ * São funções pequenas que ajudam outras funções maiores.
+ * É como ter "peças LEGO especiais" que facilitam montar coisas complexas.
+ * 
+ * Por que separar em helpers?
+ * - Reutilização: pode usar a mesma função em vários lugares
+ * - Organização: código mais limpo e fácil de entender
+ * - Testes: pode testar cada helper separadamente
+ */
+
+/**
+ * 🔤 SERIALIZAÇÃO DE NOME DE VARIAÇÃO:
+ * 
+ * Transforma dados separados em uma string única.
+ * É como colocar várias peças LEGO em uma caixa e escrever o nome na caixa.
+ * 
+ * Exemplo:
+ * - Entrada: "Camiseta", cor: "Azul", tamanho: "M"
+ * - Saída: "Camiseta|Azul|M|"
+ * 
+ * Por que fazer isso?
+ * - Banco de dados precisa de um nome único para cada variação
+ * - Facilita buscar variações depois
+ * - Separa informações com "|" (pipe) para desmontar depois
+ */
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma função interna chamada "serializeVariantName" (só pode ser usada dentro deste arquivo)
+// 🧩 ANALOGIA LEGO: É como uma ferramenta privada que só você pode usar neste arquivo
+// 💡 DICA: Sem "export", esta função não pode ser importada por outros arquivos
+⚙️ const serializeVariantName = (baseName: string, variation: { color?: string; size?: string; type?: string }): string => {
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return `${baseName}|${variation.color || 'Padrão'}|${variation.size || 'Único'}|${variation.type || ''}`;
+
+/**
+ * 🔓 DESERIALIZAÇÃO DE NOME DE VARIAÇÃO:
+ * 
+ * Faz o contrário da função acima: pega uma string e separa em dados.
+ * É como abrir uma caixa LEGO e separar as peças por tipo.
+ * 
+ * Exemplo:
+ * - Entrada: "Camiseta|Azul|M|"
+ * - Saída: { baseName: "Camiseta", color: "Azul", size: "M", type: undefined }
+ * 
+ * Por que fazer isso?
+ * - Quando busca do banco, vem como string única
+ * - Precisa separar para mostrar na tela (cor, tamanho, etc.)
+ */
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma função interna chamada "parseVariantMetadata" (só pode ser usada dentro deste arquivo)
+// 🧩 ANALOGIA LEGO: É como uma ferramenta privada que só você pode usar neste arquivo
+// 💡 DICA: Sem "export", esta função não pode ser importada por outros arquivos
+⚙️ const parseVariantMetadata = (fullName: string) => {
+⚙️   const parts = fullName.split('|');
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️   if (parts.length >= 3) {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return {
+⚙️       color: parts[1],
+⚙️       size: parts[2],
+⚙️       type: parts[3] || undefined
+⚙️     };
+⚙️   }
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return { baseName: fullName, color: 'Padrão', size: 'Único', type: undefined };
+
+/**
+ * 🔄 MAPPER: Prisma → Interface da Tela
+ * 
+ * Transforma dados do banco de dados (Prisma) para o formato que a tela precisa.
+ * É como traduzir um manual LEGO de inglês para português.
+ * 
+ * Por que fazer isso?
+ * - Prisma retorna Decimal (tipo especial para dinheiro)
+ * - Tela precisa de Number (tipo JavaScript normal)
+ * - Mapper converte: Decimal → Number
+ * 
+ * Exemplo:
+ * - Banco: price = Decimal("29.90")
+ * - Tela: price = 29.90 (number)
+ */
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma função interna chamada "mapToUserInterface" (só pode ser usada dentro deste arquivo)
+// 🧩 ANALOGIA LEGO: É como uma ferramenta privada que só você pode usar neste arquivo
+// 💡 DICA: Sem "export", esta função não pode ser importada por outros arquivos
+⚙️ const mapToUserInterface = (product: Prisma.ProductGetPayload<{ include: { variants: true } }>): ProductData => {
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return {
+⚙️     name: product.name,
+⚙️     description: product.description,
+    // Alterado de toString() para Number() para facilitar cálculos no front
+⚙️     price: Number(product.price),
+⚙️     imageUrl: product.imageUrl,
+⚙️     isVisible: product.isVisible,
+⚙️     stock: product.stock,
+⚙️     storeId: product.storeId,
+⚙️     createdAt: product.createdAt.toISOString(),
+⚙️     updatedAt: product.updatedAt.toISOString(),
+⚙️     variants: product.variants.map((variant) => {
+⚙️       const metadata = parseVariantMetadata(variant.name);
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️       return {
+⚙️         name: metadata.baseName,
+        // Alterado de toString() para Number()
+⚙️         price: variant.price ? Number(variant.price) : null,
+⚙️         stock: variant.stock,
+⚙️         sku: variant.sku,
+⚙️         images: variant.images,
+⚙️         color: metadata.color,
+⚙️         size: metadata.size,
+⚙️         type: metadata.type,
+⚙️         qty: variant.stock
+⚙️       };
+⚙️     })
+⚙️   };
+⚙️ };
+
+/**
+ * 🏷️ GERADOR DE SKU (Stock Keeping Unit - Código de Produto):
+ * 
+ * Cria um código único para cada variação de produto.
+ * É como colocar um código de barras em cada peça LEGO.
+ * 
+ * Exemplo:
+ * - Produto: "Camiseta Básica"
+ * - Variação: "Azul, Tamanho M"
+ * - SKU gerado: "CAM-AZ-1234560-ABC"
+ * 
+ * Formato: [3 primeiras letras do produto]-[2 primeiras letras da variação]-[timestamp]-[random]
+ * 
+ * Por que isso é importante?
+ * - Cada produto precisa de um código único
+ * - Facilita controle de estoque
+ * - Evita duplicatas (mesmo produto com códigos diferentes)
+ */
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma função interna chamada "generateStockKeepingUnit" (só pode ser usada dentro deste arquivo)
+// 🧩 ANALOGIA LEGO: É como uma ferramenta privada que só você pode usar neste arquivo
+// 💡 DICA: Sem "export", esta função não pode ser importada por outros arquivos
+⚙️ const generateStockKeepingUnit = (productName: string, variationName: string, index: number): string => {
+⚙️   const prefix = productName.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, 'X');
+⚙️   const varSuffix = variationName.substring(0, 2).toUpperCase().replace(/[^A-Z0-9]/g, 'X');
+⚙️   const timestamp = Date.now().toString().slice(-6);
+⚙️   const random = Math.random().toString(36).substring(2, 5).toUpperCase();
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return `${prefix}-${varSuffix}-${timestamp}${index}-${random}`;
+
+// --- SERVER ACTIONS ---
+
+/**
+ * 🧱 PEÇA LEGO PRINCIPAL: Salvar Produto
+ * 
+ * Esta função é como montar um "kit LEGO completo" de produto:
+ * 1. Valida os dados (verifica se todas as peças estão presentes)
+ * 2. Converte preço brasileiro (R$ 29,90) para número (29.90)
+ * 3. Faz upload da imagem para a nuvem
+ * 4. Encontra ou cria a loja (garante que há um lugar para guardar o produto)
+ * 5. Cria o produto com todas as variações em uma transação (tudo ou nada)
+ * 6. Atualiza o cache (diz ao Next.js para mostrar os dados atualizados)
+ * 
+ * 📦 CONTEXTO REAL:
+ * Quando um vendedor cadastra um novo produto:
+ * - Preenche formulário: nome, preço, descrição, imagem
+ * - Adiciona variações: cores, tamanhos, tipos
+ * - Clica em "Salvar"
+ * - Esta função cria tudo no banco de dados
+ */
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define uma função assíncrona que pode esperar tarefas terminarem
+// 🧩 ANALOGIA LEGO: É como um trabalhador que pode esperar uma peça chegar antes de continuar
+// 💡 DICA: Funções async sempre retornam uma Promise (promessa de resultado futuro)
+⚙️ export async function saveProductAction(inputData: CreateProductInput) {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Tenta executar código e captura erros se algo der errado
+// 🧩 ANALOGIA LEGO: É como tentar montar uma peça difícil com um plano B se não funcionar
+// 💡 DICA: Sempre use try/catch quando trabalhar com dados externos ou operações que podem falhar
+⚙️   try {
+⚙️     const validatedInput = CreateProductInputSchema.parse(inputData);
+
+    // 2. Conversão de Preço (R$ 29,90 → 29.90)
+    /**
+     * 💰 CONVERSÃO DE PREÇO:
+     * 
+     * Usuário digita: "R$ 29,90" (formato brasileiro)
+     * Sistema precisa: 29.90 (número decimal)
+     * 
+     * É como converter medidas:
+     * - Usuário pensa em "metros"
+     * - Sistema trabalha em "centímetros"
+     * - Converter: 1 metro = 100 centímetros
+     */
+⚙️     const numericPrice = parseBrazilianCurrency(validatedInput.price);
+⚙️     const decimalPrice = new Prisma.Decimal(numericPrice);
+
+⚙️     let targetStoreId = validatedInput.storeId;
+
+    // --- LÓGICA DE AUTO-CURA (SELF-HEALING) ---
+    /**
+     * 🏥 AUTO-CURA (Self-Healing):
+     * 
+     * Se não houver loja cadastrada, cria uma automaticamente.
+     * É como ter uma "peça LEGO padrão" sempre disponível.
+     * 
+     * Por que isso existe?
+     * - Em desenvolvimento, pode não ter loja cadastrada ainda
+     * - Em produção, garante que sempre há uma loja para vincular produtos
+     * - Evita erros de "loja não encontrada" que quebrariam o sistema
+     * 
+     * Analogia:
+     * É como ter um "kit LEGO de emergência" sempre pronto.
+     * Se você não tem o kit que precisa, usa o de emergência.
+     */
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (!targetStoreId) {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️       let store = await prisma.store.findFirst();
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️       if (!store) {
+        
+        // 1. Garante que existe um usuário dono (Admin)
+// 🟢 VERDE: Espera uma tarefa assíncrona terminar - como esperar uma peça chegar
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️         let owner = await prisma.user.findFirst();
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️         if (!owner) {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️             owner = await prisma.user.create({
+⚙️                     email: "admin@sistema.com",
+⚙️                     name: "Admin Sistema",
+⚙️                     document: "000.000.000-00",
+⚙️                 }
+⚙️             });
+⚙️         }
+
+        // 2. Cria a loja vinculada ao dono
+// 🟢 VERDE: Espera uma tarefa assíncrona terminar - como esperar uma peça chegar
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️         store = await prisma.store.create({
+⚙️                 name: "Minha Loja Principal",
+⚙️                 slug: "loja-principal",
+⚙️                 ownerId: owner.id
+⚙️             }
+⚙️         });
+⚙️         console.log("✅ Loja Padrão criada com sucesso:", store.id);
+⚙️       }
+      
+⚙️       targetStoreId = store.id;
+⚙️     }
+
+⚙️     let finalImageUrl: string | null = null;
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (validatedInput.image?.startsWith('data:image')) {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️       finalImageUrl = await uploadImageToCloud(validatedInput.image, validatedInput.name);
+⚙️       finalImageUrl = validatedInput.image || `https://placehold.co/600x800/png?text=${encodeURIComponent(validatedInput.name)}`;
+⚙️     }
+
+⚙️     const totalStock = validatedInput.variations.reduce((acc, curr) => {
+⚙️       const quantity = curr.qty ?? curr.stock ?? 0;
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️       return acc + quantity;
+
+// 🟢 VERDE: Espera uma tarefa assíncrona terminar - como esperar uma peça chegar
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️     const createdProduct = await prisma.$transaction(async (transaction) => {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️       return await transaction.product.create({
+⚙️           name: validatedInput.name,
+⚙️           price: decimalPrice,
+⚙️           isVisible: validatedInput.visibility === 'visible',
+⚙️           stock: totalStock,
+⚙️           imageUrl: finalImageUrl,
+⚙️           storeId: targetStoreId as string,
+⚙️           variants: {
+⚙️             create: validatedInput.variations.map((variation, index) => {
+⚙️               const variantStock = variation.qty ?? variation.stock ?? 0;
+              
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️               return {
+⚙️                 stock: variantStock,
+⚙️                 price: decimalPrice,
+⚙️                 sku: generateStockKeepingUnit(validatedInput.name, variation.color || 'VAR', index),
+⚙️                 images: variation.images
+⚙️               };
+⚙️             })
+⚙️           }
+⚙️         },
+⚙️         include: { variants: true }
+⚙️       });
+⚙️     });
+
+⚙️     revalidatePath('/dashboard');
+⚙️     revalidatePath('/inventory');
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return {
+⚙️       product: mapToUserInterface(createdProduct)
+⚙️     };
+
+⚙️   } catch (error) {
+⚙️     console.error("❌ Erro ao salvar produto:", error);
+    
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (error instanceof z.ZodError) {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️         return { success: false, error: error.issues };
+    
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️        return { success: false, error: "Erro de duplicidade: SKU ou Nome já existem." };
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return {
+⚙️       error: error instanceof Error ? error.message : "Erro interno no servidor."
+⚙️     };
+⚙️   }
+⚙️ }
+
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define uma função assíncrona que pode esperar tarefas terminarem
+// 🧩 ANALOGIA LEGO: É como um trabalhador que pode esperar uma peça chegar antes de continuar
+// 💡 DICA: Funções async sempre retornam uma Promise (promessa de resultado futuro)
+⚙️ export async function getProductsAction(): Promise<ProductData[]> {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Tenta executar código e captura erros se algo der errado
+// 🧩 ANALOGIA LEGO: É como tentar montar uma peça difícil com um plano B se não funcionar
+// 💡 DICA: Sempre use try/catch quando trabalhar com dados externos ou operações que podem falhar
+⚙️   try {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️     const products = await prisma.product.findMany({
+⚙️       include: { variants: true }
+⚙️     });
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return products.map(mapToUserInterface);
+⚙️     console.error("Erro ao buscar produtos:", error);
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return [];
+⚙️ }
+
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define uma função assíncrona que pode esperar tarefas terminarem
+// 🧩 ANALOGIA LEGO: É como um trabalhador que pode esperar uma peça chegar antes de continuar
+// 💡 DICA: Funções async sempre retornam uma Promise (promessa de resultado futuro)
+⚙️ export async function getProductByIdAction(id: string): Promise<ProductData | null> {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Tenta executar código e captura erros se algo der errado
+// 🧩 ANALOGIA LEGO: É como tentar montar uma peça difícil com um plano B se não funcionar
+// 💡 DICA: Sempre use try/catch quando trabalhar com dados externos ou operações que podem falhar
+⚙️   try {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️     const product = await prisma.product.findUnique({
+⚙️       include: { variants: true }
+⚙️     });
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return product ? mapToUserInterface(product) : null;
+⚙️     console.error("Erro ao buscar produto por ID:", error);
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return null;
+⚙️ }
+
+
+// 🧩 LEGO: Este é um "Bloco de Código" - uma peça importante do sistema
+// 📦 O QUE FAZ: Contém código que faz parte do funcionamento do aplicativo
+// 🔗 CONECTADO A: Outros arquivos do projeto que trabalham juntos
+// 🎯 ANALOGIA: É como uma peça de um grande quebra-cabeça
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Servidor de Ações" - como uma caixa de ferramentas que o servidor usa
+// 📦 O QUE FAZ: Recebe comandos do cliente (celular/navegador) e executa tarefas no servidor
+// 🔗 CONECTADO A: Banco de dados (Prisma), outras ações do servidor, e componentes React
+// 🎯 ANALOGIA: É como um garçom que recebe pedidos e vai buscar no estoque (banco de dados)
+// 💡 DICA: Essas funções só rodam no servidor, nunca no navegador do usuário
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/actions/production.ts
+📂 CAMINHO: app/actions/production.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️ 'use server';
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { ProductionItemData, ProductionStep, ProductionVariationDetail } from '@/types/builder';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { VariationItem } from '@/components/builder/ui/StockVariationsPopup';
+
+⚙️ declare global {
+⚙️   var __PRODUCTION_DB: ProductionItemData[];
+⚙️   var __READY_FOR_STORE_DB: ProductionItemData[];
+⚙️ }
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma função interna chamada "formatDate" (só pode ser usada dentro deste arquivo)
+// 🧩 ANALOGIA LEGO: É como uma ferramenta privada que só você pode usar neste arquivo
+// 💡 DICA: Sem "export", esta função não pode ser importada por outros arquivos
+⚙️ const formatDate = () => {
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return new Date().toLocaleString('pt-BR', {
+⚙️     hour: '2-digit', minute: '2-digit'
+⚙️   });
+⚙️ };
+
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️ if (!global.__PRODUCTION_DB) {
+⚙️     {
+⚙️       id: 'prod_01',
+⚙️       productId: 'p1',
+⚙️       productName: 'Conjunto Verão (P/M/G)',
+⚙️       productImage: 'https://placehold.co/400x500/fde047/000000?text=Conjunto',
+⚙️       quantity: 50,
+⚙️       currentStep: 'sewing',
+⚙️       stepsHistory: { sewing: false, sorting: false, tagging: false, packaging: false },
+⚙️       startedAt: formatDate(),
+⚙️       variationsDetail: [
+⚙️         { size: 'P', color: 'Amarelo', qty: 20, type: 'Conjunto' },
+⚙️         { size: 'M', color: 'Amarelo', qty: 30, type: 'Conjunto' }
+⚙️       ]
+⚙️     }
+⚙️   ];
+⚙️ }
+
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️ if (!global.__READY_FOR_STORE_DB) {
+⚙️ }
+
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define uma função assíncrona que pode esperar tarefas terminarem
+// 🧩 ANALOGIA LEGO: É como um trabalhador que pode esperar uma peça chegar antes de continuar
+// 💡 DICA: Funções async sempre retornam uma Promise (promessa de resultado futuro)
+⚙️ export async function getProductionItemsAction() {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return global.__PRODUCTION_DB;
+
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define uma função assíncrona que pode esperar tarefas terminarem
+// 🧩 ANALOGIA LEGO: É como um trabalhador que pode esperar uma peça chegar antes de continuar
+// 💡 DICA: Funções async sempre retornam uma Promise (promessa de resultado futuro)
+⚙️ export async function getReadyForStoreItemsAction() {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return global.__READY_FOR_STORE_DB;
+
+// --- AÇÕES DE ETAPA ---
+
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define uma função assíncrona que pode esperar tarefas terminarem
+// 🧩 ANALOGIA LEGO: É como um trabalhador que pode esperar uma peça chegar antes de continuar
+// 💡 DICA: Funções async sempre retornam uma Promise (promessa de resultado futuro)
+⚙️ export async function setProductionStepAction(itemId: string, step: ProductionStep) {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️   if (itemIndex === -1) return { success: false };
+⚙️   const item = global.__PRODUCTION_DB[itemIndex];
+⚙️   const allSteps: ProductionStep[] = ['sewing', 'sorting', 'tagging', 'packaging', 'ready'];
+
+⚙️   const newHistory = { ...item.stepsHistory };
+⚙️   const targetIndex = allSteps.indexOf(step);
+
+⚙️   allSteps.forEach((s, idx) => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (idx <= targetIndex && s !== 'ready') {
+⚙️       newHistory[stepKey] = true;
+⚙️     }
+⚙️   });
+
+⚙️   global.__PRODUCTION_DB[itemIndex] = {
+⚙️     ...item,
+⚙️     currentStep: step,
+⚙️     stepsHistory: newHistory
+⚙️   };
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return { success: true, item: global.__PRODUCTION_DB[itemIndex] };
+
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define uma função assíncrona que pode esperar tarefas terminarem
+// 🧩 ANALOGIA LEGO: É como um trabalhador que pode esperar uma peça chegar antes de continuar
+// 💡 DICA: Funções async sempre retornam uma Promise (promessa de resultado futuro)
+⚙️ export async function advanceProductionStepAction(itemId: string) {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️   if (itemIndex === -1) return { success: false };
+⚙️   const item = global.__PRODUCTION_DB[itemIndex];
+⚙️   const steps: ProductionStep[] = ['sewing', 'sorting', 'tagging', 'packaging', 'ready'];
+⚙️   const currentIndex = steps.indexOf(item.currentStep);
+
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️   if (currentIndex < steps.length - 1) {
+⚙️     const newHistory = { ...item.stepsHistory };
+
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (item.currentStep !== 'ready') {
+⚙️       newHistory[stepKey] = true;
+⚙️     }
+
+⚙️     global.__PRODUCTION_DB[itemIndex] = {
+⚙️       ...item,
+⚙️       currentStep: nextStep,
+⚙️       stepsHistory: newHistory
+⚙️     };
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return { success: true, item: global.__PRODUCTION_DB[itemIndex] };
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return { success: false, message: 'Já está pronto' };
+
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define uma função assíncrona que pode esperar tarefas terminarem
+// 🧩 ANALOGIA LEGO: É como um trabalhador que pode esperar uma peça chegar antes de continuar
+// 💡 DICA: Funções async sempre retornam uma Promise (promessa de resultado futuro)
+⚙️ export async function completeProductionAction(itemId: string) {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️   if (itemIndex === -1) return { success: false };
+⚙️   const item = global.__PRODUCTION_DB[itemIndex];
+⚙️   const completedHistory = { sewing: true, sorting: true, tagging: true, packaging: true };
+
+⚙️   global.__PRODUCTION_DB[itemIndex] = {
+⚙️     ...item,
+⚙️     currentStep: 'ready',
+⚙️     stepsHistory: completedHistory
+⚙️   };
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return { success: true, item: global.__PRODUCTION_DB[itemIndex] };
+
+// --- ALTERAÇÃO CRÍTICA AQUI ---
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define uma função assíncrona que pode esperar tarefas terminarem
+// 🧩 ANALOGIA LEGO: É como um trabalhador que pode esperar uma peça chegar antes de continuar
+// 💡 DICA: Funções async sempre retornam uma Promise (promessa de resultado futuro)
+⚙️ export async function sendToStoreAction(itemId: string) {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️   if (itemIndex === -1) return { success: false, message: "Item não encontrado." };
+⚙️   const itemToSend = global.__PRODUCTION_DB[itemIndex];
+
+  // 1. Verificamos se já foi enviado para evitar duplicação na lista do caixa
+⚙️   const alreadySent = global.__READY_FOR_STORE_DB.find(i => i.id === itemId);
+
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️   if (!alreadySent) {
+⚙️       ...itemToSend,
+⚙️       arrivedAtStore: formatDate()
+⚙️     };
+    // Adiciona na lista do Caixa
+⚙️     global.__READY_FOR_STORE_DB.unshift(readyItem);
+⚙️   }
+
+  // 2. ATUALIZAÇÃO: NÃO removemos de __PRODUCTION_DB aqui.
+  // Apenas marcamos visualmente (se necessário) ou deixamos como 'ready'.
+  // O item continuará visível na tela de produção até que o caixa libere.
+  
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return { success: true, message: "Aguardando liberação do caixa." };
+
+// --- ALTERAÇÃO CRÍTICA AQUI: O CAIXA LIBERA E O ITEM SOME DA PRODUÇÃO ---
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define uma função assíncrona que pode esperar tarefas terminarem
+// 🧩 ANALOGIA LEGO: É como um trabalhador que pode esperar uma peça chegar antes de continuar
+// 💡 DICA: Funções async sempre retornam uma Promise (promessa de resultado futuro)
+⚙️ export async function dispatchFromStoreAction(itemId: string) {
+⚙️   global.__READY_FOR_STORE_DB = global.__READY_FOR_STORE_DB.filter(i => i.id !== itemId);
+
+  // 2. AGORA SIM: Remove da lista de Produção
+  // Isso faz o item "sumir" da tela de produção, confirmando que o ciclo encerrou.
+⚙️   global.__PRODUCTION_DB = global.__PRODUCTION_DB.filter(i => i.id !== itemId);
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return { success: true };
+
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define uma função assíncrona que pode esperar tarefas terminarem
+// 🧩 ANALOGIA LEGO: É como um trabalhador que pode esperar uma peça chegar antes de continuar
+// 💡 DICA: Funções async sempre retornam uma Promise (promessa de resultado futuro)
+⚙️ export async function returnToProductionAction(itemId: string, reason: string) {
+⚙️   const itemIndexStore = global.__READY_FOR_STORE_DB.findIndex(i => i.id === itemId);
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️   if (itemIndexStore !== -1) {
+⚙️   }
+
+  // Atualiza na produção (que ainda deve ter o item, mas caso não tenha, recriamos ou atualizamos)
+⚙️   const itemIndexProd = global.__PRODUCTION_DB.findIndex(i => i.id === itemId);
+  
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️   if (itemIndexProd !== -1) {
+⚙️     const item = global.__PRODUCTION_DB[itemIndexProd];
+⚙️     global.__PRODUCTION_DB[itemIndexProd] = {
+⚙️       ...item,
+⚙️       currentStep: 'sewing',
+⚙️       returnReason: reason,
+⚙️       startedAt: `DEVOLVIDO: ${formatDate()}`
+⚙️     };
+⚙️   }
+  
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return { success: true };
+
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define uma função assíncrona que pode esperar tarefas terminarem
+// 🧩 ANALOGIA LEGO: É como um trabalhador que pode esperar uma peça chegar antes de continuar
+// 💡 DICA: Funções async sempre retornam uma Promise (promessa de resultado futuro)
+⚙️ export async function updateProductionItemDetailsAction(itemId: string, newVariations: ProductionVariationDetail[]) {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️   if (itemIndex === -1) return { success: false, message: "Item não encontrado" };
+⚙️   const item = global.__PRODUCTION_DB[itemIndex];
+⚙️   const newTotalQuantity = newVariations.reduce((acc, v) => acc + (Number(v.qty) || 0), 0);
+
+⚙️   global.__PRODUCTION_DB[itemIndex] = {
+⚙️     ...item,
+⚙️     variationsDetail: newVariations,
+⚙️     quantity: newTotalQuantity
+⚙️   };
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return { success: true, item: global.__PRODUCTION_DB[itemIndex] };
+
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define uma função assíncrona que pode esperar tarefas terminarem
+// 🧩 ANALOGIA LEGO: É como um trabalhador que pode esperar uma peça chegar antes de continuar
+// 💡 DICA: Funções async sempre retornam uma Promise (promessa de resultado futuro)
+⚙️ export async function createProductionOrderAction(data: {
+⚙️   image: string;
+⚙️   variations: VariationItem[];
+⚙️ }) {
+// 🟢 VERDE: Tenta executar código - se der erro, vai para o "catch"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Tenta executar código e captura erros se algo der errado
+// 🧩 ANALOGIA LEGO: É como tentar montar uma peça difícil com um plano B se não funcionar
+// 💡 DICA: Sempre use try/catch quando trabalhar com dados externos ou operações que podem falhar
+⚙️   try {
+
+⚙️     const details: ProductionVariationDetail[] = data.variations.map(v => ({
+⚙️       size: v.size,
+⚙️       color: v.color,
+⚙️       type: v.variation || v.type || 'Padrão',
+⚙️       qty: v.qty
+⚙️     }));
+
+⚙️     const newItem: ProductionItemData = {
+⚙️       id: `prod_${Date.now()}`,
+⚙️       productId: `temp_${Date.now()}`,
+⚙️       productName: data.productName,
+⚙️       productImage: data.image || 'https://placehold.co/400x500/e2e8f0/ffffff?text=Sem+Foto',
+⚙️       quantity: totalQty,
+⚙️       currentStep: 'sewing',
+⚙️       stepsHistory: { sewing: false, sorting: false, tagging: false, packaging: false },
+⚙️       startedAt: formatDate(),
+⚙️       variationsDetail: details
+⚙️     };
+
+⚙️     global.__PRODUCTION_DB.unshift(newItem);
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return { success: true };
+⚙️     console.error("Erro ao criar ordem:", error);
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return { success: false };
+⚙️ }
+
+
+// 🧩 LEGO: Este é um "Bloco de Código" - uma peça importante do sistema
+// 📦 O QUE FAZ: Contém código que faz parte do funcionamento do aplicativo
+// 🔗 CONECTADO A: Outros arquivos do projeto que trabalham juntos
+// 🎯 ANALOGIA: É como uma peça de um grande quebra-cabeça
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Servidor de Ações" - como uma caixa de ferramentas que o servidor usa
+// 📦 O QUE FAZ: Recebe comandos do cliente (celular/navegador) e executa tarefas no servidor
+// 🔗 CONECTADO A: Banco de dados (Prisma), outras ações do servidor, e componentes React
+// 🎯 ANALOGIA: É como um garçom que recebe pedidos e vai buscar no estoque (banco de dados)
+// 💡 DICA: Essas funções só rodam no servidor, nunca no navegador do usuário
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/actions/try-on.ts
+📂 CAMINHO: app/actions/try-on.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️ 'use server';
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import Replicate from "replicate";
+
+⚙️ const replicate = new Replicate({
+⚙️   auth: process.env.REPLICATE_API_TOKEN,
+⚙️ });
+
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ interface TryOnRequest {
+// 🔴 VERDE: garmentImage (OBRIGATÓRIA) - Tipo: string
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   garmentImage: string; // Foto da roupa (Base64 ou URL)
+⚙️   category: 'upper_body' | 'lower_body' | 'dresses';
+⚙️ }
+
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define uma função assíncrona que pode esperar tarefas terminarem
+// 🧩 ANALOGIA LEGO: É como um trabalhador que pode esperar uma peça chegar antes de continuar
+// 💡 DICA: Funções async sempre retornam uma Promise (promessa de resultado futuro)
+⚙️ export async function generateVirtualTryOn(data: TryOnRequest) {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Tenta executar código e captura erros se algo der errado
+// 🧩 ANALOGIA LEGO: É como tentar montar uma peça difícil com um plano B se não funcionar
+// 💡 DICA: Sempre use try/catch quando trabalhar com dados externos ou operações que podem falhar
+⚙️   try {
+
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (!process.env.REPLICATE_API_TOKEN) {
+⚙️     }
+
+    // --- MODELO: GOOGLE NANO BANANA ---
+⚙️     const model = "google/nano-banana";
+
+    // Montamos o input
+⚙️     const input = {
+⚙️       prompt: "Realistic photo. Put the clothing from the second image onto the person in the first image. High quality, natural lighting, perfect fit.",
+⚙️       image_input: [
+⚙️         data.userImage,    // Imagem 1: A Pessoa
+⚙️         data.garmentImage  // Imagem 2: A Roupa
+⚙️       ]
+⚙️     };
+
+    // --- CORREÇÃO DO ERRO 'ANY' ---
+    // 1. Removemos o ': any' e o 'as any'.
+    // 2. Usamos 'as unknown' para dizer ao TypeScript que trataremos o retorno depois.
+// 🟢 VERDE: Espera uma tarefa assíncrona terminar - como esperar uma peça chegar
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️     const output = await replicate.run(model, { input }) as unknown;
+⚙️     console.log("✨ Sucesso Nano Banana:", output);
+    
+    // Tratamento do Output com Tipagem Segura:
+⚙️     let imageUrl = "";
+    
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (typeof output === 'string') {
+⚙️         imageUrl = output;
+⚙️     }
+⚙️     else if (Array.isArray(output) && output.length > 0) {
+        // Se a IA devolver uma lista de links (Array)
+⚙️         imageUrl = output[0];
+⚙️     }
+⚙️     else if (output && typeof output === 'object' && 'url' in output) {
+        // Se a IA devolver um objeto de arquivo (File Output)
+        // Forçamos a tipagem aqui apenas para acessar o método .url()
+⚙️         imageUrl = (output as { url: () => string }).url();
+⚙️     }
+⚙️     else {
+        // Fallback: Tenta converter o que sobrou para texto
+⚙️         imageUrl = String(output);
+⚙️     }
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return { success: true, imageUrl: imageUrl };
+⚙️   } catch (error) {
+    // Removemos o ': any' aqui também, o TypeScript infere como 'unknown' automaticamente
+⚙️     console.error("❌ ERRO NANO BANANA:", error);
+
+⚙️     let userMessage = "Erro ao processar imagem.";
+⚙️     const errorString = String(error);
+
+    // --- TRATAMENTO DE ERROS ---
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (errorString.includes("429") || errorString.includes("throttled")) {
+⚙️     }
+⚙️     else if (errorString.includes("404") || errorString.includes("not found")) {
+⚙️       userMessage = "O modelo 'google/nano-banana' não foi encontrado. Verifique o nome exato no Replicate.";
+⚙️     }
+⚙️     else if (errorString.includes("422") || errorString.includes("Unprocessable")) {
+⚙️       userMessage = "A IA não conseguiu processar essas imagens. Tente fotos diferentes.";
+⚙️     }
+⚙️     else if (errorString.includes("payment")) {
+⚙️       userMessage = "Conta do Replicate sem créditos. Adicione um método de pagamento.";
+⚙️     }
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return { success: false, error: userMessage };
+⚙️ }
+
+
+// 🧩 LEGO: Este é um "Bloco de Código" - uma peça importante do sistema
+// 📦 O QUE FAZ: Contém código que faz parte do funcionamento do aplicativo
+// 🔗 CONECTADO A: Outros arquivos do projeto que trabalham juntos
+// 🎯 ANALOGIA: É como uma peça de um grande quebra-cabeça
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 📦 O QUE FAZ: Contém código que faz parte do funcionamento do aplicativo
+// 🔗 CONECTADO A: Outros arquivos do projeto que trabalham juntos
+// 🎯 ANALOGIA: É como uma peça de um grande quebra-cabeça
+// 💡 DICA: Cada arquivo tem um propósito específico no sistema
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/api/inventory/route.ts
+📂 CAMINHO: app/api/inventory/route.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️ import { NextResponse } from 'next/server';
+
+// --- BANCO DE DADOS EM MEMÓRIA (Global) ---
+// Isso garante que a variável sobreviva mesmo se o arquivo recarregar
+⚙️ declare global {
+⚙️   var __SERVER_IMAGE: string | null;
+⚙️ }
+
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️ if (typeof global.__SERVER_IMAGE === 'undefined') {
+⚙️ }
+
+// GET: O computador chama isso a cada 2 segundos para ver se tem foto
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define uma função assíncrona que pode esperar tarefas terminarem
+// 🧩 ANALOGIA LEGO: É como um trabalhador que pode esperar uma peça chegar antes de continuar
+// 💡 DICA: Funções async sempre retornam uma Promise (promessa de resultado futuro)
+⚙️ export async function GET() {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return NextResponse.json({
+⚙️   });
+⚙️ }
+
+// POST: O celular manda a foto pra cá
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define uma função assíncrona que pode esperar tarefas terminarem
+// 🧩 ANALOGIA LEGO: É como um trabalhador que pode esperar uma peça chegar antes de continuar
+// 💡 DICA: Funções async sempre retornam uma Promise (promessa de resultado futuro)
+⚙️ export async function POST(request: Request) {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Tenta executar código e captura erros se algo der errado
+// 🧩 ANALOGIA LEGO: É como tentar montar uma peça difícil com um plano B se não funcionar
+// 💡 DICA: Sempre use try/catch quando trabalhar com dados externos ou operações que podem falhar
+⚙️   try {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️     const formData = await request.formData();
+⚙️     const price = formData.get('price');
+⚙️     const photo = formData.get('photo') as File;
+
+    // --- LOG NO TERMINAL DO SEU PC ---
+⚙️     console.log('\n=======================================');
+⚙️     console.log('📲 RECEBIDO DO CELULAR (VIA TUNNEL)');
+⚙️     console.log(`📦 Produto: ${name}`);
+⚙️     console.log(`💲 Preço: ${price}`);
+
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (photo && photo.size > 0) {
+      
+      // Converte para Base64 para salvar na memória
+// 🟢 VERDE: Espera uma tarefa assíncrona terminar - como esperar uma peça chegar
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Espera uma tarefa assíncrona terminar antes de continuar
+// 🧩 ANALOGIA LEGO: É como esperar uma peça chegar pelo correio antes de continuar a montagem
+// 💡 DICA: await só funciona dentro de funções async
+⚙️       const arrayBuffer = await photo.arrayBuffer();
+⚙️       const base64 = `data:${photo.type};base64,${buffer.toString('base64')}`;
+      
+      // Salva na variável global
+⚙️       global.__SERVER_IMAGE = base64;
+      
+⚙️       console.log('✅ IMAGEM SALVA NA MEMÓRIA DO SERVIDOR!');
+⚙️     } else {
+⚙️       console.log('⚠️ Sem foto anexada.');
+⚙️     }
+⚙️     console.log('=======================================\n');
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return NextResponse.json({ success: true });
+⚙️   } catch (error) {
+⚙️     console.error("❌ Erro no servidor:", error);
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
+⚙️ }
+
+
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Esta é uma "Página Completa" - como uma sala inteira do aplicativo
+// 📦 O QUE FAZ: Organiza todos os componentes e lógica de uma tela específica
+// 🔗 CONECTADO A: Componentes filhos, layouts, e rotas do Next.js
+// 🎯 ANALOGIA: É como uma sala completa com móveis (componentes) organizados
+// 💡 DICA: Cada página é uma rota diferente no aplicativo
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/cart/page.tsx
+📂 CAMINHO: app/cart/page.tsx
+═══════════════════════════════════════════════════════════════════════════════
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import React from 'react';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { useRouter } from 'next/navigation';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { cn } from '@/lib/utils';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { StoreHeader } from '@/components/builder/blocks/Header';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { ShoppingCart } from 'lucide-react';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { FooterItem } from '@/types/builder';
+
+⚙️ const FOOTER_ITEMS: FooterItem[] = [
+⚙️   { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
+⚙️   { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
+⚙️   { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
+⚙️   { id: 'f4', icon: 'verified', isVisible: true, route: '/verified' },
+⚙️   { id: 'f5', icon: 'package-check', isVisible: true, route: '/inventory' }
+⚙️ ];
+
+⚙️ export default function CartPage() {
+⚙️   const router = useRouter();
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return (
+⚙️       <div className={cn("w-full h-full bg-gray-50 flex flex-col relative overflow-hidden", "lg:h-[850px] lg:max-h-[90vh] lg:w-full lg:max-w-[420px] lg:rounded-[2.5rem] lg:border-[8px] lg:border-gray-900 lg:shadow-2xl max-w-[100vw] lg:mx-auto")}>
+⚙️         <div className="shrink-0 z-[60] bg-[#5874f6] relative border-b border-blue-600/20">
+⚙️             <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-xl pointer-events-none z-50"></div>
+⚙️             <StoreHeader data={{ title: '', address: 'Carrinho Maryland' }} style={{ bgColor: '#5874f6', textColor: '#ffffff' }} />
+⚙️         </div>
+⚙️         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in duration-300">
+⚙️             <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-6 shadow-sm"><ShoppingCart size={48} className="text-[#5874f6]" /></div>
+⚙️             <h2 className="text-2xl font-black text-gray-800 mb-2">Seu carrinho está vazio</h2>
+⚙️             <p className="text-sm text-gray-400 max-w-[200px] mb-8">Adicione produtos para finalizar sua compra.</p>
+⚙️             <button onClick={() => router.push('/')} className="px-8 py-3 bg-[#5874f6] text-white font-bold rounded-xl shadow-lg active:scale-95 transition-transform">Ir às Compras</button>
+⚙️         </div>
+⚙️         <div className="absolute bottom-0 left-0 w-full z-50 pb-safe-bottom pointer-events-none"><div className="pointer-events-auto"><ButtonsFooter items={FOOTER_ITEMS} style={{ bgColor: '#5874f6' }} /></div></div>
+⚙️       </div>
+⚙️     </main>
+⚙️   );
+⚙️ }
+
+
+
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Esta é uma "Página Completa" - como uma sala inteira do aplicativo
+// 📦 O QUE FAZ: Organiza todos os componentes e lógica de uma tela específica
+// 🔗 CONECTADO A: Componentes filhos, layouts, e rotas do Next.js
+// 🎯 ANALOGIA: É como uma sala completa com móveis (componentes) organizados
+// 💡 DICA: Cada página é uma rota diferente no aplicativo
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/checkout/page.tsx
+📂 CAMINHO: app/checkout/page.tsx
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️ 'use client';
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import React from 'react';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { useRouter } from 'next/navigation';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { cn } from '@/lib/utils';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { StoreHeader } from '@/components/builder/blocks/Header';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { BlockRenderer } from '@/components/builder/BlockRender';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { BlockConfig, FooterItem } from '@/types/builder';
+
+// --- CONFIGURAÇÃO DA TELA (LEGO) ---
+⚙️ const CHECKOUT_LAYOUT: BlockConfig[] = [
+⚙️   {
+⚙️     id: 'checkout_header',
+⚙️     type: 'order-header',
+⚙️     isVisible: true,
+⚙️     style: { bgColor: 'transparent', padding: '10px 0' },
+⚙️     data: { title: 'Recebimento de Lotes', address: 'Itens enviados pela Produção' }
+⚙️   },
+  // O bloco que renderiza a lista de itens prontos
+⚙️   {
+⚙️     id: 'ready_stock_list',
+⚙️     type: 'ready-stock-list',
+⚙️     isVisible: true,
+⚙️     style: { bgColor: 'transparent' },
+⚙️     data: {}
+⚙️   }
+⚙️ ];
+
+⚙️ const FOOTER_ITEMS: FooterItem[] = [
+⚙️   { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
+⚙️   { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
+⚙️   { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
+⚙️   { id: 'f4', icon: 'verified', isVisible: true, route: '/verified' },
+⚙️   { id: 'f5', icon: 'package-check', isVisible: true, route: '/inventory' }
+⚙️ ];
+
+⚙️ export default function CheckoutPage() {
+⚙️   const router = useRouter();
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return (
+      
+⚙️       <div className={cn(
+⚙️         "w-full h-full bg-[#f8f9fa] flex flex-col relative overflow-hidden",
+⚙️         "lg:w-full lg:h-full lg:max-w-none lg:rounded-none lg:border-0 lg:shadow-none",
+⚙️         "overscroll-none"
+⚙️       )}>
+        
+⚙️         {/* HEADER */}
+⚙️         <div className="shrink-0 z-[60] bg-[#5874f6] relative border-b border-blue-600/20 shadow-md">
+⚙️            <StoreHeader
+⚙️              showBack={true}
+⚙️              onBack={() => router.push('/')}
+⚙️              data={{ title: 'ESTOQUE/CAIXA', address: 'Conferência de Entrada' }}
+⚙️              style={{ bgColor: '#5874f6', textColor: '#ffffff' }}
+⚙️            />
+⚙️         </div>
+
+⚙️         {/* CONTEÚDO */}
+⚙️         <div className="flex-1 relative overflow-hidden w-full bg-[#f8f9fa]">
+⚙️            <div className="absolute inset-0 overflow-y-auto scrollbar-hide overscroll-contain pb-24">
+⚙️               <div className="flex flex-col pt-2 min-h-full w-full max-w-5xl mx-auto px-0 lg:px-4">
+⚙️                  {CHECKOUT_LAYOUT.map(block => (
+⚙️                    <BlockRenderer key={block.id} config={block} />
+⚙️                  ))}
+⚙️               </div>
+⚙️            </div>
+⚙️         </div>
+
+⚙️         {/* FOOTER */}
+⚙️         <div className="absolute bottom-0 left-0 w-full z-50 pb-safe-bottom pointer-events-none">
+⚙️           <div className="pointer-events-auto w-full max-w-5xl mx-auto">
+⚙️             <ButtonsFooter items={FOOTER_ITEMS} style={{ bgColor: '#5874f6' }} />
+⚙️           </div>
+⚙️         </div>
+
+⚙️       </div>
+⚙️     </main>
+⚙️   );
+⚙️ }
+
+
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+// 💡 DICA: Componentes são reutilizáveis - você pode usar o mesmo componente em vários lugares
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/dashboard/layout.tsx
+📂 CAMINHO: app/dashboard/layout.tsx
+═══════════════════════════════════════════════════════════════════════════════
+
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import React from 'react';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { Sidebar } from '@/components/layouts/Sidebar';
+
+⚙️ export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return (
+⚙️       {/* Sidebar Fixa na Esquerda (Desktop) */}
+⚙️       <Sidebar />
+      
+⚙️       {/* Conteúdo Principal (Ajustado para não ficar atrás da sidebar) */}
+⚙️       <div className="flex-1 md:ml-64 w-full">
+⚙️         {children}
+⚙️       </div>
+⚙️     </div>
+⚙️   );
+⚙️ }
+
+
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Esta é uma "Página Completa" - como uma sala inteira do aplicativo
+// 📦 O QUE FAZ: Organiza todos os componentes e lógica de uma tela específica
+// 🔗 CONECTADO A: Componentes filhos, layouts, e rotas do Next.js
+// 🎯 ANALOGIA: É como uma sala completa com móveis (componentes) organizados
+// 💡 DICA: Cada página é uma rota diferente no aplicativo
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/dashboard/page.tsx
+📂 CAMINHO: app/dashboard/page.tsx
+═══════════════════════════════════════════════════════════════════════════════
+
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️ import React, { useState, useEffect, useMemo } from 'react';
+⚙️ import { useRouter } from 'next/navigation';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { AnimatePresence } from 'framer-motion';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { cn } from '@/lib/utils';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { Wand2 } from 'lucide-react';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { LocalDB } from '@/lib/local-db';
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { BlockConfig, CategoryItem } from '@/types/builder';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { INITIAL_BLOCKS as CLOTHING } from '@/data/initial-state';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { BARBER_TEMPLATE as BARBER } from '@/data/templates/barber';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { FUTURISTIC_TEMPLATE as TECH } from '@/data/templates/futuristic';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { CHRISTMAS_TEMPLATE as XMAS } from '@/data/templates/christmas';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { FooterBlock } from '@/components/builder/blocks/Footer';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { BlockRenderer } from '@/components/builder/BlockRender';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { ReelsModal } from '@/components/builder/ui/ReelsModal';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { StoreHeader } from '@/components/builder/blocks/Header';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { FooterItem } from '@/types/builder';
+// REMOVIDO: import { HealthMonitorBlock } ... (Já está no RootLayoutShell)
+
+⚙️ const FOOTER_ITEMS: FooterItem[] = [
+⚙️   { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
+⚙️   { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
+⚙️   { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
+⚙️   { id: 'f4', icon: 'verified', isVisible: true, route: '/verified' },
+⚙️   { id: 'f5', icon: 'package-check', isVisible: true, route: '/inventory' }
+⚙️ ];
+
+⚙️ export default function DashboardPage() {
+⚙️   const router = useRouter();
+
+  // Estado inicial carrega apenas os blocos de conteúdo
+// 🟢 VERDE: Hook do React - conecta lógica especial ao componente
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [blocks, setBlocks] = useState<BlockConfig[]>(CLOTHING);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [currentTheme, setCurrentTheme] = useState('clothing');
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [showAdmin, setShowAdmin] = useState(false);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [activeReelsItem, setActiveReelsItem] = useState<CategoryItem | null>(null);
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma variável que pode mudar e atualiza a tela quando muda
+// 🧩 ANALOGIA LEGO: É como uma gaveta que guarda um valor e avisa quando você troca o conteúdo
+// 💡 DICA: useState retorna [valorAtual, funçãoParaMudar] - sempre use os dois juntos
+⚙️   const [isReady, setIsReady] = useState(false);
+// 🟢 VERDE: Hook do React - conecta lógica especial ao componente
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Executa código quando o componente aparece, desaparece ou quando algo muda
+// 🧩 ANALOGIA LEGO: É como um assistente que observa e age quando algo acontece
+// 💡 DICA: useEffect é perfeito para buscar dados, configurar timers, ou limpar recursos
+⚙️   useEffect(() => {
+⚙️     const checkAuth = () => {
+⚙️       const user = LocalDB.getUser();
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️       if (!user) {
+⚙️       } else {
+⚙️         setIsReady(true);
+⚙️       }
+⚙️     };
+⚙️     checkAuth();
+⚙️   }, [router]);
+
+  /**
+   * Troca de Temas
+   */
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️   const switchTheme = (theme: string) => {
+⚙️     setCurrentTheme(theme);
+⚙️     let newBlocks: BlockConfig[] = [];
+
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (theme === 'clothing') newBlocks = CLOTHING;
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (theme === 'barber') newBlocks = BARBER;
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (theme === 'tech') newBlocks = TECH;
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (theme === 'xmas') newBlocks = XMAS;
+⚙️     setBlocks(newBlocks);
+⚙️     setShowAdmin(false);
+⚙️   };
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️   const getAppBg = () => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (currentTheme === 'tech') return 'bg-[#050505]';
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (currentTheme === 'barber') return 'bg-[#F5F5DC]';
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (currentTheme === 'xmas') return 'bg-[#F0FDF4]';
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return 'bg-gray-50';
+
+  // Memoização da filtragem para performance (React 19)
+⚙️   const layout = useMemo(() => {
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return {
+⚙️       footer: blocks.find(b => b.type === 'footer'),
+⚙️       content: blocks.filter(b => b.type !== 'footer' && b.type !== 'header')
+⚙️     };
+⚙️   }, [blocks]);
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️   const handleBlockAction = (action: string, payload?: unknown) => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (action === 'openReels' && payload) {
+⚙️     }
+⚙️   };
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️   const handleOpenGlobalAdmin = () => {
+⚙️     window.dispatchEvent(new Event('toggle_admin_menu'));
+⚙️     setShowAdmin(false);
+⚙️   };
+
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️   if (!isReady) return null;
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return (
+     
+⚙️       {/* Botão Flutuante de Admin (Canto Superior Direito) */}
+⚙️       <div className="absolute top-4 right-4 z-[9999] flex flex-col items-end gap-2">
+⚙️         <button
+⚙️           onClick={() => setShowAdmin(!showAdmin)}
+⚙️           className="bg-white text-black p-3 rounded-full shadow-xl hover:scale-110 transition-transform border-2 border-purple-500"
+⚙️         >
+⚙️           <Wand2 size={24} className="text-purple-600" />
+⚙️         </button>
+       
+⚙️         {showAdmin && (
+⚙️           <div className="bg-white p-2 rounded-xl shadow-2xl flex flex-col gap-2 min-w-[140px] animate-in fade-in slide-in-from-top-2">
+⚙️             <span className="text-[10px] font-bold text-gray-400 uppercase px-2">Opções</span>
+⚙️             <button
+⚙️               onClick={handleOpenGlobalAdmin}
+⚙️               className="text-left px-3 py-2 hover:bg-gray-100 rounded-lg text-xs font-bold text-purple-600 border border-purple-100 bg-purple-50 mb-1"
+⚙️             >
+⚙️               Painel Admin
+⚙️             </button>
+⚙️             <div className="h-px bg-gray-200 my-1" />
+⚙️             <span className="text-[10px] font-bold text-gray-400 uppercase px-2">Temas</span>
+⚙️             <button onClick={() => switchTheme('clothing')} className="text-left px-3 py-2 hover:bg-gray-100 rounded-lg text-xs font-bold text-blue-600">👕 Loja Roupas</button>
+⚙️             <button onClick={() => switchTheme('barber')} className="text-left px-3 py-2 hover:bg-gray-100 rounded-lg text-xs font-bold text-yellow-700">💈 Barbearia</button>
+⚙️             <button onClick={() => switchTheme('tech')} className="text-left px-3 py-2 hover:bg-gray-100 rounded-lg text-xs font-bold text-cyan-600">🤖 Cyberpunk</button>
+⚙️             <button onClick={() => switchTheme('xmas')} className="text-left px-3 py-2 hover:bg-red-50 rounded-lg text-xs font-bold text-red-600">🎅 Natal</button>
+⚙️           </div>
+⚙️         )}
+⚙️       </div>
+
+⚙️       {/* Frame do Dispositivo (Mobile Viewport) */}
+⚙️       <div className={cn(
+⚙️         "w-full h-full flex flex-col relative overflow-hidden transition-colors duration-500",
+⚙️         "lg:h-[850px] lg:max-h-[90vh] lg:w-full lg:max-w-[420px]",
+⚙️         "lg:rounded-[2.5rem] lg:border-[8px] lg:border-gray-800 lg:shadow-2xl",
+⚙️         "max-w-[100vw] lg:mx-auto",
+⚙️         getAppBg()
+⚙️       )}>
+       
+⚙️         {/*
+⚙️             REMOVIDO: <HealthMonitorBlock />
+⚙️             Motivo: Agora ele é injetado globalmente no RootLayoutShell.tsx
+        */}
+
+⚙️         {currentTheme === 'tech' && (
+⚙️           <div className="absolute inset-0 pointer-events-none opacity-20 z-0" style={{ backgroundImage: 'linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+⚙️         )}
+
+⚙️         {/* Header Fixo */}
+⚙️         <div className={cn(
+⚙️           "shrink-0 z-[60] relative transition-colors duration-300",
+⚙️           currentTheme === 'tech' ? 'bg-[#050505]' : currentTheme === 'barber' ? 'bg-[#F5F5DC]' : currentTheme === 'xmas' ? 'bg-[#D42426]' : 'bg-white'
+⚙️         )}>
+⚙️           <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-xl pointer-events-none z-50" />
+⚙️           {layout.header && (
+⚙️             <StoreHeader
+⚙️               style={layout.header.style}
+⚙️               data={{
+⚙️                 address: layout.header.data.address as string,
+⚙️                 title: 'Maryland SaaS'
+⚙️               }}
+⚙️             />
+⚙️           )}
+⚙️         </div>
+
+⚙️         {/* Área de Scroll com Blocos Dinâmicos */}
+⚙️         <div className="flex-1 overflow-y-auto scrollbar-hide bg-transparent relative w-full pb-32 z-10">
+⚙️           <div className="flex flex-col min-h-full p-4 gap-4">
+⚙️             <AnimatePresence mode='wait'>
+⚙️               <div key={currentTheme} className="animate-in fade-in zoom-in-95 duration-500 flex flex-col gap-4">
+⚙️                 {layout.content.map((block) => (
+⚙️                   <BlockRenderer key={block.id} config={block} onAction={handleBlockAction} />
+⚙️                 ))}
+⚙️               </div>
+⚙️             </AnimatePresence>
+⚙️           </div>
+⚙️         </div>
+
+⚙️         {/* Footer Fixo */}
+⚙️         <div className="absolute bottom-0 left-0 w-full z-50 pb-safe-bottom bg-transparent pointer-events-none">
+⚙️           <div className="pointer-events-auto">
+⚙️             <ButtonsFooter items={FOOTER_ITEMS} style={{ bgColor: '#5874f6' }} />
+⚙️           </div>
+⚙️         </div>
+
+⚙️         <ReelsModal isOpen={!!activeReelsItem} item={activeReelsItem} onClose={() => setActiveReelsItem(null)} />
+⚙️       </div>
+⚙️     </main>
+⚙️   );
+⚙️ }
+
+
+// 🧩 LEGO: Este é um "Bloco de Construção Visual" - uma peça do quebra-cabeça da interface
+// 📦 O QUE FAZ: Cria elementos visuais que o usuário vê e interage na tela
+// 🔗 CONECTADO A: Outros componentes, hooks (lógica), e ações do servidor
+// 🎯 ANALOGIA: É como uma peça de LEGO que se encaixa com outras para formar a tela completa
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Esta é uma "Página Completa" - como uma sala inteira do aplicativo
+// 📦 O QUE FAZ: Organiza todos os componentes e lógica de uma tela específica
+// 🔗 CONECTADO A: Componentes filhos, layouts, e rotas do Next.js
+// 🎯 ANALOGIA: É como uma sala completa com móveis (componentes) organizados
+// 💡 DICA: Cada página é uma rota diferente no aplicativo
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: app/favorites/page.tsx
+📂 CAMINHO: app/favorites/page.tsx
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️ 'use client';
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import React from 'react';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { useRouter } from 'next/navigation';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { cn } from '@/lib/utils';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { StoreHeader } from '@/components/builder/blocks/Header';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { Heart, ShoppingBag } from 'lucide-react';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { FooterItem } from '@/types/builder';
+
+// Configuração dos itens do Footer
+⚙️ const FOOTER_ITEMS: FooterItem[] = [
+⚙️   { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
+⚙️   { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
+⚙️   { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
+⚙️   { id: 'f4', icon: 'verified', isVisible: true, route: '/verified' },
+⚙️   { id: 'f5', icon: 'package-check', isVisible: true, route: '/inventory' }
+⚙️ ];
+
+⚙️ export default function FavoritesPage() {
+⚙️   const router = useRouter();
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️   return (
+      
+⚙️       {/* APP SHELL (O Celular) */}
+⚙️       <div className={cn(
+⚙️         "w-full h-full bg-gray-50 flex flex-col relative overflow-hidden", // bg-gray-50 para consistência com a Home
+⚙️         "lg:h-[850px] lg:max-h-[90vh] lg:w-full lg:max-w-[420px]",
+⚙️         "lg:rounded-[2.5rem] lg:border-[8px] lg:border-gray-900 lg:shadow-2xl",
+⚙️         "max-w-[100vw] lg:mx-auto"
+⚙️       )}>
+
+⚙️         {/* 1. HEADER (Fixo no topo, Azul e com Menu) */}
+⚙️         <div className="shrink-0 z-[60] bg-[#5874f6] relative border-b border-blue-600/20">
+⚙️             {/* Notch Fake (Apenas Desktop) */}
+⚙️             <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-xl pointer-events-none z-50"></div>
+            
+⚙️             <StoreHeader
+⚙️                 data={{
+⚙️                     title: '',
+⚙️                     address: 'Favoritos Maryland'
+⚙️                 }}
+⚙️                 style={{
+⚙️                     bgColor: '#5874f6', // Fundo Azul
+⚙️                     textColor: '#ffffff' // Texto Branco
+⚙️                 }}
+⚙️             />
+⚙️         </div>
+
+⚙️         {/* 2. ÁREA DE ROLAGEM (Conteúdo) */}
+⚙️         <div className="flex-1 overflow-y-auto scrollbar-hide w-full relative">
+            
+⚙️             {/* LISTA VAZIA (Placeholder) */}
+⚙️             <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center animate-in fade-in zoom-in duration-500">
+⚙️                 <div className="relative mb-6">
+⚙️                     <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center shadow-sm z-10 relative">
+⚙️                         <Heart size={48} className="text-[#5874f6] fill-[#5874f6]/10" strokeWidth={1.5} />
+⚙️                     </div>
+⚙️                     {/* Elemento decorativo atrás */}
+⚙️                     <div className="absolute top-0 right-0 w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center animate-bounce delay-700">
+⚙️                         <ShoppingBag size={14} className="text-pink-500" />
+⚙️                     </div>
+⚙️                 </div>
+
+⚙️                 <h2 className="text-2xl font-black text-gray-800 mb-2 tracking-tight">
+⚙️                     Sua lista está vazia
+⚙️                 </h2>
+⚙️                 <p className="text-sm text-gray-400 max-w-[220px] leading-relaxed mb-8">
+⚙️                     Você ainda não curtiu nenhum produto. Explore a loja e marque o que gostar!
+⚙️                 </p>
+                
+⚙️                 <button
+⚙️                     onClick={() => router.push('/')}
+⚙️                     className="px-8 py-3.5 bg-[#5874f6] text-white font-bold text-sm uppercase tracking-wider rounded-xl shadow-lg shadow-blue-500/30 active:scale-95 transition-transform border border-white/20"
+⚙️                 >
+⚙️                     Explorar Loja
+⚙️                 </button>
+⚙️             </div>
+
+⚙️             {/* Espaço extra no final para o footer não cobrir conteúdo se a lista encher */}
+⚙️             <div className="h-32" />
+⚙️         </div>
+
+⚙️         {/* 3. RODAPÉ FIXO */}
+⚙️         <div className="absolute bottom-0 left-0 w-full z-50 pb-safe-bottom bg-transparent pointer-events-none">
+⚙️            <div className="pointer-events-auto">
+⚙️              <ButtonsFooter
+⚙️                items={FOOTER_ITEMS}
+⚙️                style={{ bgColor: '#5874f6' }}
+⚙️              />
+⚙️            </div>
+⚙️         </div>
+
+⚙️       </div>
+⚙️     </main>
+⚙️   );
+⚙️ }

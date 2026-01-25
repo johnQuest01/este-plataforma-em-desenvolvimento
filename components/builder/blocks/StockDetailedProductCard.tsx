@@ -10,6 +10,7 @@ export const StockDetailedProductCardBlock = ({ config, onAction }: { config: Bl
   const {
     productName,
     productImage,
+    productId, // 🧱 NOVO: ID do produto para abrir modal
     detailedVariations = [] // Array de variações (Ex: [{size: 'P', color: 'Azul', qty: 10}, ...])
   } = config.data;
 
@@ -23,7 +24,14 @@ export const StockDetailedProductCardBlock = ({ config, onAction }: { config: Bl
     <div className="w-full px-4 mb-3">
       {/* Card Container - Clicável */}
       <div
-        onClick={() => onAction && onAction('open_product_details', config.id)}
+        onClick={() => {
+          // 🧱 NOVO: Passa o ID correto do produto
+          if (onAction && productId) {
+            onAction('open_product_details', productId);
+          } else {
+            console.warn('⚠️ productId não encontrado no config.data');
+          }
+        }}
         className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-3 relative overflow-hidden transition-all hover:shadow-md active:scale-[0.99] cursor-pointer"
       >
         <div className="flex gap-4 items-stretch">

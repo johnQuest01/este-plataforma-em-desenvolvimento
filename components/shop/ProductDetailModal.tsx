@@ -3,12 +3,17 @@
 
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// 🛡️ GUARDIAN: Importação do HOC
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
+
 import {
   MapPin, Heart, Share2, Eye, Truck,
-  ArrowRight, Sparkles, Tag, Type, ChevronLeft
+  ArrowRight, Tag, Type, ChevronLeft
 } from 'lucide-react';
 import { ProductData } from '@/app/actions/product';
 import { cn } from '@/lib/utils';
+import { formatCurrencyBRL } from '@/lib/utils/currency'; // 🧱 NOVO: Import do formatador
 import Image from 'next/image'; // ✅ Importação do Next Image
 
 interface ProductDetailModalProps {
@@ -28,15 +33,24 @@ function getSafeString(item: unknown, key: string): string | undefined {
   return undefined;
 }
 
-export const ProductDetailModal = ({ isOpen, onClose, product }: ProductDetailModalProps) => {
+function getSafeNumber(item: unknown, key: string): number | undefined {
+  if (typeof item === 'object' && item !== null && key in item) {
+    const val = (item as Record<string, unknown>)[key];
+    return typeof val === 'number' ? val : undefined;
+  }
+  return undefined;
+}
+
+const ProductDetailModalBase = ({ isOpen, onClose, product }: ProductDetailModalProps) => {
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<string | null>(null); // 🧱 NOVO: Estado para tipo selecionado
 
   // --- LÓGICA DE DADOS ---
   const metadata = useMemo(() => {
     const categories = new Set<string>();
     const keywords = new Set<string>();
-    const types = new Set<string>();
+    const types: Record<string, number> = {}; // 🧱 MUDADO: Agora rastreia quantidade por tipo
     const colors: Record<string, number> = {};
     const sizes: Record<string, number> = {};
     let totalStock = 0;
@@ -51,16 +65,13 @@ export const ProductDetailModal = ({ isOpen, onClose, product }: ProductDetailMo
         if (keyword) keywords.add(keyword);
         
         // 'type' exists in the base interface (optional), so we access it directly if present
-        if (v.type) types.add(v.type);
-
-        // Strict Type Safety for Stock/Qty
-        // We check existence of 'stock' safely without forcing type overrides
-        let variantStock = 0;
-        if ('stock' in v && typeof (v as Record<string, unknown>).stock === 'number') {
-             variantStock = (v as Record<string, unknown>).stock as number;
-        }
-        
+        // 🧱 NOVO: Rastreia quantidade por tipo
+        const variantStock = getSafeNumber(v, 'stock') ?? 0;
         const quantity = v.qty ?? variantStock ?? 0;
+        
+        if (v.type) {
+          types[v.type] = (types[v.type] || 0) + quantity;
+        }
 
         if (v.color) colors[v.color] = (colors[v.color] || 0) + quantity;
         if (v.size) sizes[v.size] = (sizes[v.size] || 0) + quantity;
@@ -71,7 +82,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }: ProductDetailMo
     return {
       categories: Array.from(categories),
       keywords: Array.from(keywords),
-      types: Array.from(types),
+      types, // Agora retorna Record<string, number>
       colors,
       sizes,
       totalStock
@@ -130,7 +141,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }: ProductDetailMo
             {/* Imagem Principal Otimizada */}
             <div className="w-full aspect-[4/5] bg-gray-100 relative group">
               <Image 
-                src={product.mainImage || 'https://placehold.co/600x800/png'} 
+                src={product.imageUrl || 'https://placehold.co/600x800/png'} 
                 alt={product.name}
                 fill
                 sizes="(max-width: 768px) 100vw, 420px"
@@ -152,7 +163,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }: ProductDetailMo
                 <div className="flex items-end justify-between border-t border-gray-100 pt-3 mt-1">
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-gray-400 uppercase">Preço Final</span>
-                    <span className="font-black text-3xl text-[#5874f6] tracking-tight">{product.price}</span>
+                    <span className="font-black text-3xl text-[#5874f6] tracking-tight">{formatCurrencyBRL(product.price)}</span>
                   </div>
                   <div className="flex gap-3 text-gray-400">
                     <div className="flex flex-col items-center gap-1"><Truck size={18} /><span className="text-[9px] font-bold">Frete</span></div>
@@ -161,7 +172,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }: ProductDetailMo
                 </div>
               </div>
 
-              {/* Tags */}
+              {/* Tags - REMOVIDO: Tags de tipos laranjas */}
               <div className="flex flex-col gap-3 animate-in slide-in-from-bottom-4 duration-500 delay-100">
                 <h3 className="font-bold text-sm uppercase tracking-wide text-gray-500 flex items-center gap-1">Informações do Produto</h3>
                 <div className="flex flex-wrap gap-2">
@@ -170,9 +181,6 @@ export const ProductDetailModal = ({ isOpen, onClose, product }: ProductDetailMo
                   ))}
                   {metadata.keywords.map(keyw => (
                     <div key={keyw} className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 border border-purple-100 rounded-lg"><Type size={12} className="text-purple-500" /><span className="text-xs font-medium text-gray-600">Palavra-chave: <strong className="text-purple-600">{keyw}</strong></span></div>
-                  ))}
-                  {metadata.types.map(type => (
-                    <div key={type} className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 border border-orange-100 rounded-lg"><Sparkles size={12} className="text-orange-500" /><span className="text-xs font-medium text-gray-600">Tipo: <strong className="text-orange-600">{type}</strong></span></div>
                   ))}
                 </div>
               </div>
@@ -193,6 +201,35 @@ export const ProductDetailModal = ({ isOpen, onClose, product }: ProductDetailMo
                         </div>
                       </button>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 🧱 Tipos (Variações adicionais) com Contagem */}
+              {Object.keys(metadata.types).length > 0 && (
+                <div>
+                  <h3 className="font-bold text-sm uppercase tracking-wide mb-3 text-gray-500">Tipo / Variação</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(metadata.types).map(([type, count]) => {
+                      const isSelected = selectedType === type;
+                      return (
+                        <button 
+                          key={type} 
+                          onClick={() => setSelectedType(isSelected ? null : type)}
+                          className={cn(
+                            "px-4 py-2.5 rounded-xl border-2 transition-all active:scale-95 font-bold text-xs uppercase flex items-center gap-2",
+                            isSelected 
+                              ? "bg-[#5874f6] border-[#5874f6] text-white shadow-lg shadow-blue-500/30" 
+                              : "bg-white border-gray-200 text-gray-900 hover:border-blue-200"
+                          )}
+                        >
+                          <span>{type}</span>
+                          <span className={cn("text-[10px] font-bold", isSelected ? "text-white/70" : "text-gray-400")}>
+                            {count} un
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -234,3 +271,28 @@ export const ProductDetailModal = ({ isOpen, onClose, product }: ProductDetailMo
     </AnimatePresence>
   );
 };
+
+// 🛡️ GUARDIAN: Exportação com metadados
+export const ProductDetailModal = withGuardian(
+  ProductDetailModalBase,
+  "components/shop/ProductDetailModal.tsx",
+  "POPUP",
+  {
+    label: "Modal de Detalhes do Produto",
+    description: "Modal fullscreen para visualizar detalhes completos de um produto, incluindo fotos, cores, tamanhos e estoque disponível.",
+    orientationNotes: `
+⚠️ **Pontos de Atenção**:
+- **Z-Index**: z-[200] para sobrepor conteúdo principal
+- **Dependências**: ProductData, getSafeString helper
+- **UX**: Seleção de cor e tamanho, visualização de estoque
+- **Fluxo**: Exibe detalhes completos do produto para decisão de compra
+    `.trim(),
+    connectsTo: [
+      {
+        target: "app/actions/product.ts",
+        type: "DATABASE",
+        description: "Fonte de dados do produto (ProductData)"
+      }
+    ]
+  }
+);

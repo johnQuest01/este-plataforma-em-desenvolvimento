@@ -14,6 +14,7 @@ import { HeaderBlock } from './blocks/Header';
 import { ProductGridBlock } from './blocks/ProductGrid';
 import { BannerBlock } from './blocks/Banner';
 import { CategoriesBlock } from './blocks/Categories';
+import { CategorySectionBlock } from './blocks/CategorySectionBlock'; // 🧱 CMS DINÂMICO
 import { FooterBlock } from './blocks/Footer';
 
 // --- Imports de Blocos Funcionais ---
@@ -81,6 +82,7 @@ export const COMPONENT_MAP: Record<string, LegoComponent> = {
   'liquid-dynamic-footer': LiquidDynamicFooter,
   'banner': BannerBlock,
   'categories': CategoriesBlock,
+  'category-section': CategorySectionBlock, // 🧱 CMS DINÂMICO: Seção auto-gerada
 
   // Ecommerce e Catálogo
   'product-grid': ProductGridBlock,

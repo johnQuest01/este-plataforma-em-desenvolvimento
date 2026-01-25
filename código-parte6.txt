@@ -1,0 +1,1502 @@
+
+// 🧩 LEGO: Este é um "Kit de Peças Pré-Montadas" - configurações prontas
+// 📦 O QUE FAZ: Define dados iniciais, templates e estados padrão do app
+// 🔗 CONECTADO A: Componentes e páginas que usam esses dados
+// 🎯 ANALOGIA: É como um kit LEGO com peças já organizadas para montar algo específico
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Kit de Peças Pré-Montadas" - configurações prontas
+// 📦 O QUE FAZ: Define dados iniciais, templates e estados padrão do app
+// 🔗 CONECTADO A: Componentes e páginas que usam esses dados
+// 🎯 ANALOGIA: É como um kit LEGO com peças já organizadas para montar algo específico
+// 💡 DICA: Templates são como modelos prontos que você pode copiar e modificar
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: data/templates/burger.ts
+📂 CAMINHO: data/templates/burger.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { BlockConfig } from '@/types/builder';
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const BURGER_TEMPLATE: BlockConfig[] = [
+  // Header
+⚙️   {
+⚙️     id: 'food_header',
+⚙️     type: 'header',
+⚙️     isVisible: true,
+⚙️     data: { address: 'Rua da Fome, 123 - Centro', title: 'Burger King Demo' },
+⚙️     style: { bgColor: '#d92323', textColor: '#ffffff' }
+⚙️   },
+  // Banner
+⚙️   {
+⚙️     id: 'food_banner',
+⚙️     type: 'banner',
+⚙️     isVisible: true,
+⚙️     data: {},
+⚙️     style: { bgColor: '#ffc107', borderRadius: '0' }
+⚙️   },
+  
+  // --- CATEGORIAS FOOD COM REELS ---
+⚙️   {
+⚙️     id: 'food_cats',
+⚙️     type: 'categories',
+⚙️     isVisible: true,
+⚙️     data: {
+⚙️       items: [
+⚙️         {
+⚙️           label: 'Combos', icon: 'star',
+          // Vídeo de Hambúrguer na grelha ou montagem
+⚙️           videoUrl: "https://videos.pexels.com/video-files/2996024/2996024-hd_1080_1920_24fps.mp4",
+⚙️           videoColor: "#d92323" // Vermelho
+⚙️         },
+⚙️         {
+⚙️           label: 'Bebidas', icon: 'zap',
+          // Vídeo de Refrigerante com gelo
+⚙️           videoUrl: "https://videos.pexels.com/video-files/4252329/4252329-hd_1080_1920_30fps.mp4",
+⚙️           videoColor: "#fb923c" // Laranja
+⚙️         },
+⚙️         {
+⚙️           label: 'Sobremesa', icon: 'sun',
+          // Vídeo de Sorvete/Calda
+⚙️           videoUrl: "https://videos.pexels.com/video-files/4706322/4706322-hd_1080_1920_25fps.mp4",
+⚙️           videoColor: "#ec4899" // Rosa
+⚙️         },
+⚙️         {
+⚙️           label: 'Vegano', icon: 'heart',
+          // Vídeo de Salada fresca
+⚙️           videoUrl: "https://videos.pexels.com/video-files/3209663/3209663-hd_1080_1920_25fps.mp4",
+⚙️           videoColor: "#16a34a" // Verde
+⚙️         }
+⚙️       ]
+⚙️     },
+⚙️     style: {
+⚙️       bgColor: '#ffffff',
+⚙️       textColor: '#000000',
+⚙️       accentColor: '#d92323'
+⚙️     }
+⚙️   },
+  // ... Resto (Product Grid e Footer) ...
+⚙️   {
+⚙️     id: 'food_grid',
+⚙️     type: 'product-grid',
+⚙️     isVisible: true,
+⚙️     data: {
+⚙️       title: 'Mais Pedidos',
+⚙️       products: [
+⚙️         { name: 'X-Bacon Duplo', tag: '🔥 Hot', imageColor: '78350f', price: 'R$ 32,90' },
+⚙️         { name: 'Smash Salad', tag: 'Leve', imageColor: '166534', price: 'R$ 24,50' },
+⚙️         { name: 'Combo Família', tag: 'Oferta', imageColor: 'fbbf24', price: 'R$ 89,90' }
+⚙️       ]
+⚙️     },
+⚙️     style: { bgColor: '#f9f9f9' }
+⚙️   },
+⚙️   {
+⚙️     id: 'food_footer',
+⚙️     type: 'footer',
+⚙️     isVisible: true,
+⚙️     data: {
+⚙️       footerItems: [
+⚙️         { id: 'f1', icon: 'home', isVisible: true, route: '/' },
+⚙️         { id: 'f2', icon: 'cart', isVisible: true, route: '/cart' },
+⚙️         { id: 'f3', icon: 'user', isVisible: true, route: '/account' }
+⚙️       ]
+⚙️     },
+⚙️     style: { bgColor: '#1f2937' }
+⚙️   }
+⚙️ ];
+
+
+// 🧩 LEGO: Este é um "Kit de Peças Pré-Montadas" - configurações prontas
+// 📦 O QUE FAZ: Define dados iniciais, templates e estados padrão do app
+// 🔗 CONECTADO A: Componentes e páginas que usam esses dados
+// 🎯 ANALOGIA: É como um kit LEGO com peças já organizadas para montar algo específico
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Kit de Peças Pré-Montadas" - configurações prontas
+// 📦 O QUE FAZ: Define dados iniciais, templates e estados padrão do app
+// 🔗 CONECTADO A: Componentes e páginas que usam esses dados
+// 🎯 ANALOGIA: É como um kit LEGO com peças já organizadas para montar algo específico
+// 💡 DICA: Templates são como modelos prontos que você pode copiar e modificar
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: data/templates/christmas.ts
+📂 CAMINHO: data/templates/christmas.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { BlockConfig } from '@/types/builder';
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const CHRISTMAS_TEMPLATE: BlockConfig[] = [
+  // Header
+⚙️   {
+⚙️     id: "xmas_header",
+⚙️     type: "header",
+⚙️     isVisible: true,
+⚙️     data: { title: "Ofertas de Natal", subtitle: "Ho Ho Ho! Descontos Mágicos", address: "Pólo Norte, Logística Express" },
+⚙️     style: { bgColor: "#D42426", textColor: "#ffffff", borderBottom: "4px solid #165B33" }
+⚙️   },
+  // Banner
+⚙️   {
+⚙️     id: "xmas_banner",
+⚙️     type: "banner",
+⚙️     isVisible: true,
+⚙️     data: { imageUrl: "https://placehold.co/600x350/D42426/ffffff?text=FELIZ+NATAL+2025" },
+⚙️     style: { bgColor: "#ffffff", padding: "12px", borderRadius: "16px", boxShadow: "0 4px 15px rgba(212, 36, 38, 0.2)" }
+⚙️   },
+  
+  // --- CATEGORIAS NATALINAS COM REELS ---
+⚙️   {
+⚙️     id: "xmas_cats",
+⚙️     type: "categories",
+⚙️     isVisible: true,
+⚙️     data: {
+⚙️       title: "Lista de Presentes",
+⚙️       items: [
+⚙️         {
+⚙️           label: "Para Ele", icon: "star", link: "/cat/him",
+          // Vídeo abrindo presentes
+⚙️           videoUrl: "https://videos.pexels.com/video-files/6102377/6102377-hd_1080_1920_25fps.mp4",
+⚙️           videoColor: "#165B33" // Verde
+⚙️         },
+⚙️         {
+⚙️           label: "Para Ela", icon: "heart", link: "/cat/her",
+          // Vídeo com luzes de natal
+⚙️           videoUrl: "https://videos.pexels.com/video-files/3249917/3249917-hd_1080_1920_25fps.mp4",
+⚙️           videoColor: "#D42426" // Vermelho
+⚙️         },
+⚙️         {
+⚙️           label: "Crianças", icon: "sun", link: "/cat/kids",
+          // Vídeo de neve/brincadeira
+⚙️           videoUrl: "https://videos.pexels.com/video-files/6102943/6102943-hd_1080_1920_25fps.mp4",
+⚙️           videoColor: "#fbbf24" // Dourado
+⚙️         },
+⚙️         {
+⚙️           label: "Amigo Secreto", icon: "zap", link: "/cat/gift",
+          // Vídeo de brinde/festa
+⚙️           videoUrl: "https://videos.pexels.com/video-files/3206253/3206253-hd_1080_1920_25fps.mp4",
+⚙️           videoColor: "#9ca3af" // Prata
+⚙️         }
+⚙️       ]
+⚙️     },
+⚙️     style: {
+⚙️       bgColor: "#F0FDF4",
+⚙️       textColor: "#165B33",
+⚙️       accentColor: "#D42426"
+⚙️     }
+⚙️   },
+  // ... Resto (Product Grid e Footer) ...
+⚙️   {
+⚙️     id: "xmas_grid",
+⚙️     type: "product-grid",
+⚙️     isVisible: true,
+⚙️     data: {
+⚙️       title: "Destaques do Noel",
+⚙️       products: [
+⚙️         { name: "Kit Perfume Premium", tag: "Presentão", price: "R$ 299,90", imageUrl: "https://placehold.co/400x500/165B33/ffffff?text=Presente+1" },
+⚙️         { name: "Tênis Esportivo", tag: "50% OFF", price: "R$ 199,90", imageUrl: "https://placehold.co/400x500/D42426/ffffff?text=Presente+2" },
+⚙️         { name: "Relógio Smart", tag: "Tech", price: "R$ 450,00", imageUrl: "https://placehold.co/400x500/BB2528/ffffff?text=Presente+3" },
+⚙️         { name: "Vale Presente", tag: "Rápido", price: "R$ 100,00", imageUrl: "https://placehold.co/400x500/FFD700/000000?text=Vale+Presente" }
+⚙️       ],
+⚙️       gridColumns: 2
+⚙️     },
+⚙️     style: { bgColor: "#ffffff", textColor: "#D42426" }
+⚙️   },
+⚙️   {
+⚙️     id: "xmas_footer",
+⚙️     type: "footer",
+⚙️     isVisible: true,
+⚙️     data: {
+⚙️       footerItems: [
+⚙️         { id: "f1", icon: "home", isVisible: true, route: "/" },
+⚙️         { id: "f2", icon: "cart", isVisible: true, route: "/cart" },
+⚙️         { id: "f3", icon: "heart", isVisible: true, route: "/wishlist", isHighlight: true },
+⚙️         { id: "f4", icon: "user", isVisible: true, route: "/account" }
+⚙️       ]
+⚙️     },
+⚙️     style: { bgColor: "#165B33" }
+⚙️   }
+⚙️ ];
+
+
+// 🧩 LEGO: Este é um "Kit de Peças Pré-Montadas" - configurações prontas
+// 📦 O QUE FAZ: Define dados iniciais, templates e estados padrão do app
+// 🔗 CONECTADO A: Componentes e páginas que usam esses dados
+// 🎯 ANALOGIA: É como um kit LEGO com peças já organizadas para montar algo específico
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Kit de Peças Pré-Montadas" - configurações prontas
+// 📦 O QUE FAZ: Define dados iniciais, templates e estados padrão do app
+// 🔗 CONECTADO A: Componentes e páginas que usam esses dados
+// 🎯 ANALOGIA: É como um kit LEGO com peças já organizadas para montar algo específico
+// 💡 DICA: Templates são como modelos prontos que você pode copiar e modificar
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: data/templates/clothing.ts
+📂 CAMINHO: data/templates/clothing.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️ import { BlockConfig } from '@/types/builder';
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const CLOTHING_TEMPLATE: BlockConfig[] = [
+⚙️   {
+⚙️     id: 'inv_header',
+⚙️     type: 'header',
+⚙️     isVisible: true,
+⚙️     data: { address: '' },
+⚙️     style: { bgColor: '#5874f6', textColor: '#ffffff' }
+⚙️   },
+⚙️   {
+⚙️     id: 'inv_user_info',
+⚙️     type: 'user-info',
+⚙️     isVisible: true,
+⚙️     data: {
+⚙️       userName: 'Bruno',
+⚙️       bagPinkTitle: 'BAG COMPRAS',
+⚙️       bagBlueTitle: 'BAG MOCHILA',
+⚙️       mainTitle: 'Meu Inventário Maryland'
+⚙️     },
+⚙️     style: { bgColor: '#eeeeee' }
+⚙️   },
+⚙️   {
+⚙️     id: 'inv_grid_top',
+⚙️     type: 'grid-buttons',
+⚙️     isVisible: true,
+⚙️     data: {
+⚙️       buttons: [
+⚙️         { id: 'btn_hist', label: 'Histórico de Compras' },
+⚙️         { id: 'btn_stock', label: 'Estoque', action: 'openStockModal' },
+⚙️         { id: 'btn_login', label: 'Login / Senha' },
+⚙️         { id: 'btn_orders', label: 'Pedidos', action: 'openOrders' },
+⚙️       ]
+⚙️     },
+⚙️     style: { bgColor: '#eeeeee' }
+⚙️   },
+⚙️   {
+⚙️     id: 'inv_main_feature',
+⚙️     type: 'inventory-feature',
+⚙️     isVisible: true,
+⚙️     data: {
+⚙️       featureTitleLeft: 'Meu Inventario',
+⚙️       featureTitleRight: 'Status do Pedido',
+⚙️       boxLabel: 'Box Maryland',
+⚙️       boxTitle: 'Box de Maryland',
+⚙️     },
+⚙️     style: { bgColor: '#eeeeee' }
+⚙️   },
+⚙️   {
+⚙️     id: 'inv_actions_bottom',
+⚙️     type: 'action-buttons',
+⚙️     isVisible: true,
+⚙️     data: {
+⚙️       buttons: [
+⚙️         { id: 'act_my_purchases', label: 'Minhas compras', bgColor: '#5874f6', textColor: '#fff' },
+⚙️         {
+⚙️           id: 'act_make_order',
+⚙️           label: 'Fazer pedido',
+⚙️           bgColor: '#5874f6',
+⚙️           textColor: '#fff',
+⚙️           action: 'openCatalog'
+⚙️         },
+⚙️         { id: 'act_box_received', label: 'Box Recebidas', bgColor: '#ff4d6d', textColor: '#fff', badge: '9' },
+⚙️         { id: 'act_box_opened', label: 'Box Abertas', bgColor: '#5874f6', textColor: '#fff' },
+⚙️       ]
+⚙️     },
+⚙️     style: { bgColor: '#eeeeee' }
+⚙️   },
+⚙️   {
+⚙️     id: 'inv_footer',
+⚙️     type: 'footer',
+⚙️     isVisible: true,
+⚙️     data: {
+⚙️       footerItems: [
+⚙️         { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
+⚙️         { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
+⚙️         { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
+⚙️         { id: 'f4', icon: 'verified', isVisible: true, route: '/verified' },
+⚙️         { id: 'f5', icon: 'package-check', isVisible: true, route: '/inventory' }
+⚙️       ]
+⚙️     },
+⚙️     style: { bgColor: '#5874f6' }
+⚙️   }
+⚙️ ];
+
+
+// 🧩 LEGO: Este é um "Kit de Peças Pré-Montadas" - configurações prontas
+// 📦 O QUE FAZ: Define dados iniciais, templates e estados padrão do app
+// 🔗 CONECTADO A: Componentes e páginas que usam esses dados
+// 🎯 ANALOGIA: É como um kit LEGO com peças já organizadas para montar algo específico
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Kit de Peças Pré-Montadas" - configurações prontas
+// 📦 O QUE FAZ: Define dados iniciais, templates e estados padrão do app
+// 🔗 CONECTADO A: Componentes e páginas que usam esses dados
+// 🎯 ANALOGIA: É como um kit LEGO com peças já organizadas para montar algo específico
+// 💡 DICA: Templates são como modelos prontos que você pode copiar e modificar
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: data/templates/futuristic.ts
+📂 CAMINHO: data/templates/futuristic.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { BlockConfig } from '@/types/builder';
+
+⚙️ const NEON_CYAN = "#00f3ff";
+⚙️ const NEON_PURPLE = "#bc13fe";
+⚙️ const DARK_BG = "#050505";
+⚙️ const GLASS_BG = "#1a1a1a";
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const FUTURISTIC_TEMPLATE: BlockConfig[] = [
+  // ... Header e Banner mantidos ...
+⚙️   {
+⚙️     id: "cyber_header",
+⚙️     type: "header",
+⚙️     isVisible: true,
+⚙️     data: { title: "NEO_STORE_v2", address: "SERVER: BR_SAO_PAULO_01" },
+⚙️     style: { bgColor: DARK_BG, textColor: NEON_CYAN, padding: "20px 16px", borderBottom: `1px solid ${NEON_PURPLE}` }
+⚙️   },
+⚙️   {
+⚙️     id: "cyber_banner",
+⚙️     type: "banner",
+⚙️     isVisible: true,
+⚙️     data: { imageUrl: "https://placehold.co/600x350/000000/00f3ff?text=SYSTEM_UPDATE_READY" },
+⚙️     style: { bgColor: "transparent", padding: "0 16px", borderRadius: "0px", border: `1px solid ${NEON_CYAN}`, boxShadow: `0 0 15px ${NEON_CYAN}40` }
+⚙️   },
+  
+  // --- CATEGORIAS COM REELS TECH ---
+⚙️   {
+⚙️     id: "cyber_cats",
+⚙️     type: "categories",
+⚙️     isVisible: true,
+⚙️     data: {
+⚙️       items: [
+⚙️         {
+⚙️           label: "HARDWARE", icon: "zap", link: "/cat/hw",
+          // Vídeo de Placa de Circuito / Tech
+⚙️           videoUrl: "https://videos.pexels.com/video-files/2516159/2516159-hd_1280_720_24fps.mp4",
+⚙️           videoColor: NEON_CYAN
+⚙️         },
+⚙️         {
+⚙️           label: "SOFTWARE", icon: "star", link: "/cat/sw",
+          // Vídeo de Código Matrix
+⚙️           videoUrl: "https://videos.pexels.com/video-files/5473806/5473806-hd_1080_1920_30fps.mp4",
+⚙️           videoColor: NEON_PURPLE
+⚙️         },
+⚙️         {
+⚙️           label: "NET_RUN", icon: "fire", link: "/cat/net",
+          // Vídeo de Cidade Neon
+⚙️           videoUrl: "https://videos.pexels.com/video-files/3121459/3121459-hd_1280_720_25fps.mp4",
+⚙️           videoColor: "#ff003c" // Vermelho Cyber
+⚙️         },
+⚙️         {
+⚙️           label: "DATA", icon: "sun", link: "/cat/data",
+          // Vídeo Abstrato Digital
+⚙️           videoUrl: "https://videos.pexels.com/video-files/2759750/2759750-hd_1280_720_30fps.mp4",
+⚙️           videoColor: "#ffffff"
+⚙️         }
+⚙️       ]
+⚙️     },
+⚙️     style: {
+⚙️       bgColor: "transparent",
+⚙️       textColor: "#ffffff",
+⚙️       accentColor: NEON_PURPLE
+⚙️     }
+⚙️   },
+  // ... Restante do arquivo (Product Grid, Status, Footer) ...
+⚙️   {
+⚙️     id: "cyber_grid",
+⚙️     type: "product-grid",
+⚙️     isVisible: true,
+⚙️     data: {
+⚙️       title: "UPGRADES DISPONÍVEIS",
+⚙️       products: [
+⚙️         { name: "Neural Link v4.0", tag: "BETA", imageColor: "000000", price: "Ξ 2.5 ETH", imageUrl: "https://placehold.co/400x500/111111/bc13fe?text=NEURAL+LINK" },
+⚙️         { name: "Cyber Arm MK-II", tag: "MILITARY", imageColor: "000000", price: "Ξ 5.0 ETH", imageUrl: "https://placehold.co/400x500/111111/00f3ff?text=CYBER+ARM" },
+⚙️         { name: "Optical Camo", tag: "STEALTH", imageColor: "000000", price: "Ξ 1.2 ETH", imageUrl: "https://placehold.co/400x500/111111/00ff00?text=OPTIC+CAMO" },
+⚙️         { name: "Data Shard 500TB", tag: "STORAGE", imageColor: "000000", price: "Ξ 0.5 ETH", imageUrl: "https://placehold.co/400x500/111111/ffffff?text=DATA+SHARD" }
+⚙️       ],
+⚙️       gridColumns: 2
+⚙️     },
+⚙️     style: { bgColor: "transparent", textColor: NEON_CYAN }
+⚙️   },
+⚙️   {
+⚙️     id: "cyber_status",
+⚙️     type: "user-info",
+⚙️     isVisible: true,
+⚙️     data: { userName: "USER_ID_992", mainTitle: "INVENTÁRIO PESSOAL", bagPinkTitle: "LOOT", bagBlueTitle: "EQUIP" },
+⚙️     style: { bgColor: GLASS_BG, textColor: "#ffffff" }
+⚙️   },
+⚙️   {
+⚙️     id: "cyber_footer",
+⚙️     type: "footer",
+⚙️     isVisible: true,
+⚙️     data: {
+⚙️       footerItems: [
+⚙️         { id: "f1", icon: "home", isVisible: true, route: "/" },
+⚙️         { id: "f2", icon: "cart", isVisible: true, route: "/cart" },
+⚙️         { id: "f3", icon: "sync", isVisible: true, route: "/sync", isHighlight: true },
+⚙️         { id: "f4", icon: "verified", isVisible: true, route: "/verified" },
+⚙️         { id: "f5", icon: "package-check", isVisible: true, route: "/inventory" }
+⚙️       ]
+⚙️     },
+⚙️     style: { bgColor: NEON_PURPLE }
+⚙️   }
+⚙️ ];
+
+
+// 🧩 LEGO: Este é um "Kit de Peças Pré-Montadas" - configurações prontas
+// 📦 O QUE FAZ: Define dados iniciais, templates e estados padrão do app
+// 🔗 CONECTADO A: Componentes e páginas que usam esses dados
+// 🎯 ANALOGIA: É como um kit LEGO com peças já organizadas para montar algo específico
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Kit de Peças Pré-Montadas" - configurações prontas
+// 📦 O QUE FAZ: Define dados iniciais, templates e estados padrão do app
+// 🔗 CONECTADO A: Componentes e páginas que usam esses dados
+// 🎯 ANALOGIA: É como um kit LEGO com peças já organizadas para montar algo específico
+// 💡 DICA: Templates são como modelos prontos que você pode copiar e modificar
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: data/templates/generic.ts
+📂 CAMINHO: data/templates/generic.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️ import { BlockConfig } from '@/types/builder';
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const GENERIC_TEMPLATE: BlockConfig[] = [
+⚙️   {
+⚙️     id: 'gen_header',
+⚙️     type: 'header',
+⚙️     isVisible: true,
+⚙️     data: { address: 'Endereço da Loja' },
+⚙️     style: { bgColor: '#111827', textColor: '#ffffff' } // Header Preto (Neutro)
+⚙️   },
+⚙️   {
+⚙️     id: 'gen_banner',
+⚙️     type: 'banner',
+⚙️     isVisible: true,
+⚙️     data: {},
+⚙️     style: { bgColor: '#f3f4f6', borderRadius: '0' } // Banner Quadrado
+⚙️   },
+⚙️   {
+⚙️     id: 'gen_grid',
+⚙️     type: 'product-grid',
+⚙️     isVisible: true,
+⚙️     data: {
+⚙️       title: 'Produtos em Destaque',
+⚙️       products: [] // Produtos virão do banco
+⚙️     },
+⚙️     style: { bgColor: '#ffffff' }
+⚙️   },
+⚙️   {
+⚙️     id: 'gen_footer',
+⚙️     type: 'footer',
+⚙️     isVisible: true,
+⚙️     data: {
+⚙️       footerItems: [
+⚙️         { id: 'f1', icon: 'home', isVisible: true, route: '/' },
+⚙️         { id: 'f2', icon: 'cart', isVisible: true, route: '/cart' },
+⚙️         { id: 'f3', icon: 'user', isVisible: true, route: '/account' }
+⚙️       ]
+⚙️     },
+⚙️     style: { bgColor: '#111827' }
+⚙️   }
+⚙️ ];
+
+
+// 🧩 LEGO: Este é um "Gancho de Lógica" - como uma ferramenta reutilizável
+// 📦 O QUE FAZ: Contém lógica que pode ser compartilhada entre vários componentes
+// 🔗 CONECTADO A: Componentes React que precisam dessa lógica
+// 🎯 ANALOGIA: É como uma ferramenta que vários trabalhadores podem usar
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Gancho de Lógica" - como uma ferramenta reutilizável
+// 📦 O QUE FAZ: Contém lógica que pode ser compartilhada entre vários componentes
+// 🔗 CONECTADO A: Componentes React que precisam dessa lógica
+// 🎯 ANALOGIA: É como uma ferramenta que vários trabalhadores podem usar
+// 💡 DICA: Hooks sempre começam com "use" e podem guardar estado e efeitos
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: hooks/use-guardian-store.ts
+📂 CAMINHO: hooks/use-guardian-store.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { create } from 'zustand';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { persist, createJSONStorage } from 'zustand/middleware';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { ThemePreference } from '@/schemas/user-preferences-schema';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { DiagnosticLayer } from '@/schemas/guardian-schema';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { RuntimeTracker, ComponentNode } from '@/schemas/guardian-runtime-schema';
+
+// ✅ ATUALIZAÇÃO: Adicionado 'CODE_MAP' explicitamente ao tipo
+⚙️ export type GuardianTab = 'SCANNER' | 'CODE_MAP' | 'DATABASE' | 'AUDIT' | 'HISTORY' | 'CONNECTIONS' | 'FILES';
+⚙️ export type GuardianFilter = DiagnosticLayer | 'ALL';
+
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ export interface SelectedFileState {
+⚙️   type: 'UI' | 'LOGIC';
+⚙️ }
+
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ interface GuardianStore {
+// 🔴 VERDE: theme (OBRIGATÓRIA) - Tipo: ThemePreference
+//    DEVE ter este valor sempre
+// 🔴 VERDE: theme (OBRIGATÓRIA) - Tipo: ThemePreference
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   theme: ThemePreference;
+// 🔴 VERDE: activeFilter (OBRIGATÓRIA) - Tipo: GuardianFilter
+//    DEVE ter este valor sempre
+// 🔴 VERDE: activeFilter (OBRIGATÓRIA) - Tipo: GuardianFilter
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   activeFilter: GuardianFilter;
+ 
+  // Estado da Rota Ativa
+// 🔴 VERDE: activeRuntimeElements (OBRIGATÓRIA) - Tipo: RuntimeTracker[]
+//    DEVE ter este valor sempre
+// 🔴 VERDE: activeRuntimeElements (OBRIGATÓRIA) - Tipo: RuntimeTracker[]
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   activeRuntimeElements: RuntimeTracker[];
+
+⚙️   toggle: () => void;
+⚙️   close: () => void;
+⚙️   setTheme: (theme: ThemePreference) => void;
+⚙️   setTab: (tab: GuardianTab) => void;
+⚙️   setFilter: (filter: GuardianFilter) => void;
+⚙️   selectFile: (file: SelectedFileState) => void;
+⚙️   clearSelectedFile: () => void;
+⚙️   registerElement: (element: RuntimeTracker) => void;
+⚙️   unregisterElement: (elementId: string) => void;
+ 
+⚙️   setRouteStructure: (structure: ComponentNode | null) => void;
+⚙️ }
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const useGuardianStore = create<GuardianStore>()(
+⚙️   persist(
+⚙️     (set) => ({
+⚙️       isOpen: false,
+⚙️       theme: 'system',
+⚙️       activeTab: 'SCANNER',
+⚙️       activeFilter: 'ALL',
+⚙️       selectedFile: null,
+⚙️       activeRuntimeElements: [],
+⚙️       currentRouteStructure: null,
+
+⚙️       toggle: () => set((state) => ({ isOpen: !state.isOpen })),
+⚙️       close: () => set({ isOpen: false }),
+⚙️       setTheme: (theme) => set({ theme }),
+⚙️       setTab: (tab) => set({ activeTab: tab }),
+⚙️       setFilter: (filter) => set({ activeFilter: filter }),
+⚙️       selectFile: (file) => set({ selectedFile: file }),
+⚙️       clearSelectedFile: () => set({ selectedFile: null }),
+
+⚙️       registerElement: (element) => set((state) => {
+        // Evita duplicatas
+⚙️         const exists = state.activeRuntimeElements.find(e => e.elementId === element.elementId);
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️         if (exists) return state;
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️         return { activeRuntimeElements: [...state.activeRuntimeElements, element] };
+
+⚙️       unregisterElement: (elementId) => set((state) => ({
+⚙️         activeRuntimeElements: state.activeRuntimeElements.filter((e) => e.elementId !== elementId)
+⚙️       })),
+
+⚙️       setRouteStructure: (structure) => set({ currentRouteStructure: structure }),
+⚙️     }),
+⚙️     {
+⚙️       name: 'guardian-storage-v2',
+⚙️       storage: createJSONStorage(() => localStorage),
+⚙️       partialize: (state) => ({
+⚙️         activeTab: state.activeTab,
+⚙️         theme: state.theme,
+⚙️       }),
+⚙️     }
+⚙️   )
+⚙️ );
+
+
+// 🧩 LEGO: Este é um "Gancho de Lógica" - como uma ferramenta reutilizável
+// 📦 O QUE FAZ: Contém lógica que pode ser compartilhada entre vários componentes
+// 🔗 CONECTADO A: Componentes React que precisam dessa lógica
+// 🎯 ANALOGIA: É como uma ferramenta que vários trabalhadores podem usar
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Gancho de Lógica" - como uma ferramenta reutilizável
+// 📦 O QUE FAZ: Contém lógica que pode ser compartilhada entre vários componentes
+// 🔗 CONECTADO A: Componentes React que precisam dessa lógica
+// 🎯 ANALOGIA: É como uma ferramenta que vários trabalhadores podem usar
+// 💡 DICA: Hooks sempre começam com "use" e podem guardar estado e efeitos
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: hooks/useFluidButton.ts
+📂 CAMINHO: hooks/useFluidButton.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { useMotionValue, useSpring, useTransform, MotionValue } from 'framer-motion';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Executa código quando o componente aparece, desaparece ou quando algo muda
+// 🧩 ANALOGIA LEGO: É como um assistente que observa e age quando algo acontece
+// 💡 DICA: useEffect é perfeito para buscar dados, configurar timers, ou limpar recursos
+⚙️ import { useRef, useEffect } from 'react';
+/**
+ * Configuração de física fluida para botão
+ */
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ export interface FluidButtonConfig {
+// 🔴 VERDE: damping (OBRIGATÓRIA) - Tipo: number
+//    DEVE ter este valor sempre
+// 🔴 VERDE: damping (OBRIGATÓRIA) - Tipo: number
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️     damping: number;
+// 🔴 VERDE: dragResistance (OBRIGATÓRIA) - Tipo: number
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️     dragResistance: number; // Fator de resistência ao arrasto (0-1)
+// 🔴 VERDE: scaleMagnification (OBRIGATÓRIA) - Tipo: number
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️     scaleMagnification: number; // Escala quando pressionado
+// 🔴 VERDE: squashStretchIntensity (OBRIGATÓRIA) - Tipo: number
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️     squashStretchIntensity: number; // Intensidade do squash and stretch
+⚙️ }
+
+/**
+ * Estado de física fluida de um botão
+ */
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ export interface FluidButtonState {
+// 🔴 VERDE: xSpring (OBRIGATÓRIA) - Tipo: MotionValue<number>
+//    DEVE ter este valor sempre
+// 🔴 VERDE: xSpring (OBRIGATÓRIA) - Tipo: MotionValue<number>
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️     xSpring: MotionValue<number>;
+// 🔴 VERDE: scaleX (OBRIGATÓRIA) - Tipo: MotionValue<number>
+//    DEVE ter este valor sempre
+// 🔴 VERDE: scaleX (OBRIGATÓRIA) - Tipo: MotionValue<number>
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️     scaleX: MotionValue<number>;
+// 🔴 VERDE: isPressedRef (OBRIGATÓRIA) - Tipo: React.MutableRefObject<boolean>
+//    DEVE ter este valor sempre
+// 🔴 VERDE: isPressedRef (OBRIGATÓRIA) - Tipo: React.MutableRefObject<boolean>
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️     isPressedRef: React.MutableRefObject<boolean>;
+⚙️ }
+
+/**
+ * Hook customizado para gerenciar física fluida de botão (watchOS style)
+ * 
+ * Implementa:
+ * - Rubber Banding: resistência elástica ao arrasto
+ * - Scale Magnification: aumento ao pressionar
+ * - Squash and Stretch: deformação na direção do arrasto
+ */
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma função chamada "useFluidButton" que pode ser usada em outros arquivos
+// 🧩 ANALOGIA LEGO: É como criar uma ferramenta especializada que outros trabalhadores podem usar
+// 🔗 CONECTADO A: Outros arquivos que importam esta função usando "import { useFluidButton }"
+// 📥 RECEBE: Esta função não recebe parâmetros
+// 💡 DICA: "export" significa que outros arquivos podem importar e usar esta função
+⚙️ export function useFluidButton(
+⚙️     initialX: number,
+⚙️     config: FluidButtonConfig
+⚙️ ): FluidButtonState {
+    // Motion values para posição
+⚙️     const x = useMotionValue(initialX);
+⚙️     const dragDelta = useMotionValue(0);
+    
+    // Spring para animação suave
+⚙️     const xSpring = useSpring(x, {
+⚙️         stiffness: config.stiffness,
+⚙️         damping: config.damping,
+⚙️         mass: config.mass
+⚙️     });
+
+    // Rubber Banding: mapeamento não-linear com resistência
+⚙️     const dragResistanceValue = useTransform(dragDelta, (latestDelta) => {
+        // Função não-linear para criar efeito de "elástico"
+        // Quanto mais arrasta, mais resistência
+⚙️         const absDelta = Math.abs(latestDelta);
+⚙️         const resistanceFactor = 1 - (1 / (1 + absDelta * config.dragResistance));
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️         return latestDelta * resistanceFactor;
+
+    // Estado de pressão
+⚙️     const isPressedRef = useRef<boolean>(false);
+
+    // Scale Magnification: aumenta quando pressionado
+⚙️     const baseScale = 1;
+⚙️     const pressedScale = baseScale * config.scaleMagnification;
+    
+⚙️     const scaleX = useTransform(dragDelta, (latestDelta) => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️         if (!isPressedRef.current) return baseScale;
+        // Squash and Stretch: estica na direção do arrasto
+⚙️         const stretchFactor = Math.abs(latestDelta) * config.squashStretchIntensity;
+⚙️         const direction = latestDelta > 0 ? 1 : -1;
+        
+        // Aumenta escala base quando pressionado
+⚙️         const baseStretch = pressedScale;
+        
+        // Adiciona deformação na direção do arrasto
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️         if (direction > 0) {
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️             return Math.min(baseStretch + stretchFactor, baseStretch * 1.2);
+            // Comprime para esquerda (scaleX diminui)
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️             return Math.max(baseStretch - stretchFactor, baseStretch * 0.8);
+⚙️     });
+
+⚙️     const scaleY = useTransform(dragDelta, (latestDelta) => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️         if (!isPressedRef.current) return baseScale;
+⚙️         const stretchFactor = Math.abs(latestDelta) * config.squashStretchIntensity;
+⚙️         const direction = latestDelta > 0 ? 1 : -1;
+        
+⚙️         const baseStretch = pressedScale;
+        
+        // Efeito oposto ao scaleX para criar squash and stretch
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️         if (direction > 0) {
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️             return Math.max(baseStretch - stretchFactor, baseStretch * 0.8);
+            // Estica verticalmente quando comprime horizontalmente
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️             return Math.min(baseStretch + stretchFactor, baseStretch * 1.2);
+⚙️     });
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return {
+⚙️         xSpring,
+⚙️         dragResistanceValue,
+⚙️         scaleX,
+⚙️         scaleY,
+⚙️         isPressedRef,
+⚙️         dragDelta
+⚙️     };
+⚙️ }
+
+/**
+ * Calcula posição visual com rubber banding aplicado
+ */
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma função chamada "applyRubberBanding" que pode ser usada em outros arquivos
+// 🧩 ANALOGIA LEGO: É como criar uma ferramenta especializada que outros trabalhadores podem usar
+// 🔗 CONECTADO A: Outros arquivos que importam esta função usando "import { applyRubberBanding }"
+// 📥 RECEBE: Esta função não recebe parâmetros
+// 💡 DICA: "export" significa que outros arquivos podem importar e usar esta função
+⚙️ export function applyRubberBanding(
+⚙️     rawPosition: number,
+⚙️     resistanceFactor: number
+⚙️ ): number {
+    // Função não-linear para criar efeito de elástico
+⚙️     const absPosition = Math.abs(rawPosition);
+⚙️     const resistance = 1 - (1 / (1 + absPosition * resistanceFactor));
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return rawPosition * resistance;
+
+
+
+// 🧩 LEGO: Este é um "Gancho de Lógica" - como uma ferramenta reutilizável
+// 📦 O QUE FAZ: Contém lógica que pode ser compartilhada entre vários componentes
+// 🔗 CONECTADO A: Componentes React que precisam dessa lógica
+// 🎯 ANALOGIA: É como uma ferramenta que vários trabalhadores podem usar
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Gancho de Lógica" - como uma ferramenta reutilizável
+// 📦 O QUE FAZ: Contém lógica que pode ser compartilhada entre vários componentes
+// 🔗 CONECTADO A: Componentes React que precisam dessa lógica
+// 🎯 ANALOGIA: É como uma ferramenta que vários trabalhadores podem usar
+// 💡 DICA: Hooks sempre começam com "use" e podem guardar estado e efeitos
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: hooks/useHoneycombPosition.ts
+📂 CAMINHO: hooks/useHoneycombPosition.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️ 'use client';
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Executa código quando o componente aparece, desaparece ou quando algo muda
+// 🧩 ANALOGIA LEGO: É como um assistente que observa e age quando algo acontece
+// 💡 DICA: useEffect é perfeito para buscar dados, configurar timers, ou limpar recursos
+⚙️ import { useRef, useEffect } from 'react';
+⚙️ import { useMotionValue, useTransform, MotionValue, useAnimationFrame } from 'framer-motion';
+
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ interface HoneycombPositionConfig {
+⚙️     scaleRange: { min: number; max: number };
+⚙️     yOffsetRange: { min: number; max: number };
+⚙️     opacityRange: { min: number; max: number };
+⚙️ }
+
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ interface HoneycombPositionResult {
+// 🔴 VERDE: scale (OBRIGATÓRIA) - Tipo: MotionValue<number>
+//    DEVE ter este valor sempre
+// 🔴 VERDE: scale (OBRIGATÓRIA) - Tipo: MotionValue<number>
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️     scale: MotionValue<number>;
+// 🔴 VERDE: opacity (OBRIGATÓRIA) - Tipo: MotionValue<number>
+//    DEVE ter este valor sempre
+// 🔴 VERDE: opacity (OBRIGATÓRIA) - Tipo: MotionValue<number>
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️     opacity: MotionValue<number>;
+⚙️ }
+
+/**
+ * useHoneycombPosition: Hook para calcular efeito Fisheye/Honeycomb
+ * 
+ * Calcula dinamicamente a distância de um item em relação ao centro do container,
+ * e mapeia essa distância para scale, y offset e opacity usando curvas não-lineares.
+ * 
+ * @param buttonRef - Referência do elemento do botão
+ * @param containerRef - Referência do container pai
+ * @param containerX - MotionValue da posição X do container (para rastrear drag)
+ * @param config - Configuração do efeito fisheye
+ * @returns Objeto com MotionValues para distance, scale, yOffset e opacity
+ */
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma função chamada "useHoneycombPosition" que pode ser usada em outros arquivos
+// 🧩 ANALOGIA LEGO: É como criar uma ferramenta especializada que outros trabalhadores podem usar
+// 🔗 CONECTADO A: Outros arquivos que importam esta função usando "import { useHoneycombPosition }"
+// 📥 RECEBE: Esta função não recebe parâmetros
+// 💡 DICA: "export" significa que outros arquivos podem importar e usar esta função
+⚙️ export function useHoneycombPosition(
+⚙️     buttonRef: React.RefObject<HTMLDivElement>,
+⚙️     containerRef: React.RefObject<HTMLDivElement>,
+⚙️     containerX: MotionValue<number>,
+⚙️     config: HoneycombPositionConfig
+⚙️ ): HoneycombPositionResult {
+    // MotionValue para rastrear a distância do centro
+⚙️     const distance = useMotionValue(0);
+    
+    // Atualiza a distância em cada frame usando useAnimationFrame
+⚙️     useAnimationFrame(() => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️         if (!buttonRef.current || !containerRef.current) {
+⚙️             return;
+⚙️         }
+        
+⚙️         const buttonRect = buttonRef.current.getBoundingClientRect();
+⚙️         const containerRect = containerRef.current.getBoundingClientRect();
+        
+        // Posição do centro do botão relativa ao container
+⚙️         const buttonCenterX = buttonRect.left - containerRect.left + buttonRect.width / 2;
+        // Posição do centro fixo do container
+⚙️         const containerCenterX = containerRect.width / 2;
+        
+        // Distância absoluta do centro do botão até o centro do container
+⚙️         const currentDistance = Math.abs(buttonCenterX - containerCenterX);
+⚙️         distance.set(currentDistance);
+⚙️     });
+    
+    // Normaliza a distância para o range [0, 1] onde 0 = centro, 1 = borda
+⚙️     const normalizedDistance = useTransform(distance, (dist) => {
+⚙️         const normalized = Math.min(dist / config.maxDistance, 1);
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️         return normalized;
+    
+    // Função de interpolação não-linear (curva gaussiana acentuada)
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️     const gaussianInterpolation = (t: number, sharpness: number = 2): number => {
+        // Curva exponencial para efeito mais acentuado no centro
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️         return Math.exp(-Math.pow(t * sharpness, 2));
+    
+    // Mapeia distância normalizada para scale (1.0 a 1.8)
+⚙️     const scale = useTransform(normalizedDistance, (normalized) => {
+⚙️         const gaussian = gaussianInterpolation(normalized, 2.5);
+⚙️         const scaleValue = config.scaleRange.min +
+⚙️             (config.scaleRange.max - config.scaleRange.min) * gaussian;
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️         return scaleValue;
+    
+    // Mapeia distância normalizada para y offset (efeito de arco)
+⚙️     const yOffset = useTransform(normalizedDistance, (normalized) => {
+⚙️         const gaussian = gaussianInterpolation(normalized, 2.5);
+⚙️         const yValue = config.yOffsetRange.min +
+⚙️             (config.yOffsetRange.max - config.yOffsetRange.min) * (1 - gaussian);
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️         return yValue;
+    
+    // Mapeia distância normalizada para opacity
+⚙️     const opacity = useTransform(normalizedDistance, (normalized) => {
+⚙️         const gaussian = gaussianInterpolation(normalized, 2);
+⚙️         const opacityValue = config.opacityRange.min +
+⚙️             (config.opacityRange.max - config.opacityRange.min) * gaussian;
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️         return opacityValue;
+    
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return {
+⚙️         scale,
+⚙️         yOffset,
+⚙️         opacity,
+⚙️         normalizedDistance
+⚙️     };
+⚙️ }
+
+
+
+// 🧩 LEGO: Este é um "Gancho de Lógica" - como uma ferramenta reutilizável
+// 📦 O QUE FAZ: Contém lógica que pode ser compartilhada entre vários componentes
+// 🔗 CONECTADO A: Componentes React que precisam dessa lógica
+// 🎯 ANALOGIA: É como uma ferramenta que vários trabalhadores podem usar
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Gancho de Lógica" - como uma ferramenta reutilizável
+// 📦 O QUE FAZ: Contém lógica que pode ser compartilhada entre vários componentes
+// 🔗 CONECTADO A: Componentes React que precisam dessa lógica
+// 🎯 ANALOGIA: É como uma ferramenta que vários trabalhadores podem usar
+// 💡 DICA: Hooks sempre começam com "use" e podem guardar estado e efeitos
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: hooks/useIndividualPhysics.ts
+📂 CAMINHO: hooks/useIndividualPhysics.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { useMotionValue, useSpring, useAnimationFrame } from 'framer-motion';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { useRef, useCallback } from 'react';
+
+/**
+ * Configuração de física para um botão individual
+ */
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ export interface PhysicsConfig {
+// 🔴 VERDE: damping (OBRIGATÓRIA) - Tipo: number
+//    DEVE ter este valor sempre
+// 🔴 VERDE: damping (OBRIGATÓRIA) - Tipo: number
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️     damping: number;
+// 🔴 VERDE: repulsionStrength (OBRIGATÓRIA) - Tipo: number
+//    DEVE ter este valor sempre
+// 🔴 VERDE: repulsionStrength (OBRIGATÓRIA) - Tipo: number
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️     repulsionStrength: number;
+⚙️ }
+
+/**
+ * Estado de movimento de um botão individual
+ */
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ export interface ButtonPhysicsState {
+// 🔴 VERDE: xSpring (OBRIGATÓRIA) - Tipo: ReturnType<typeof useSpring>
+//    DEVE ter este valor sempre
+// 🔴 VERDE: xSpring (OBRIGATÓRIA) - Tipo: ReturnType<typeof useSpring>
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️     xSpring: ReturnType<typeof useSpring>;
+// 🔴 VERDE: isDraggingRef (OBRIGATÓRIA) - Tipo: React.MutableRefObject<boolean>
+//    DEVE ter este valor sempre
+// 🔴 VERDE: isDraggingRef (OBRIGATÓRIA) - Tipo: React.MutableRefObject<boolean>
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️     isDraggingRef: React.MutableRefObject<boolean>;
+⚙️ }
+
+/**
+ * Hook customizado para gerenciar física individual de cada botão
+ * 
+ * Cada botão tem sua própria instância de useMotionValue e useSpring,
+ * permitindo movimento independente com física de molas.
+ */
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma função chamada "useIndividualPhysics" que pode ser usada em outros arquivos
+// 🧩 ANALOGIA LEGO: É como criar uma ferramenta especializada que outros trabalhadores podem usar
+// 🔗 CONECTADO A: Outros arquivos que importam esta função usando "import { useIndividualPhysics }"
+// 📥 RECEBE: Esta função não recebe parâmetros
+// 💡 DICA: "export" significa que outros arquivos podem importar e usar esta função
+⚙️ export function useIndividualPhysics(
+⚙️     initialX: number,
+⚙️     config: PhysicsConfig
+⚙️ ): ButtonPhysicsState {
+⚙️     const x = useMotionValue(initialX);
+⚙️     const xSpring = useSpring(x, {
+⚙️         stiffness: config.stiffness,
+⚙️         damping: config.damping,
+⚙️         mass: config.mass
+⚙️     });
+
+⚙️     const velocityRef = useRef<number>(0);
+⚙️     const isDraggingRef = useRef<boolean>(false);
+⚙️     const dragStartXRef = useRef<number>(0);
+⚙️     const lastXRef = useRef<number>(initialX);
+
+    // Atualiza velocidade baseado na mudança de posição
+⚙️     useAnimationFrame(() => {
+⚙️         const currentX = xSpring.get();
+⚙️         const deltaX = currentX - lastXRef.current;
+⚙️         velocityRef.current = deltaX * 16; // Aproximação de velocidade (60fps)
+⚙️         lastXRef.current = currentX;
+⚙️     });
+
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return {
+⚙️         xSpring,
+⚙️         velocityRef,
+⚙️         isDraggingRef,
+⚙️         dragStartXRef
+⚙️     };
+⚙️ }
+
+/**
+ * Calcula força de repulsão entre dois botões
+ * 
+ * @param button1X Posição X do primeiro botão
+ * @param button2X Posição X do segundo botão
+ * @param minDistance Distância mínima entre botões
+ * @param repulsionStrength Força de repulsão
+ * @returns Força aplicada ao primeiro botão
+ */
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma função chamada "calculateRepulsionForce" que pode ser usada em outros arquivos
+// 🧩 ANALOGIA LEGO: É como criar uma ferramenta especializada que outros trabalhadores podem usar
+// 🔗 CONECTADO A: Outros arquivos que importam esta função usando "import { calculateRepulsionForce }"
+// 📥 RECEBE: Esta função não recebe parâmetros
+// 💡 DICA: "export" significa que outros arquivos podem importar e usar esta função
+⚙️ export function calculateRepulsionForce(
+⚙️     button1X: number,
+⚙️     button2X: number,
+⚙️     minDistance: number,
+⚙️     repulsionStrength: number
+⚙️ ): number {
+⚙️     const distance = Math.abs(button1X - button2X);
+    
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (distance < minDistance) {
+⚙️         const direction = button1X < button2X ? -1 : 1;
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️         return direction * overlap * repulsionStrength;
+    
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return 0;
+
+/**
+ * Aplica wrap-around quando botão sai da borda
+ * 
+ * @param currentX Posição atual X
+ * @param containerWidth Largura do container
+ * @param buttonWidth Largura do botão
+ * @returns Nova posição X após wrap
+ */
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Cria uma função chamada "applyWrapAround" que pode ser usada em outros arquivos
+// 🧩 ANALOGIA LEGO: É como criar uma ferramenta especializada que outros trabalhadores podem usar
+// 🔗 CONECTADO A: Outros arquivos que importam esta função usando "import { applyWrapAround }"
+// 📥 RECEBE: Esta função não recebe parâmetros
+// 💡 DICA: "export" significa que outros arquivos podem importar e usar esta função
+⚙️ export function applyWrapAround(
+⚙️     currentX: number,
+⚙️     containerWidth: number,
+⚙️     buttonWidth: number
+⚙️ ): number {
+⚙️     const halfButton = buttonWidth / 2;
+    
+    // Se saiu pela direita
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (currentX > containerWidth + halfButton) {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️         return -halfButton;
+    
+    // Se saiu pela esquerda
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (currentX < -halfButton) {
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️         return containerWidth + halfButton;
+    
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return currentX;
+
+
+
+// 🧩 LEGO: Este é um "Gancho de Lógica" - como uma ferramenta reutilizável
+// 📦 O QUE FAZ: Contém lógica que pode ser compartilhada entre vários componentes
+// 🔗 CONECTADO A: Componentes React que precisam dessa lógica
+// 🎯 ANALOGIA: É como uma ferramenta que vários trabalhadores podem usar
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Este é um "Gancho de Lógica" - como uma ferramenta reutilizável
+// 📦 O QUE FAZ: Contém lógica que pode ser compartilhada entre vários componentes
+// 🔗 CONECTADO A: Componentes React que precisam dessa lógica
+// 🎯 ANALOGIA: É como uma ferramenta que vários trabalhadores podem usar
+// 💡 DICA: Hooks sempre começam com "use" e podem guardar estado e efeitos
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: hooks/usePosLogic.ts
+📂 CAMINHO: hooks/usePosLogic.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { create } from 'zustand';
+// 🟢 VERDE: Importa peças de outros arquivos - como buscar peças LEGO de outra caixa
+⚙️ import { RuntimeTracker } from '@/schemas/guardian-runtime-schema';
+
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ interface GuardianRuntimeState {
+⚙️   registerElement: (element: RuntimeTracker) => void;
+⚙️   unregisterElement: (elementId: string) => void;
+  // Mantemos o estado existente do Guardian OS
+// 🔴 VERDE: isOpen (OBRIGATÓRIA) - Tipo: boolean
+//    DEVE ter este valor sempre
+// 🔴 VERDE: isOpen (OBRIGATÓRIA) - Tipo: boolean
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   isOpen: boolean;
+⚙️ }
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const useGuardianStore = create<GuardianRuntimeState>((set) => ({
+⚙️   activeRuntimeElements: new Map(),
+⚙️   isOpen: false,
+  
+⚙️   registerElement: (element) => set((state) => {
+⚙️     const newMap = new Map(state.activeRuntimeElements);
+⚙️     newMap.set(element.elementId, element);
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return { activeRuntimeElements: newMap };
+
+⚙️   unregisterElement: (elementId) => set((state) => {
+⚙️     const newMap = new Map(state.activeRuntimeElements);
+⚙️     newMap.delete(elementId);
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return { activeRuntimeElements: newMap };
+
+⚙️   toggle: () => set((state) => ({ isOpen: !state.isOpen })),
+⚙️ }));
+
+
+// 🧩 LEGO: Esta é uma "Caixa de Ferramentas" - funções úteis para todo o app
+// 📦 O QUE FAZ: Contém funções auxiliares que podem ser usadas em qualquer lugar
+// 🔗 CONECTADO A: Qualquer arquivo que precise dessas ferramentas
+// 🎯 ANALOGIA: É como uma caixa de ferramentas que todos podem usar
+
+
+// 🟢 VERDE - VISÃO GERAL DO ARQUIVO:
+// 🧩 LEGO: Esta é uma "Caixa de Ferramentas" - funções úteis para todo o app
+// 📦 O QUE FAZ: Contém funções auxiliares que podem ser usadas em qualquer lugar
+// 🔗 CONECTADO A: Qualquer arquivo que precise dessas ferramentas
+// 🎯 ANALOGIA: É como uma caixa de ferramentas que todos podem usar
+// 💡 DICA: Utils são funções puras que sempre fazem a mesma coisa com os mesmos dados
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 ARQUIVO: lib/local-db.ts
+📂 CAMINHO: lib/local-db.ts
+═══════════════════════════════════════════════════════════════════════════════
+
+
+⚙️ 'use client';
+
+// 🟢 VERDE: Define um formato/tipo - como um molde que diz como os dados devem ser
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Define o formato das informações que o componente recebe
+// 🧩 ANALOGIA LEGO: É como uma lista de peças necessárias para montar algo
+// 💡 DICA: Propriedades com "?" são opcionais (pode não ter), sem "?" são obrigatórias
+⚙️ export interface UserData {
+⚙️   type: 'fisica' | 'juridica';
+// 🔴 VERDE: document (OBRIGATÓRIA) - Tipo: string
+//    DEVE ter este valor sempre
+// 🔴 VERDE: document (OBRIGATÓRIA) - Tipo: string
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   document: string;
+// 🔵 VERDE: storeName (OPCIONAL) - Tipo: string
+//    Pode não ter este valor
+// 🔵 VERDE: storeName (OPCIONAL) - Tipo: string
+//    📦 O QUE FAZ: Propriedade opcional do componente
+//    🧩 ANALOGIA LEGO: É como uma peça extra que pode ou não ser usada
+//    💡 DICA: Pode não ter este valor
+⚙️   storeName?: string;
+// 🔴 VERDE: createdAt (OBRIGATÓRIA) - Tipo: string
+//    DEVE ter este valor sempre
+// 🔴 VERDE: createdAt (OBRIGATÓRIA) - Tipo: string
+//    📦 O QUE FAZ: Propriedade obrigatória do componente
+//    🧩 ANALOGIA LEGO: É como uma peça essencial que sempre precisa estar
+//    💡 DICA: DEVE ter este valor sempre
+⚙️   createdAt: string;
+
+⚙️ const DB_KEY = 'b2b_app_user_db';
+
+// 🟢 VERDE: Define uma função/constante - cria uma ferramenta que pode ser usada depois
+⚙️ export const LocalDB = {
+  // Salvar usuário (Cadastro)
+⚙️   saveUser: (data: Omit<UserData, 'id' | 'createdAt'>) => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (typeof window === 'undefined') return null;
+⚙️     const newUser: UserData = {
+⚙️       ...data,
+      // CORREÇÃO: Fallback para funcionar em HTTP (IP de rede)
+⚙️       id: typeof crypto !== 'undefined' && crypto.randomUUID
+⚙️           ? crypto.randomUUID()
+⚙️           : `user_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+⚙️       createdAt: new Date().toISOString(),
+⚙️     };
+
+⚙️     localStorage.setItem(DB_KEY, JSON.stringify(newUser));
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return newUser;
+
+  // Recuperar usuário (Login Automático)
+⚙️   getUser: (): UserData | null => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (typeof window === 'undefined') return null;
+// 🟢 VERDE: Retorna um valor - entrega o resultado do trabalho feito
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Entrega o resultado do trabalho feito pela função
+// 🧩 ANALOGIA LEGO: É como entregar o produto final depois de montar todas as peças
+// 💡 DICA: return para a execução da função - nada depois dele é executado
+⚙️     return data ? JSON.parse(data) : null;
+
+  // Limpar dados (Sair do App)
+⚙️   clearUser: () => {
+// 🟢 VERDE: Verifica uma condição - "se isso for verdade, faça aquilo"
+// 🟢 VERDE - EXPLICAÇÃO DETALHADA:
+// 📦 O QUE FAZ: Verifica se uma condição é verdadeira e executa código se for
+// 🧩 ANALOGIA LEGO: É como perguntar "tenho todas as peças?" antes de começar a montar
+// 💡 DICA: if sempre precisa de uma condição que seja true ou false
+⚙️     if (typeof window === 'undefined') return;
+⚙️   }
+⚙️ };

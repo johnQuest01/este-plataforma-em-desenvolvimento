@@ -25,7 +25,7 @@ const JeansRegistrationBlockBase = ({
   config: BlockConfig
 }) => {
  
-  const title = (config.data.title as string) || 'Jeans';
+  const title = (typeof config.data?.title === 'string' ? config.data.title : 'Jeans');
  
   // Inputs
   const [refImageInput, setRefImageInput] = useState<string>("");
@@ -53,9 +53,9 @@ const JeansRegistrationBlockBase = ({
         const imageUrl = parts[1];
 
         const res = await linkReferenceImageAction({ reference, imageUrl, storeSlug: 'maryland-gestao' });
-        if (res.success && 'reference' in res) {
+        if (res.success && 'reference' in res && res.reference && typeof res.hasImage === 'boolean') {
           successCount++;
-          newSessionRefs.push({ ref: res.reference!, hasImage: res.hasImage! });
+          newSessionRefs.push({ ref: res.reference, hasImage: res.hasImage });
         }
       }
 
@@ -75,15 +75,15 @@ const JeansRegistrationBlockBase = ({
     startTransition(async () => {
       const res = await processBulkJeansAction({ rawText: bulkTextInput, storeSlug: 'maryland-gestao' });
       
-      if (res.success && res.results) {
+      if (res.success && res.results && Array.isArray(res.results)) {
         setResults(prev => {
-          const newIds = new Set(res.results!.map(r => r.id));
+          const newIds = new Set(res.results?.map(r => r.id) ?? []);
           const filteredPrev = prev.filter(p => !newIds.has(p.id));
-          return [...res.results!, ...filteredPrev];
+          return [...(res.results ?? []), ...filteredPrev];
         });
         setBulkTextInput("");
       } else {
-        const errorMessage = 'error' in res ? res.error : "Erro desconhecido.";
+        const errorMessage = 'error' in res && typeof res.error === 'string' ? res.error : "Erro desconhecido.";
         alert("Erro: " + errorMessage);
       }
     });
@@ -128,7 +128,6 @@ const JeansRegistrationBlockBase = ({
 
       {/* --- ÁREA DE CONTEÚDO COM SCROLL --- */}
       <div className="w-full flex flex-col items-center px-4 md:px-6 pb-32 gap-4 md:gap-6">
-
         <div className="w-full max-w-md md:max-w-lg flex flex-col gap-4 md:gap-6">
             <JeansLinkForm
               refImageInput={refImageInput}

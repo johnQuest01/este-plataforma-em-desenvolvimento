@@ -30,6 +30,9 @@ export const ProductDataSchema = z.object({
   // ATUALIZAÇÃO: Agora é estritamente number para facilitar cálculos no front
   price: z.number(),
   
+  // 🧱 CMS DINÂMICO: Categoria do produto
+  category: z.string().nullable().optional(),
+  
   imageUrl: z.string().nullable(),
   isVisible: z.boolean(),
   stock: z.number(),
@@ -51,6 +54,9 @@ export const CreateProductInputSchema = z.object({
   
   // O preço principal vem como string do input mask (ex: "R$ 100,00")
   price: z.string().min(1, "Preço é obrigatório"),
+  
+  // 🧱 CMS DINÂMICO: Categoria para auto-geração de seções na Home
+  category: z.string().min(1, "Categoria é obrigatória"),
   
   variations: z.array(ProductVariantSchema), 
   visibility: z.string(),

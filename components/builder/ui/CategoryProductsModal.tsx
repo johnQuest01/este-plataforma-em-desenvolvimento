@@ -3,6 +3,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft } from 'lucide-react';
+
+// 🛡️ GUARDIAN: Importação do HOC
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
+
 import { cn } from '@/lib/utils';
 import { BlockConfig, SelectedCategoryData } from '@/types/builder';
 import { BlockRenderer } from '@/components/builder/BlockRender';
@@ -16,15 +20,19 @@ interface CategoryProductsModalProps {
   category?: string;
 }
 
-export const CategoryProductsModal = ({ isOpen, onClose, categoryData, category }: CategoryProductsModalProps) => {
+const CategoryProductsModalBase = ({ isOpen, onClose, categoryData, category }: CategoryProductsModalProps) => {
   const [selectedProduct, setSelectedProduct] = useState<ProductData | null>(null);
 
   const categoryName = categoryData?.category || category || 'Produtos';
   const stockName = categoryData?.stock || '';
 
   const handleProductClick = (action: string, product: unknown) => {
-    if (action === 'openProductOrder' && product) {
-      setSelectedProduct(product as ProductData);
+    if (action === 'openProductOrder' && product && typeof product === 'object' && product !== null) {
+      // Type guard: verifica se product tem as propriedades esperadas de ProductData
+      const data = product as Record<string, unknown>;
+      if (typeof data.id === 'string' && typeof data.name === 'string') {
+        setSelectedProduct(product as ProductData);
+      }
     }
   };
 
@@ -120,3 +128,38 @@ export const CategoryProductsModal = ({ isOpen, onClose, categoryData, category 
     </>
   );
 };
+
+// 🛡️ GUARDIAN: Exportação com metadados
+export const CategoryProductsModal = withGuardian(
+  CategoryProductsModalBase,
+  "components/builder/ui/CategoryProductsModal.tsx",
+  "POPUP",
+  {
+    label: "Modal de Produtos por Categoria",
+    description: "Modal secundário que exibe produtos filtrados de uma categoria específica.",
+    orientationNotes: `
+⚠️ **Pontos de Atenção**:
+- **Z-Index**: z-220 (sobrepõe CatalogModal z-200)
+- **Dependências**: BlockRenderer, ProductOrderModal
+- **UX**: Animação de entrada lateral (slide-in)
+- **Fluxo**: Invocado pelo CatalogModal, abre ProductOrderModal ao clicar em produto
+    `.trim(),
+    connectsTo: [
+      {
+        target: "components/builder/ui/ProductOrderModal.tsx",
+        type: "COMPONENT",
+        description: "Modal filho para fazer pedido do produto"
+      },
+      {
+        target: "components/builder/ui/CatalogModal.tsx",
+        type: "COMPONENT",
+        description: "Modal pai que invoca este componente"
+      },
+      {
+        target: "components/builder/BlockRender.tsx",
+        type: "COMPONENT",
+        description: "Renderiza lista de produtos da categoria"
+      }
+    ]
+  }
+);

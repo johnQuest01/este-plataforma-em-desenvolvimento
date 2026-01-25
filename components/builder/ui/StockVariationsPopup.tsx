@@ -62,7 +62,7 @@ export interface VariationItem {
 interface StockVariationsPopupProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave?: (items: VariationItem[], metadata?: { name: string }) => void;
+  onSave?: (items: VariationItem[], metadata?: { name: string; category: string }) => void; // 🧱 CMS: Adicionado category
   initialItems?: VariationItem[];
 }
 
@@ -414,7 +414,10 @@ const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }
       };
     }));
 
-    onSave(processedVariations, { name: formattedName });
+    onSave(processedVariations, { 
+      name: formattedName,
+      category: draft.category || 'Geral' // 🧱 CMS: Passa a categoria
+    });
     setIsSaving(false);
     onClose();
   };

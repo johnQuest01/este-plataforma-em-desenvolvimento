@@ -2,6 +2,10 @@
 
 import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// 🛡️ GUARDIAN: Importação do HOC
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
+
 import {
   X,
   Check,
@@ -32,6 +36,21 @@ interface ExtendedVariant {
   size?: string;
   name?: string;
   [key: string]: unknown;
+}
+
+// 🛡️ GUARDIAN: Safe Variant Accessor
+// Converte variante do Prisma para ExtendedVariant de forma type-safe
+function toExtendedVariant(v: unknown): ExtendedVariant {
+  if (typeof v !== 'object' || v === null) return {};
+  
+  const variant = v as Record<string, unknown>;
+  return {
+    color: typeof variant.color === 'string' ? variant.color : undefined,
+    variation: typeof variant.variation === 'string' ? variant.variation : undefined,
+    type: typeof variant.type === 'string' ? variant.type : undefined,
+    size: typeof variant.size === 'string' ? variant.size : undefined,
+    name: typeof variant.name === 'string' ? variant.name : undefined,
+  };
 }
 
 // --- SUB-COMPONENTE: Mini Preview Card ---
@@ -131,15 +150,15 @@ const OrderModalContent = ({ onClose }: { onClose: () => void }) => {
     const sizes = new Set<string>();
 
     product.variants.forEach(v => {
-      // CORREÇÃO: Cast seguro para ExtendedVariant
-      const anyV = v as unknown as ExtendedVariant;
-      if (anyV.color) colors.add(anyV.color.trim());
+      // CORREÇÃO: Conversão type-safe usando helper
+      const extV = toExtendedVariant(v);
+      if (extV.color) colors.add(extV.color.trim());
       else colors.add('Padrão');
 
-      const typeVal = anyV.variation || anyV.type;
+      const typeVal = extV.variation || extV.type;
       if (typeVal) types.add(typeVal.trim());
      
-      const sizeVal = anyV.size || v.name;
+      const sizeVal = extV.size || extV.name;
       if (sizeVal) sizes.add(sizeVal.trim());
     });
 
@@ -164,11 +183,13 @@ const OrderModalContent = ({ onClose }: { onClose: () => void }) => {
     if (!product || options.types.length === 0) return [];
     if (!selections['color']) return options.types;
 
-    // CORREÇÃO: Cast seguro
-    const variationsForColor = product.variants.filter(v => (v as unknown as ExtendedVariant).color === selections['color']);
-    const hasTypeForColor = variationsForColor.some(v => {
-        const ev = v as unknown as ExtendedVariant;
-        return ev.variation || ev.type;
+    // CORREÇÃO: Conversão type-safe usando helper
+    const variationsForColor = product.variants
+      .map(v => toExtendedVariant(v))
+      .filter(extV => extV.color === selections['color']);
+    
+    const hasTypeForColor = variationsForColor.some(extV => {
+        return extV.variation || extV.type;
     });
 
     return hasTypeForColor ? options.types : [];
@@ -396,7 +417,7 @@ const OrderModalContent = ({ onClose }: { onClose: () => void }) => {
 };
 
 // --- EXPORTAÇÃO NOMEADA CORRETA ---
-export const ProductOrderModal = ({ isOpen, onClose, product }: ProductOrderModalProps) => {
+const ProductOrderModalBase = ({ isOpen, onClose, product }: ProductOrderModalProps) => {
   return (
     <AnimatePresence>
       {isOpen && product && (
@@ -430,3 +451,39 @@ export const ProductOrderModal = ({ isOpen, onClose, product }: ProductOrderModa
     </AnimatePresence>
   );
 };
+
+// 🛡️ GUARDIAN: Exportação com metadados
+export const ProductOrderModal = withGuardian(
+  ProductOrderModalBase,
+  "components/builder/ui/ProductOrderModal.tsx",
+  "POPUP",
+  {
+    label: "Modal de Pedido de Produto (Maryland Autorizada)",
+    description: "Modal complexo para criar pedidos com seleção de cor, modelo, tamanho e quantidade, validando estoque disponível.",
+    orientationNotes: `
+⚠️ **Pontos de Atenção**:
+- **Z-Index**: z-300 (máxima prioridade - sobrepõe CategoryProductsModal z-220)
+- **Dependências**: OrderContext, createOrderAction, ProductData
+- **UX**: Validação de combinações de estoque em tempo real
+- **Fluxo**: Invocado pelo CategoryProductsModal, cria pedido via Server Action
+- **State Management**: Usa OrderContext para gerenciar seleções
+    `.trim(),
+    connectsTo: [
+      {
+        target: "components/builder/context/OrderContext.tsx",
+        type: "HOOK",
+        description: "Context para gerenciar estado do pedido"
+      },
+      {
+        target: "app/actions/order.ts",
+        type: "DATABASE",
+        description: "Cria pedido no banco de dados"
+      },
+      {
+        target: "components/builder/ui/CategoryProductsModal.tsx",
+        type: "COMPONENT",
+        description: "Modal pai que invoca este componente"
+      }
+    ]
+  }
+);

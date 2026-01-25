@@ -100,7 +100,7 @@ export const CategoryProductListBlock = ({ config, onAction }: CategoryProductLi
                 key={product.id}
                 onClick={() => {
                     if (onAction) {
-                        onAction('openProductOrder', product);
+                        onAction('open_product_details', product.id); // 🧱 CORRIGIDO: Passa ID do produto
                     }
                 }}
                 className="bg-white border border-black rounded-2xl p-3 flex flex-col gap-2 shadow-sm active:scale-[0.98] transition-transform relative overflow-hidden cursor-pointer"

@@ -19,6 +19,7 @@ import { AuthInputField } from '@/components/auth/AuthInputField';
 import { withGuardian } from "@/components/guardian/GuardianBeacon";
 import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
 import { FooterItem } from '@/types/builder';
+import { detectBrazilianNameGender } from '@/lib/utils/name-gender';
 
 // --- Utilitários de Máscara ---
 const masks = {
@@ -97,13 +98,18 @@ function EntryPageBase() {
     // Simulação de processamento
     await new Promise((resolvePromise) => setTimeout(resolvePromise, 800));
 
+    // Detecta o gênero do nome brasileiro
+    const nameGender = detectBrazilianNameGender(formData.name);
+
     // Persistência Local (LocalDB)
     LocalDB.saveUser({
       type: personType === 'vendedor' ? 'fisica' : personType, 
       name: formData.name,
       document: formData.document,
       whatsapp: formData.whatsapp,
-      storeName: personType === 'juridica' ? formData.storeName : undefined
+      storeName: personType === 'juridica' ? formData.storeName : undefined,
+      isVendedor: personType === 'vendedor',
+      nameGender
     });
 
     // CRITICAL CHANGE: Redireciona para Jeans ao invés de Dashboard

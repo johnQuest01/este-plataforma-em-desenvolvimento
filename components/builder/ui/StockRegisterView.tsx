@@ -6,13 +6,14 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { 
   Camera, Type, Tag, Box, Barcode, ImageIcon, Store, 
-  DollarSign, ChevronLeft, CheckCircle2, Save, ArrowRightLeft 
+  DollarSign, ChevronLeft, CheckCircle2, Save, ArrowRightLeft, Trash2 
 } from 'lucide-react';
 
 import { StockVariationsPopup, VariationItem } from './StockVariationsPopup';
 import { StockPricePopup, ProductVisibility } from './StockPricePopup';
 import { StockResupplyPopup } from './StockResupplyPopup';
-import { saveProductAction } from '@/app/actions/product';
+import { ProductManagementPopup } from './ProductManagementPopup'; // 🧱 NOVO: Import do popup de gerenciamento
+import { saveProductAction, removeProductGridBlocksAction } from '@/app/actions/product'; // 🧹 LIMPEZA
 import { PRODUCT_UPDATE_EVENT } from '@/components/builder/blocks/ProductGrid';
 import { fileToBase64 } from '@/utils/image-helper';
 import { withGuardian } from "@/components/guardian/GuardianBeacon";
@@ -29,10 +30,28 @@ const StockRegisterViewBase = ({ onBack, onRegister, isPageMode = false }: Stock
   const [isVariationsOpen, setIsVariationsOpen] = useState(false);
   const [isPriceOpen, setIsPriceOpen] = useState(false);
   const [isResupplyOpen, setIsResupplyOpen] = useState(false);
+  const [isManagementOpen, setIsManagementOpen] = useState(false); // 🧱 NOVO: Estado do popup de gerenciamento
   const [isSendingData, setIsSendingData] = useState(false);
+
+  // 🧹 LIMPEZA AUTOMÁTICA: Remove blocos antigos de "Lançamentos da Semana" na primeira renderização
+  React.useEffect(() => {
+    const cleanupOldBlocks = async () => {
+      try {
+        const result = await removeProductGridBlocksAction();
+        if (result.success && result.removedCount && result.removedCount > 0) {
+          console.log(`🧹 ${result.removedCount} bloco(s) antigo(s) removido(s) automaticamente`);
+        }
+      } catch (error) {
+        console.error('❌ Erro na limpeza automática:', error);
+      }
+    };
+    
+    cleanupOldBlocks();
+  }, []); // Executa apenas uma vez na montagem
 
   const [productName, setProductName] = useState("");
   const [productPrice, setProductPrice] = useState('R$ 0,00');
+  const [productCategory, setProductCategory] = useState(""); // 🧱 CMS DINÂMICO
   const [productVisibility, setProductVisibility] = useState<ProductVisibility>('none');
   const [savedVariations, setSavedVariations] = useState<VariationItem[]>([]);
   
@@ -44,6 +63,7 @@ const StockRegisterViewBase = ({ onBack, onRegister, isPageMode = false }: Stock
 
   const gridButtons = [
     { label: "Abastecer Estoque", icon: ArrowRightLeft, action: 'openResupply', highlight: true },
+    { label: "Gerenciar Produtos", icon: Trash2, action: 'openManagement', highlight: false, isManagement: true }, // 🧱 NOVO
     { label: "Nome do produto", icon: Type },
     { label: "Loja", icon: Store },
     { label: "Preço", icon: DollarSign, action: 'openPrice' },
@@ -59,6 +79,7 @@ const StockRegisterViewBase = ({ onBack, onRegister, isPageMode = false }: Stock
     if (action === 'openVariations') setIsVariationsOpen(true);
     if (action === 'openPrice') setIsPriceOpen(true);
     if (action === 'openResupply') setIsResupplyOpen(true);
+    if (action === 'openManagement') setIsManagementOpen(true); // 🧱 NOVO
     if (action === 'openCamera') cameraInputReference.current?.click();
     if (action === 'openGallery') galleryInputReference.current?.click();
   };
@@ -76,16 +97,25 @@ const StockRegisterViewBase = ({ onBack, onRegister, isPageMode = false }: Stock
     setProductVisibility(visibility);
   };
 
-  const handleVariationsSave = (items: VariationItem[], metadata?: { name: string }) => {
+  const handleVariationsSave = (items: VariationItem[], metadata?: { name: string; category?: string }) => {
     setSavedVariations(items);
     if (metadata?.name) {
       setProductName(metadata.name);
+    }
+    // 🧱 CMS DINÂMICO: Recebe categoria das variações
+    if (metadata?.category) {
+      setProductCategory(metadata.category);
     }
   };
 
   const handleConfirmRegister = async () => {
     const sanitizedName = productName.trim();
     if (!sanitizedName) return alert("⚠️ Digite o nome do produto antes de salvar!");
+    
+    // 🧱 CMS DINÂMICO: Valida categoria
+    if (!productCategory.trim()) {
+      return alert("⚠️ Selecione ou digite a categoria do produto!");
+    }
     
     const hasVariationPhoto = savedVariations.some(v => v.images && v.images.length > 0);
     if (!directPhotoFile && !hasVariationPhoto) {
@@ -106,6 +136,7 @@ const StockRegisterViewBase = ({ onBack, onRegister, isPageMode = false }: Stock
       const result = await saveProductAction({
         name: sanitizedName,
         price: productPrice,
+        category: productCategory.trim(), // 🧱 CMS DINÂMICO
         visibility: productVisibility,
         variations: savedVariations.map(v => ({ 
           ...v, 
@@ -184,16 +215,32 @@ const StockRegisterViewBase = ({ onBack, onRegister, isPageMode = false }: Stock
           />
         </div>
 
+        {/* 🧱 CMS DINÂMICO: Campo de Categoria */}
+        <div className="bg-white rounded-2xl p-1.5 shadow-sm border border-gray-200">
+          <input
+            type="text"
+            value={productCategory}
+            onChange={(event) => setProductCategory(event.target.value)}
+            placeholder="CATEGORIA (ex: Camisetas, Vestidos, Calças)"
+            className="w-full h-10 px-4 bg-gray-50 rounded-xl text-gray-900 placeholder:text-gray-400 font-bold text-xs text-center outline-none border-2 border-transparent focus:border-[#00c853]"
+          />
+          <p className="text-[10px] text-gray-500 text-center mt-1 px-2">
+            💡 Uma nova seção será criada automaticamente na Home se esta categoria ainda não existir
+          </p>
+        </div>
+
         {/* ✅ GRID RESPONSIVO: 2 colunas no mobile, 4 no desktop (lg) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           {gridButtons.map((button, index) => {
             const isPriceSet = button.action === 'openPrice' && productPrice !== 'R$ 0,00';
             const hasVars = button.action === 'openVariations' && savedVariations.length > 0;
             const hasPhoto = (button.action === 'openCamera' || button.action === 'openGallery') && directPhotoFile !== null;
+            const isManagement = button.isManagement === true; // 🧱 NOVO: Identifica botão de gerenciamento
+            
             return (
-              <button key={index} onClick={() => handleGridButtonClick(button.action)} className={cn("flex flex-col items-center justify-center gap-1 py-2 px-1 bg-white border border-gray-200 rounded-xl shadow-sm active:scale-95 transition-all group", (isPriceSet || hasVars || hasPhoto) && "border-[#00c853] bg-green-50/30", button.highlight && "border-orange-200 bg-orange-50/50")}>
-                <div className={cn("w-10 h-10 rounded-full flex items-center justify-center", (isPriceSet || hasVars || hasPhoto) ? "bg-[#00c853] text-white" : button.highlight ? "bg-orange-100 text-orange-600" : "bg-gray-50 text-gray-600")}>
-                  <button.icon size={26} strokeWidth={button.highlight ? 2 : 1.5} />
+              <button key={index} onClick={() => handleGridButtonClick(button.action)} className={cn("flex flex-col items-center justify-center gap-1 py-2 px-1 bg-white border border-gray-200 rounded-xl shadow-sm active:scale-95 transition-all group", (isPriceSet || hasVars || hasPhoto) && "border-[#00c853] bg-green-50/30", button.highlight && "border-orange-200 bg-orange-50/50", isManagement && "border-red-200 bg-red-50/30")}>
+                <div className={cn("w-10 h-10 rounded-full flex items-center justify-center", (isPriceSet || hasVars || hasPhoto) ? "bg-[#00c853] text-white" : button.highlight ? "bg-orange-100 text-orange-600" : isManagement ? "bg-red-100 text-red-600" : "bg-gray-50 text-gray-600")}>
+                  <button.icon size={26} strokeWidth={button.highlight || isManagement ? 2 : 1.5} />
                 </div>
                 <span className="text-[11px] font-black uppercase text-gray-800">{button.label}</span>
                 {(isPriceSet || hasVars) && <span className="text-[10px] font-bold text-[#00c853]">{isPriceSet ? productPrice : `${savedVariations.length} item(s)`}</span>}
@@ -228,6 +275,16 @@ const StockRegisterViewBase = ({ onBack, onRegister, isPageMode = false }: Stock
         )}
         {isResupplyOpen && <StockResupplyPopup isOpen={isResupplyOpen} onClose={() => setIsResupplyOpen(false)} />}
       </AnimatePresence>
+
+      {/* 🧱 NOVO: Popup de Gerenciamento de Produtos */}
+      <ProductManagementPopup
+        isOpen={isManagementOpen}
+        onClose={() => setIsManagementOpen(false)}
+        onProductDeleted={() => {
+          // Dispara evento para atualizar outras telas
+          window.dispatchEvent(new Event(PRODUCT_UPDATE_EVENT));
+        }}
+      />
 
       <StockPricePopup isOpen={isPriceOpen} onClose={() => setIsPriceOpen(false)} onConfirm={handlePriceConfirmation} initialPrice={productPrice} initialVisibility={productVisibility} />
     </div>

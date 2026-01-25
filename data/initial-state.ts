@@ -67,44 +67,7 @@ export const INITIAL_BLOCKS: BlockConfig[] = [
       accentColor: '#111827'
     }
   },
-  {
-    id: 'blk_products_featured',
-    type: 'product-grid',
-    isVisible: true,
-    data: {
-      title: 'Lançamentos da Semana',
-      products: [
-        {
-          name: 'Roupa curta feminina',
-          tag: 'Novo',
-          imageColor: 'd688b4',
-          price: 'R$ 149,90'
-        },
-        {
-          name: 'Conjunto Verão',
-          tag: 'Oferta',
-          imageColor: 'fde047',
-          price: 'R$ 89,90'
-        },
-        {
-          name: 'Vestido Floral',
-          tag: 'Trend',
-          imageColor: '93c5fd',
-          price: 'R$ 199,90'
-        },
-        {
-          name: 'Jaqueta Jeans',
-          tag: 'Inverno',
-          imageColor: 'cbd5e1',
-          price: 'R$ 259,90'
-        }
-      ]
-    },
-    style: {
-      bgColor: '#ffffff',
-      textColor: '#000000'
-    }
-  },
+  // 🧱 REMOVIDO: Seção "Lançamentos da Semana" - Produtos serão exibidos apenas por categoria
   {
     id: 'blk_footer_main',
     type: 'footer',

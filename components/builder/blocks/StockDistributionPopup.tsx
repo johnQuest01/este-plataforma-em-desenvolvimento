@@ -4,6 +4,10 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { X, Minus, Plus, Check, User, Package } from 'lucide-react';
+
+// 🛡️ GUARDIAN: Importação do HOC
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
+
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { BlockConfig, SaleswomanData } from '@/types/builder';
@@ -19,7 +23,7 @@ interface StockDistributionPopupProps {
   onConfirm?: (distribution: Record<string, number>) => void; // Função ao confirmar
 }
 
-export const StockDistributionPopup: React.FC<StockDistributionPopupProps> = ({ 
+const StockDistributionPopupBase: React.FC<StockDistributionPopupProps> = ({ 
   block, 
   onClose,
   onConfirm 
@@ -208,3 +212,28 @@ export const StockDistributionPopup: React.FC<StockDistributionPopupProps> = ({
     </div>
   );
 };
+
+// 🛡️ GUARDIAN: Exportação com metadados
+export const StockDistributionPopup = withGuardian(
+  StockDistributionPopupBase,
+  "components/builder/blocks/StockDistributionPopup.tsx",
+  "POPUP",
+  {
+    label: "Popup de Distribuição de Estoque",
+    description: "Modal para distribuir quantidade de estoque entre vendedoras autorizadas usando controles de incremento/decremento.",
+    orientationNotes: `
+⚠️ **Pontos de Atenção**:
+- **Z-Index**: z-[300] (alta prioridade)
+- **Dependências**: BlockConfig, SaleswomanData
+- **UX**: Validação de estoque (não permite exceder disponível), feedback visual
+- **Fluxo**: Distribui estoque entre vendedoras e confirma a distribuição
+    `.trim(),
+    connectsTo: [
+      {
+        target: "types/builder.ts",
+        type: "EXTERNAL",
+        description: "Interfaces BlockConfig e SaleswomanData"
+      }
+    ]
+  }
+);

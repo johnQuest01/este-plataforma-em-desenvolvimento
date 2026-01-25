@@ -3,6 +3,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShoppingBag } from 'lucide-react';
+
+// 🛡️ GUARDIAN: Importação do HOC
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
+
 import { cn } from '@/lib/utils';
 // Importa SelectedCategoryData daqui agora
 import { BlockConfig, SelectedCategoryData } from '@/types/builder';
@@ -30,12 +34,16 @@ interface CatalogModalProps {
 
 // Interface removida daqui pois agora vem do @/types/builder
 
-export const CatalogModal = ({ isOpen, onClose }: CatalogModalProps) => {
+const CatalogModalBase = ({ isOpen, onClose }: CatalogModalProps) => {
   const [selectedData, setSelectedData] = useState<SelectedCategoryData | null>(null);
 
   const handleBlockAction = (action: string, payload?: unknown) => {
-    if (action === 'openCategory' && payload && typeof payload === 'object') {
-      setSelectedData(payload as SelectedCategoryData);
+    if (action === 'openCategory' && payload && typeof payload === 'object' && payload !== null) {
+      // Type guard: verifica se payload tem as propriedades esperadas de SelectedCategoryData
+      const data = payload as Record<string, unknown>;
+      if (typeof data.category === 'string') {
+        setSelectedData(payload as SelectedCategoryData);
+      }
     }
   };
 
@@ -114,3 +122,33 @@ export const CatalogModal = ({ isOpen, onClose }: CatalogModalProps) => {
     </>
   );
 };
+
+// 🛡️ GUARDIAN: Exportação com metadados
+export const CatalogModal = withGuardian(
+  CatalogModalBase,
+  "components/builder/ui/CatalogModal.tsx",
+  "POPUP",
+  {
+    label: "Modal de Catálogo de Produtos",
+    description: "Modal para visualização e seleção de produtos do catálogo para criar pedidos.",
+    orientationNotes: `
+⚠️ **Pontos de Atenção**:
+- **Z-Index**: z-200 para sobrepor todos os elementos
+- **Dependências**: BlockRenderer, CategoryProductsModal
+- **UX**: Animação suave de abertura/fechamento
+- **Fluxo**: Abre modal de categoria ao clicar em produto
+    `.trim(),
+    connectsTo: [
+      {
+        target: "components/builder/ui/CategoryProductsModal.tsx",
+        type: "COMPONENT",
+        description: "Modal filho para produtos de uma categoria"
+      },
+      {
+        target: "components/builder/BlockRender.tsx",
+        type: "COMPONENT",
+        description: "Renderiza blocos de catálogo dinamicamente"
+      }
+    ]
+  }
+);

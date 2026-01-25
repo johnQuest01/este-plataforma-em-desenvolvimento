@@ -1,8 +1,7 @@
 // prisma/schema.prisma
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -53,6 +52,9 @@ model Product {
   // Campo essencial para o cadastro inteligente
   reference       String?          
  
+  // 🧱 CMS DINÂMICO: Categoria para filtragem automática
+  category        String?
+ 
   imageColor      String?
   imageUrl        String?
   tags            String[]
@@ -68,6 +70,7 @@ model Product {
 
   // Índice para busca rápida no upload em massa
   @@index([reference])
+  @@index([category]) // 🧱 CMS DINÂMICO: Índice para busca por categoria
 }
 
 model ProductVariant {
@@ -162,4 +165,15 @@ model UIConfig {
   layout    Json     @default("[]") // Onde ficam os blocos Lego
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
+}
+
+// --- DEVELOPMENT CARD PERCENTAGE (Sincronização entre dispositivos) ---
+model DevelopmentCardPercentage {
+  id             String   @id @default("development-card-single-record")
+  percentage     Int      @default(69) // Valor entre 0 e 100
+  isManual       Boolean  @default(false) // Se foi alterado manualmente
+  lastManualUpdate DateTime? // Última vez que foi alterado manualmente
+  lastAutoUpdate  DateTime  @default(now()) // Última vez que foi atualizado automaticamente
+  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime  @default(now())
 }

@@ -3,6 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, Layers, RefreshCw } from 'lucide-react';
+
+// 🛡️ GUARDIAN: Importação do HOC
+import { withGuardian } from "@/components/guardian/GuardianBeacon";
+
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import Image from 'next/image'; // ✅ Importação do Next Image
@@ -58,7 +62,7 @@ interface StockResupplyPopupProps {
   onClose: () => void;
 }
 
-export const StockResupplyPopup = ({ isOpen, onClose }: StockResupplyPopupProps) => {
+const StockResupplyPopupBase = ({ isOpen, onClose }: StockResupplyPopupProps) => {
   const [products, setProducts] = useState<ProductData[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -235,3 +239,28 @@ export const StockResupplyPopup = ({ isOpen, onClose }: StockResupplyPopupProps)
     </AnimatePresence>
   );
 };
+
+// 🛡️ GUARDIAN: Exportação com metadados
+export const StockResupplyPopup = withGuardian(
+  StockResupplyPopupBase,
+  "components/builder/ui/StockResupplyPopup.tsx",
+  "POPUP",
+  {
+    label: "Popup de Reposição de Estoque",
+    description: "Modal para visualizar produtos com estoque baixo e solicitar reposição/separação de estoque.",
+    orientationNotes: `
+⚠️ **Pontos de Atenção**:
+- **Z-Index**: z-[200] para sobrepor elementos principais
+- **Dependências**: getProductsAction (Server Action)
+- **UX**: Busca de produtos, filtro por estoque, loading state
+- **Fluxo**: Exibe produtos com baixo estoque para facilitar reposição
+    `.trim(),
+    connectsTo: [
+      {
+        target: "app/actions/product.ts",
+        type: "DATABASE",
+        description: "Busca produtos do banco de dados"
+      }
+    ]
+  }
+);

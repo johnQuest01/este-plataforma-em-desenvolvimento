@@ -119,8 +119,8 @@ export const JeansNavigation = () => {
     <motion.div 
       className={twMerge(
         // Container com background sutil para legibilidade
-        "flex items-center justify-center mx-auto pointer-events-auto relative z-50",
-        "bg-white/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/50",
+        "flex items-center justify-center mx-auto pointer-events-auto relative z-10",
+        "bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/50",
         "p-2 md:p-3",
         // Layout vertical no mobile, horizontal no desktop
         "flex-col md:flex-row gap-2 w-full max-w-[90%] md:max-w-2xl"
