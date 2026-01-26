@@ -29,7 +29,9 @@ import { z } from 'zod';
 import { 
   CreateProductInput, 
   ProductData, 
-  CreateProductInputSchema 
+  CreateProductInputSchema,
+  DeleteProductInputSchema,
+  DeleteCategoryInputSchema,
 } from './product.schema';
 import { INITIAL_BLOCKS } from '@/data/initial-state';
 import { BlockConfig } from '@/types/builder';
@@ -470,28 +472,101 @@ export async function getProductByIdAction(id: string): Promise<ProductData | nu
  * 🗑️ DELETAR PRODUTO
  * 
  * Remove um produto específico do banco de dados.
- * Cascade delete remove automaticamente todas as variantes.
+ * Implementa cascade delete manual para evitar erros de foreign key.
+ * 
+ * Fluxo:
+ * 1. Valida entrada com Zod
+ * 2. Deleta OrderItems vinculados
+ * 3. Deleta ProductionItems vinculados
+ * 4. Deleta Variantes (cascade automático já existe)
+ * 5. Deleta Produto
  * 
  * @param productId - ID do produto a ser deletado
- * @returns Sucesso ou erro
+ * @returns Sucesso ou erro com mensagem descritiva
  */
 export async function deleteProductAction(productId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    await prisma.product.delete({
-      where: { id: productId }
+    // 🔒 VALIDAÇÃO ZOD: Garante que ID é válido
+    const validation = DeleteProductInputSchema.safeParse({ productId });
+    
+    if (!validation.success) {
+      return { 
+        success: false, 
+        error: validation.error.issues[0]?.message || "ID do produto inválido" 
+      };
+    }
+
+    // 🗑️ CASCADE DELETE MANUAL: Remove todas as dependências em transação
+    await prisma.$transaction(async (tx) => {
+      // 1️⃣ Deletar OrderItems que referenciam este produto
+      const orderItemsDeleted = await tx.orderItem.deleteMany({
+        where: { productId }
+      });
+
+      if (orderItemsDeleted.count > 0) {
+        console.log(`  ↳ ${orderItemsDeleted.count} OrderItem(s) deletado(s)`);
+      }
+
+      // 2️⃣ Deletar ProductionItems que referenciam este produto
+      const productionItemsDeleted = await tx.productionItem.deleteMany({
+        where: { productId }
+      });
+
+      if (productionItemsDeleted.count > 0) {
+        console.log(`  ↳ ${productionItemsDeleted.count} ProductionItem(s) deletado(s)`);
+      }
+
+      // 3️⃣ Deletar ProductVariants (já tem onDelete: Cascade, mas explícito)
+      const variantsDeleted = await tx.productVariant.deleteMany({
+        where: { productId }
+      });
+
+      if (variantsDeleted.count > 0) {
+        console.log(`  ↳ ${variantsDeleted.count} Variante(s) deletada(s)`);
+      }
+
+      // 4️⃣ Deletar o Produto
+      await tx.product.delete({
+        where: { id: productId }
+      });
     });
 
     revalidatePath('/dashboard');
     revalidatePath('/inventory');
     revalidatePath('/');
 
-    console.log(`✅ Produto ${productId} deletado com sucesso`);
+    console.log(`✅ Produto ${productId} deletado com sucesso (cascade completo)`);
     return { success: true };
   } catch (error) {
     console.error("❌ Erro ao deletar produto:", error);
+    
+    // 🔍 Tratamento específico para erros de FK
+    if (error instanceof Error) {
+      // Erro de foreign key constraint
+      if (error.message.includes('Foreign key constraint')) {
+        return { 
+          success: false, 
+          error: "Este produto está vinculado a outros registros e não pode ser deletado. Tente novamente ou contate o suporte." 
+        };
+      }
+      
+      // Erro de produto não encontrado
+      if (error.message.includes('Record to delete does not exist')) {
+        return { 
+          success: false, 
+          error: "Produto não encontrado. Ele pode já ter sido deletado." 
+        };
+      }
+
+      return { 
+        success: false, 
+        error: error.message 
+      };
+    }
+
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : "Erro ao deletar produto" 
+      error: "Erro desconhecido ao deletar produto" 
     };
   }
 }
@@ -500,15 +575,18 @@ export async function deleteProductAction(productId: string): Promise<{ success:
  * 🗑️ DELETAR CATEGORIA COMPLETA
  * 
  * Remove todos os produtos de uma categoria E remove o bloco da Home Page.
+ * Implementa cascade delete manual para evitar erros de foreign key.
  * 
  * Fluxo:
- * 1. Busca todos produtos da categoria
- * 2. Deleta todos os produtos (cascade remove variantes)
- * 3. Remove o bloco da categoria do UIConfig
- * 4. Revalida páginas
+ * 1. Valida entrada com Zod
+ * 2. Busca todos produtos da categoria
+ * 3. Para cada produto: deleta OrderItems, ProductionItems e Variantes
+ * 4. Deleta todos os produtos
+ * 5. Remove o bloco da categoria do UIConfig
+ * 6. Revalida páginas
  * 
  * @param category - Nome da categoria (ex: "Modinha")
- * @returns Sucesso com contagem de produtos deletados
+ * @returns Sucesso com contagem de produtos deletados ou erro
  */
 export async function deleteCategoryAction(category: string): Promise<{ 
   success: boolean; 
@@ -516,13 +594,64 @@ export async function deleteCategoryAction(category: string): Promise<{
   error?: string 
 }> {
   try {
+    // 🔒 VALIDAÇÃO ZOD: Garante que categoria é válida
+    const validation = DeleteCategoryInputSchema.safeParse({ category });
+    
+    if (!validation.success) {
+      return { 
+        success: false, 
+        error: validation.error.issues[0]?.message || "Nome da categoria inválido" 
+      };
+    }
+
+    // 🗑️ CASCADE DELETE MANUAL: Remove todos produtos e dependências
     const result = await prisma.$transaction(async (transaction) => {
-      // 1️⃣ Deletar todos produtos (cascade deleta variantes automaticamente)
+      // 1️⃣ Buscar IDs de todos produtos da categoria
+      const productsToDelete = await transaction.product.findMany({
+        where: { category },
+        select: { id: true }
+      });
+
+      const productIds = productsToDelete.map(p => p.id);
+
+      if (productIds.length === 0) {
+        // Nenhum produto para deletar, mas ainda remove o bloco se existir
+        console.log(`⚠️ Nenhum produto encontrado na categoria "${category}"`);
+      } else {
+        // 2️⃣ Deletar OrderItems de todos os produtos desta categoria
+        const orderItemsDeleted = await transaction.orderItem.deleteMany({
+          where: { productId: { in: productIds } }
+        });
+
+        if (orderItemsDeleted.count > 0) {
+          console.log(`  ↳ ${orderItemsDeleted.count} OrderItem(s) deletado(s)`);
+        }
+
+        // 3️⃣ Deletar ProductionItems de todos os produtos desta categoria
+        const productionItemsDeleted = await transaction.productionItem.deleteMany({
+          where: { productId: { in: productIds } }
+        });
+
+        if (productionItemsDeleted.count > 0) {
+          console.log(`  ↳ ${productionItemsDeleted.count} ProductionItem(s) deletado(s)`);
+        }
+
+        // 4️⃣ Deletar ProductVariants (já tem cascade, mas explícito)
+        const variantsDeleted = await transaction.productVariant.deleteMany({
+          where: { productId: { in: productIds } }
+        });
+
+        if (variantsDeleted.count > 0) {
+          console.log(`  ↳ ${variantsDeleted.count} Variante(s) deletada(s)`);
+        }
+      }
+
+      // 5️⃣ Deletar todos produtos da categoria
       const deleteResult = await transaction.product.deleteMany({
         where: { category }
       });
 
-      // 2️⃣ Remover bloco da categoria do UIConfig
+      // 6️⃣ Remover bloco da categoria do UIConfig
       const categoryNormalized = normalizeCategoryName(category);
       const categoryBlockId = `cat_section_${categoryNormalized}`;
 
@@ -560,9 +689,26 @@ export async function deleteCategoryAction(category: string): Promise<{
     return { success: true, deletedCount: result };
   } catch (error) {
     console.error("❌ Erro ao deletar categoria:", error);
+    
+    // 🔍 Tratamento específico para erros
+    if (error instanceof Error) {
+      // Erro de foreign key constraint
+      if (error.message.includes('Foreign key constraint')) {
+        return { 
+          success: false, 
+          error: "Alguns produtos desta categoria estão vinculados a pedidos ou produção. Não foi possível deletar." 
+        };
+      }
+      
+      return { 
+        success: false, 
+        error: error.message 
+      };
+    }
+
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : "Erro ao deletar categoria" 
+      error: "Erro desconhecido ao deletar categoria" 
     };
   }
 }

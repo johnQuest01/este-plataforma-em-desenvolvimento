@@ -4,6 +4,7 @@
 import React from "react";
 import { GlobalAdmin } from '@/components/admin/GlobalAdmin';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
+import { PWAHead } from '@/components/pwa/PWAHead';
 import { MasterGuardianDashboard } from "@/components/builder/blocks/MasterGuardianDashboard";
 import { GlobalGuardianObserver } from "@/components/builder/blocks/master/RexRuntimePixel";
 import { withGuardian } from "@/components/guardian/GuardianBeacon";
@@ -21,6 +22,9 @@ function RootLayoutShellBase({ children }: RootLayoutShellProps) {
 
   return (
     <>
+      {/* PWA Head: Apenas em produção para evitar loops em desenvolvimento */}
+      {!isDevelopmentEnvironment && <PWAHead />}
+      
       {/* Camada de Conteúdo Principal (Páginas) */}
       <main className="relative z-0">
         {children}
@@ -28,7 +32,9 @@ function RootLayoutShellBase({ children }: RootLayoutShellProps) {
       
       {/* Camada de Utilidades de Admin (Production Ready) */}
       <GlobalAdmin />
-      <InstallPrompt />
+      
+      {/* InstallPrompt: Apenas em produção para evitar loops */}
+      {!isDevelopmentEnvironment && <InstallPrompt />}
 
       {/* 
           ✅ INJEÇÃO DO MONITOR DE SAÚDE 

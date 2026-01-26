@@ -179,3 +179,47 @@
     perspective: 1000px;
   }
 }
+
+/* PWA Standalone Mode Styles */
+/* Garante que o app ocupe tela cheia quando instalado */
+@media (display-mode: standalone) {
+  html {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  
+  body {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    /* Remove espaços seguros para área de notificação */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  /* Esconde barras de navegação do navegador */
+  body::before,
+  body::after {
+    display: none;
+  }
+}
+
+/* Classe para modo standalone (adicionada via JavaScript) */
+.standalone-mode {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.standalone-mode body {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}

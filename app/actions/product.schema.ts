@@ -68,3 +68,22 @@ export const CreateProductInputSchema = z.object({
 export type ProductData = z.infer<typeof ProductDataSchema>;
 export type ProductVariantData = z.infer<typeof ProductVariantSchema>;
 export type CreateProductInput = z.infer<typeof CreateProductInputSchema>;
+
+// --- SCHEMAS DE VALIDAÇÃO PARA DELETE ---
+
+/**
+ * Schema para validar exclusão de produto individual
+ */
+export const DeleteProductInputSchema = z.object({
+  productId: z.string().cuid("ID do produto inválido"),
+});
+
+/**
+ * Schema para validar exclusão de categoria completa
+ */
+export const DeleteCategoryInputSchema = z.object({
+  category: z.string().min(1, "Nome da categoria é obrigatório"),
+});
+
+export type DeleteProductInput = z.infer<typeof DeleteProductInputSchema>;
+export type DeleteCategoryInput = z.infer<typeof DeleteCategoryInputSchema>;

@@ -370,20 +370,23 @@ export function ConnectionsView({ data }: ViewProps) {
     };
   }, [data]);
 
-  // ✅ CORREÇÃO DEFINITIVA: Padrão "Adjusting state during render"
-  // 1. Inicialização Lazy
+  // ✅ CORREÇÃO: Estado inicializado corretamente
   const [selectedPath, setSelectedPath] = useState<string[]>(() => {
     return rootFile ? [rootFile] : [];
   });
 
-  // 2. Rastreamento do valor anterior da prop
-  const [prevRootFile, setPrevRootFile] = useState(rootFile);
-
-  // 3. Ajuste de estado DURANTE a renderização (substitui o useEffect problemático)
-  if (rootFile !== prevRootFile) {
-    setPrevRootFile(rootFile);
-    setSelectedPath(rootFile ? [rootFile] : []);
-  }
+  // ✅ CORREÇÃO: Usa useEffect para atualizar quando rootFile mudar (evita loop infinito)
+  useEffect(() => {
+    if (rootFile) {
+      setSelectedPath((prev) => {
+        // Só atualiza se realmente mudou
+        if (prev.length === 0 || prev[0] !== rootFile) {
+          return [rootFile];
+        }
+        return prev;
+      });
+    }
+  }, [rootFile]); // ✅ Dependência correta: apenas rootFile
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 

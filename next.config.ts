@@ -4,13 +4,18 @@ import path from "path";
 
 /**
  * PWA Configuration - Optimized for 2026 Mobile-First POS
+ * PWA desabilitado em desenvolvimento para evitar loops de compilação
+ * Para testar PWA: use produção OU defina variável ENABLE_PWA_DEV=true
+ * Segue protocolo @.cursorrules: TypeScript Strict, Zero placeholders
  */
+const shouldDisablePWA = process.env.NODE_ENV === "development" && !process.env.ENABLE_PWA_DEV;
+
 const withProgressiveWebApp = withProgressiveWebAppInitialization({
   dest: "public",
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
-  reloadOnOnline: false,
-  disable: process.env.NODE_ENV === "development",
+  reloadOnOnline: true,
+  disable: shouldDisablePWA, // ✅ Desabilitado em dev para evitar loops
   workboxOptions: {
     runtimeCaching: [
       {
