@@ -192,11 +192,11 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
         return wrapped;
     });
 
-    // 7. HANDLER DE RESET PREVENTIVO AGRESSIVO COM FUNÇÃO MATEMÁTICA (SEM FIM)
-    // Técnica: Reset preventivo AGRESSIVO usando função matemática para garantir loop infinito SEM FIM
+    // 7. HANDLER DE RESET PREVENTIVO ULTRA AGRESSIVO COM FUNÇÃO MATEMÁTICA (SEM FIM)
+    // Técnica: Reset preventivo ULTRA AGRESSIVO usando função matemática para garantir loop infinito SEM FIM
     // Reseta MUITO ANTES que os botões desapareçam da tela, garantindo visibilidade contínua ABSOLUTA
     // Os botões aparecem continuamente do outro lado, criando ilusão de voltas infinitas
-    // Threshold reduzido para 50% para garantir reset muito antes dos botões desaparecerem
+    // Threshold aumentado para 20% para garantir reset MUITO antes dos botões desaparecerem
     // IMPORTANTE: Usa flag para prevenir loop infinito (x.set dentro de x.on('change') causa recursão)
     const isResettingRef = useRef<boolean>(false);
     
@@ -207,16 +207,16 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
             // Previne loop infinito: se já está resetando, ignora o evento
             if (isResettingRef.current) return;
             
-            // FUNÇÃO MATEMÁTICA DE RESET PREVENTIVO AGRESSIVO:
-            // Reseta quando se aproxima dos limites (50% do limite) para garantir visibilidade contínua ABSOLUTA
-            // Threshold reduzido de 80% para 50% para garantir reset muito antes dos botões desaparecerem
+            // FUNÇÃO MATEMÁTICA DE RESET PREVENTIVO ULTRA AGRESSIVO:
+            // Reseta quando se aproxima dos limites (20% do limite) para garantir visibilidade contínua ABSOLUTA
+            // Threshold ULTRA AGRESSIVO de 20% para garantir reset MUITO antes dos botões desaparecerem
             // Isso previne ABSOLUTAMENTE que os botões desapareçam antes do reset acontecer
             
-            // Calcula thresholds para reset preventivo AGRESSIVO (50% do limite)
-            const rightThreshold = contentWidth * 0.5; // 50% do limite para reset preventivo agressivo (direita)
-            const leftThreshold = -contentWidth * 0.5; // 50% do limite negativo para reset preventivo agressivo (esquerda)
+            // Calcula thresholds para reset preventivo ULTRA AGRESSIVO (20% do limite)
+            const rightThreshold = contentWidth * 0.2; // 20% do limite para reset preventivo ultra agressivo (direita)
+            const leftThreshold = -contentWidth * 0.2; // 20% do limite negativo para reset preventivo ultra agressivo (esquerda)
             
-            // Loop infinito para a DIREITA: quando se aproxima do final de uma cópia (50% do limite)
+            // Loop infinito para a DIREITA: quando se aproxima do final de uma cópia (20% do limite)
             // Reseta preventivamente para o início da mesma cópia, fazendo botões aparecerem do outro lado (esquerda)
             // Como as cópias são idênticas, o reset é imperceptível - botões parecem dar voltas infinitas
             if (latest >= rightThreshold) {
@@ -229,7 +229,7 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
                     isResettingRef.current = false;
                 });
             }
-            // Loop infinito para a ESQUERDA: quando se aproxima do início (50% do limite negativo)
+            // Loop infinito para a ESQUERDA: quando se aproxima do início (20% do limite negativo)
             // Reseta preventivamente para o final da mesma cópia, fazendo botões aparecerem do outro lado (direita)
             // Como as cópias são idênticas, o reset é imperceptível - botões parecem dar voltas infinitas
             else if (latest <= leftThreshold) {

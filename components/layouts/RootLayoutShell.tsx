@@ -12,6 +12,10 @@ import { withGuardian } from "@/components/guardian/GuardianBeacon";
 // ✅ NOVA IMPORTAÇÃO: O Widget Flutuante Global
 import { HealthMonitorBlock } from "@/components/builder/blocks/HealthMonitorBlock";
 
+// ✅ FOOTER GLOBAL: Importa componente e configuração
+import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
+import { GLOBAL_FOOTER_ITEMS, GLOBAL_FOOTER_STYLE } from '@/config/footer';
+
 interface RootLayoutShellProps {
   children: React.ReactNode;
 }
@@ -26,9 +30,20 @@ function RootLayoutShellBase({ children }: RootLayoutShellProps) {
       {!isDevelopmentEnvironment && <PWAHead />}
       
       {/* Camada de Conteúdo Principal (Páginas) */}
-      <main className="relative z-0">
+      <main className="relative z-0 pb-20">
         {children}
       </main>
+      
+      {/* 
+          ✅ FOOTER GLOBAL ÚNICO
+          Aparece em TODAS as telas automaticamente.
+          Botões NUNCA desaparecem - scroll infinito verdadeiro.
+      */}
+      <div className="fixed bottom-0 left-0 w-full z-50 pb-safe-bottom pointer-events-none">
+        <div className="pointer-events-auto">
+          <ButtonsFooter items={GLOBAL_FOOTER_ITEMS} style={GLOBAL_FOOTER_STYLE} />
+        </div>
+      </div>
       
       {/* Camada de Utilidades de Admin (Production Ready) */}
       <GlobalAdmin />
