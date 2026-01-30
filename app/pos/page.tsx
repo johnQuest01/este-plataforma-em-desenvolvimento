@@ -408,9 +408,9 @@ export default function POSPage() {
               initial={{ y: "100%" }} 
               animate={{ y: 0 }} 
               exit={{ y: "100%" }} 
-              className="bg-white w-full h-[90vh] rounded-t-4xl flex flex-col relative z-10 overflow-hidden"
+              className="bg-white w-full h-[90vh] rounded-t-4xl flex flex-col relative z-10 overflow-hidden pb-20"
             >
-              <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+              <div className="p-4 border-b flex justify-between items-center bg-gray-50 shrink-0">
                 <h2 className="font-black text-lg text-gray-800 flex items-center gap-2">
                   <ShoppingBag size={20} className="text-[#5874f6]" /> Sacola
                 </h2>
@@ -418,7 +418,7 @@ export default function POSPage() {
                   <X size={20} />
                 </button>
               </div>
-              <div className="flex-1 overflow-hidden">
+              <div className="flex-1 overflow-hidden flex flex-col">
                 <CartSidebar 
                   cart={cart} 
                   total={subtotal} 
