@@ -30,17 +30,17 @@ export const GLOBAL_FOOTER_ITEMS: FooterItem[] = [
     route: '/favorites' 
   },
   { 
-    id: 'footer_pos', 
+    id: 'footer_dashboard', 
     icon: 'sync', 
     isVisible: true, 
     isHighlight: true, 
-    route: '/pos' 
+    route: '/dashboard' 
   },
   { 
-    id: 'footer_dashboard', 
+    id: 'footer_pos', 
     icon: 'verified', 
     isVisible: true, 
-    route: '/dashboard' 
+    route: '/pos' 
   },
   { 
     id: 'footer_inventory', 

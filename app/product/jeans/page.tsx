@@ -8,16 +8,7 @@ import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
 import { HeaderBlock } from '@/components/builder/blocks/Header';
 import { JeansRegistrationBlock } from '@/components/builder/blocks/JeansRegistrationBlock';
-import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
-import { BlockConfig, FooterItem } from '@/types/builder';
-
-const FOOTER_ITEMS: FooterItem[] = [
-  { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
-  { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
-  { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
-  { id: 'f4', icon: 'verified', isVisible: true, route: '/verified' },
-  { id: 'f5', icon: 'package-check', isVisible: true, route: '/inventory' }
-];
+import { BlockConfig } from '@/types/builder';
 
 /**
  * Página de Cadastro de Jeans.
@@ -66,13 +57,6 @@ function JeansRegistrationPageBase() {
         {/* Conteúdo com scroll - padding-top para compensar header fixo */}
         <div className="w-full pt-[120px] pb-24">
           <JeansRegistrationBlock config={jeansConfig} />
-        </div>
-        
-        {/* Footer Fixo */}
-        <div className="fixed bottom-0 left-0 w-full z-50 pb-safe-bottom bg-transparent pointer-events-none">
-          <div className="pointer-events-auto">
-            <ButtonsFooter items={FOOTER_ITEMS} style={{ bgColor: '#5874f6' }} />
-          </div>
         </div>
       </div>
     </main>

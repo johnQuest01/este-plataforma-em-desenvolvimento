@@ -3,17 +3,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { StoreHeader } from '@/components/builder/blocks/Header';
-import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
 import { BadgeCheck } from 'lucide-react';
-import { FooterItem } from '@/types/builder';
-
-const FOOTER_ITEMS: FooterItem[] = [
-  { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
-  { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
-  { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
-  { id: 'f4', icon: 'verified', isVisible: true, route: '/verified' },
-  { id: 'f5', icon: 'package-check', isVisible: true, route: '/inventory' }
-];
 
 export default function VerifiedPage() {
   return (
@@ -28,7 +18,6 @@ export default function VerifiedPage() {
             <h2 className="text-2xl font-black text-gray-800 mb-2">Loja Verificada</h2>
             <p className="text-sm text-gray-400 max-w-[250px]">Esta loja possui selo de autenticidade e segurança garantida.</p>
         </div>
-        <div className="absolute bottom-0 left-0 w-full z-50 pb-safe-bottom pointer-events-none"><div className="pointer-events-auto"><ButtonsFooter items={FOOTER_ITEMS} style={{ bgColor: '#5874f6' }} /></div></div>
       </div>
     </main>
   );

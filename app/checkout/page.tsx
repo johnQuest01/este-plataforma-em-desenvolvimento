@@ -5,9 +5,8 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { StoreHeader } from '@/components/builder/blocks/Header';
-import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
 import { BlockRenderer } from '@/components/builder/BlockRender';
-import { BlockConfig, FooterItem } from '@/types/builder';
+import { BlockConfig } from '@/types/builder';
 
 // --- CONFIGURAÇÃO DA TELA (LEGO) ---
 const CHECKOUT_LAYOUT: BlockConfig[] = [
@@ -26,14 +25,6 @@ const CHECKOUT_LAYOUT: BlockConfig[] = [
     style: { bgColor: 'transparent' },
     data: {} 
   }
-];
-
-const FOOTER_ITEMS: FooterItem[] = [
-  { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
-  { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
-  { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
-  { id: 'f4', icon: 'verified', isVisible: true, route: '/verified' },
-  { id: 'f5', icon: 'package-check', isVisible: true, route: '/inventory' }
 ];
 
 export default function CheckoutPage() {
@@ -67,13 +58,6 @@ export default function CheckoutPage() {
                  ))}
               </div>
            </div>
-        </div>
-
-        {/* FOOTER */}
-        <div className="absolute bottom-0 left-0 w-full z-50 pb-safe-bottom pointer-events-none">
-          <div className="pointer-events-auto w-full max-w-5xl mx-auto">
-            <ButtonsFooter items={FOOTER_ITEMS} style={{ bgColor: '#5874f6' }} />
-          </div>
         </div>
 
       </div>

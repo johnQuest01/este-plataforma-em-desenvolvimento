@@ -8,12 +8,11 @@ import { cn } from '@/lib/utils';
 // ✅ GUARDIAN: Importação do HOC
 import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
-import { BlockConfig, FooterItem } from '@/types/builder';
+import { BlockConfig } from '@/types/builder';
 import { INVENTORY_BLOCKS, STOCK_BLOCKS } from '@/data/inventory-state';
 import { BlockRenderer } from '@/components/builder/BlockRender';
 import { checkForNewImage } from '@/app/actions';
 import { StoreHeader } from '@/components/builder/blocks/Header';
-import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
 import { LocalDB } from '@/lib/local-db';
 import { AuthorizedSellerBadge } from '@/components/builder/blocks/AuthorizedSellerBadge';
 import { MeusClientesExpandible } from '@/components/builder/blocks/MeusClientesExpandible';
@@ -23,15 +22,6 @@ import { SIZING, SPACING, COLORS, BORDERS, SHADOWS, TYPOGRAPHY } from '@/lib/des
 import { StockModal } from '@/components/builder/ui/StockModal';
 import { CatalogModal } from '@/components/builder/ui/CatalogModal';
 import { OrdersModal } from '@/components/builder/ui/OrdersModal';
-
-// --- CONFIGURAÇÃO DO FOOTER ---
-const FOOTER_ITEMS: FooterItem[] = [
-  { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
-  { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
-  { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
-  { id: 'f4', icon: 'verified', isVisible: true, route: '/verified' },
-  { id: 'f5', icon: 'package-check', isVisible: true, route: '/inventory' }
-];
 
 function InventoryPageBase() {
   const router = useRouter();
@@ -285,14 +275,6 @@ function InventoryPageBase() {
             onClose={() => setIsOrdersModalOpen(false)}
           />
         )}
-
-        {/* 3. RODAPÉ FIXO - Menu de Navegação (Sempre Visível) - FISHEYE FOOTER */}
-        {/* 3. RODAPÉ FIXO - Menu de Navegação (Sempre Visível) */}
-        <div className="absolute bottom-0 left-0 w-full z-100 pb-safe-bottom bg-transparent pointer-events-none">
-          <div className="pointer-events-auto">
-            <ButtonsFooter items={FOOTER_ITEMS} style={{ bgColor: '#5874f6' }} />
-          </div>
-        </div>
 
       </div>
     </main>

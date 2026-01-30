@@ -2,9 +2,8 @@
 
 import React, { useState } from 'react';
 import { StoreHeader } from '@/components/builder/blocks/Header';
-import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
 import { BlockRenderer } from '@/components/builder/BlockRender';
-import { FooterItem, SaleRecord } from '@/types/builder';
+import { SaleRecord } from '@/types/builder';
 
 const MOCK_SALES: SaleRecord[] = [
   { id: '1', productName: 'Camiseta Oversized Black', totalValue: 380.00, quantity: 2, date: '2025-12-20T14:30:00', sellerName: 'Amanda Costa' },
@@ -13,14 +12,6 @@ const MOCK_SALES: SaleRecord[] = [
 ];
 
 const THEME_PRIMARY = '#5874f6';
-
-const FOOTER_ITEMS: FooterItem[] = [
-  { id: 'footer_cart', icon: 'cart', isVisible: true, route: '/cart' },
-  { id: 'footer_heart', icon: 'heart', isVisible: true, route: '/favorites' },
-  { id: 'footer_home', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },
-  { id: 'footer_verified', icon: 'verified', isVisible: true, route: '/verified' },
-  { id: 'footer_package', icon: 'package-check', isVisible: true, route: '/inventory' }
-];
 
 export default function HistoryPage() {
   const [activeView, setActiveView] = useState<'main' | 'total-sales'>('main');
@@ -119,10 +110,6 @@ export default function HistoryPage() {
               />
             </div>
           )}
-        </div>
-
-        <div className="absolute bottom-0 left-0 w-full shrink-0 pb-safe-bottom bg-white border-t border-gray-100 z-50">
-          <ButtonsFooter items={FOOTER_ITEMS} style={{ bgColor: THEME_PRIMARY }} />
         </div>
       </div>
     </main>

@@ -78,9 +78,9 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
         setCenterButtonId(null);
     }, [visibleItems]);
 
-    // 3. Identifica botão de destaque (Caixa/PDV)
+    // 3. Identifica botão de destaque (Dashboard - Tela Inicial)
     const highlightItem = useMemo(() => {
-        return visibleItems.find(item => item.route === '/pos' || item.isHighlight);
+        return visibleItems.find(item => item.route === '/dashboard' || item.isHighlight);
     }, [visibleItems]);
 
     // 4. Duplica itens para criar loop infinito contínuo (botões dando voltas na tela)
@@ -532,7 +532,7 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
                     mass: 0.2 // Reduzido para resposta quase instantânea
                 }}
                 className={cn(
-                    "flex items-center justify-center shadow-xl rounded-full border-4 flex-shrink-0",
+                    "flex items-center justify-center shadow-xl rounded-full border-4 shrink-0",
                     "select-none touch-none",
                     transitionClass,
                     // Tamanho consistente: w-14 h-14 (56px) quando no centro, proporcional ao tamanho normal
@@ -559,7 +559,7 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
                                 href={item.route}
                                 prefetch={true} 
                                 className={cn(
-                                    "flex-shrink-0",
+                                    "shrink-0",
                                     "min-w-[48px] min-h-[48px]",
                                     "flex items-center justify-center",
                                     "touch-none select-none",
@@ -593,7 +593,7 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
                     return (
                         <div
                             className={cn(
-                                "flex-shrink-0",
+                                "shrink-0",
                                 "min-w-[48px] min-h-[48px]",
                                 "flex items-center justify-center",
                                 "touch-none select-none",
