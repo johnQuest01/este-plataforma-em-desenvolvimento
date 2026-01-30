@@ -357,7 +357,7 @@ export default function POSPage() {
       </div>
 
       {/* --- LADO DIREITO: CARRINHO (DESKTOP) --- */}
-      <div className="hidden lg:flex w-[400px] bg-white border-l border-gray-200 flex-col shadow-2xl z-30 h-full">
+      <div className="hidden lg:flex w-[400px] bg-white border-l border-gray-200 flex-col shadow-2xl z-30 h-full pb-20">
         <CartSidebar 
           cart={cart} 
           total={subtotal} 
