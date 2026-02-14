@@ -1,4 +1,3 @@
-// components/builder/blocks/FisheyeFooter.tsx
 'use client';
 
 import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
@@ -12,11 +11,11 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BlockComponentProps } from '@/types/builder';
-import { InfiniteCircularFooterDataSchema, CircularFooterButton } from '@/types/footer';
+import { InfiniteCircularFooterDataSchema, CircularFooterButton, InfiniteCircularFooterData } from '@/types/footer';
 import { registerFooterUsageAction } from '@/app/actions/footer-actions';
 
 /**
- * Configuração de fisheye magnification
+ * Configuration for fisheye magnification
  */
 interface FisheyeConfig {
     maxScale: number;
@@ -30,7 +29,7 @@ interface FisheyeConfig {
 }
 
 /**
- * Props para DockIcon
+ * Props for DockIcon
  */
 interface DockIconProps {
     button: CircularFooterButton;
@@ -44,7 +43,21 @@ interface DockIconProps {
 }
 
 /**
- * DockIcon: Componente individual de ícone com fisheye magnification
+ * Default configuration to satisfy hooks when validation fails
+ */
+const DEFAULT_CONFIG: InfiniteCircularFooterData = {
+    buttons: [],
+    enableLongPressNavigation: false,
+    longPressThreshold: 150,
+    backgroundColor: '#5874f6',
+    centerScale: 1.3,
+    edgeScale: 0.7,
+    centerOpacity: 1,
+    edgeOpacity: 0.4
+};
+
+/**
+ * DockIcon: Individual icon component with fisheye magnification
  */
 const DockIcon: React.FC<DockIconProps> = ({
     button,
@@ -59,7 +72,7 @@ const DockIcon: React.FC<DockIconProps> = ({
     const iconRef = useRef<HTMLDivElement>(null);
     const iconCenterX = useMotionValue<number>(0);
     
-    // Atualiza posição do centro do botão usando useAnimationFrame
+    // Update button center position using useAnimationFrame
     useAnimationFrame(() => {
         if (!iconRef.current || !containerRef.current) return;
         const iconRect = iconRef.current.getBoundingClientRect();
@@ -68,12 +81,12 @@ const DockIcon: React.FC<DockIconProps> = ({
         iconCenterX.set(centerX);
     });
 
-    // Cria um MotionValue que sempre retorna number (trata null como maxDistance)
+    // Create a MotionValue that always returns a number (treats null as maxDistance)
     const cursorXNumber = useTransform(cursorX, (value: number | null): number => {
         return value ?? config.maxDistance;
     });
 
-    // Calcula distância entre cursor e centro do botão
+    // Calculate distance between cursor and button center
     const distanceFromCursor = useTransform(
         [cursorXNumber, iconCenterX],
         (values: number[]): number => {
@@ -84,27 +97,27 @@ const DockIcon: React.FC<DockIconProps> = ({
         }
     );
 
-    // Aplica spring para suavizar a distância
+    // Apply spring to smooth the distance
     const smoothedDistance = useSpring(distanceFromCursor, {
         stiffness: config.springStiffness,
         damping: config.springDamping,
         mass: config.springMass
     });
 
-    // Calcula scale baseado na distância (fisheye effect)
+    // Calculate scale based on distance (fisheye effect)
     const iconScale = useTransform(smoothedDistance, (distance) => {
         if (distance >= config.maxDistance) {
             return config.minScale;
         }
         
-        // Interpolação não-linear para efeito fisheye
+        // Non-linear interpolation for fisheye effect
         const normalizedDistance = distance / config.maxDistance;
-        const easeOut = 1 - Math.pow(1 - normalizedDistance, 3); // Easing cúbico
+        const easeOut = 1 - Math.pow(1 - normalizedDistance, 3); // Cubic easing
         
         return config.maxScale - (easeOut * (config.maxScale - config.minScale));
     });
 
-    // Calcula width baseado na distância
+    // Calculate width based on distance
     const iconWidth = useTransform(smoothedDistance, (distance) => {
         if (distance >= config.maxDistance) {
             return config.minWidth;
@@ -116,7 +129,7 @@ const DockIcon: React.FC<DockIconProps> = ({
         return config.maxWidth - (easeOut * (config.maxWidth - config.minWidth));
     });
 
-    // Aplica spring nos valores de saída para fluidez elástica
+    // Apply spring to output values for elastic fluidity
     const springScale = useSpring(iconScale, {
         stiffness: config.springStiffness,
         damping: config.springDamping,
@@ -182,43 +195,38 @@ const DockIcon: React.FC<DockIconProps> = ({
 };
 
 /**
- * FisheyeFooter: Footer com efeito Fisheye Magnification (Dock Effect)
+ * FisheyeFooter: Footer with Fisheye Magnification Effect (Dock Effect)
  * 
- * Componente de rodapé com efeito de ampliação dinâmica estilo Apple Watch.
- * Os botões aumentam de tamanho conforme o cursor/toque se aproxima do centro.
+ * Footer component with dynamic magnification effect (Apple Watch style).
+ * Buttons increase in size as the cursor/touch approaches the center.
  * 
  * Features:
- * - Fisheye Magnification: scale e width dinâmicos baseados na distância do cursor
- * - Rastreamento de cursor/toque sem re-renders (useMotionValue)
- * - Interpolação não-linear com easing cúbico
- * - Spring physics para fluidez elástica
- * - Glassmorphism com backdrop-blur
+ * - Fisheye Magnification: dynamic scale and width based on cursor distance
+ * - Cursor/touch tracking without re-renders (useMotionValue)
+ * - Non-linear interpolation with cubic easing
+ * - Spring physics for elastic fluidity
+ * - Glassmorphism with backdrop-blur
  */
 const FisheyeFooterBase = ({ config, onAction }: BlockComponentProps): React.JSX.Element => {
     const pathname = usePathname();
     const containerRef = useRef<HTMLDivElement>(null);
     
-    // Estados para dimensões
+    // States for dimensions
     const [containerWidth, setContainerWidth] = useState<number>(0);
     const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
-    // Validação via Zod
+    // 1. Validation (Executed but result used later for rendering)
     const validationResult = InfiniteCircularFooterDataSchema.safeParse(config.data);
     
-    if (!validationResult.success) {
-        return (
-            <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl text-[10px] text-red-400 font-mono">
-                [LEGO_ERR]: {validationResult.error.issues[0]?.message ?? 'Erro de validação'}
-            </div>
-        );
-    }
+    // Use validated data or fallback to defaults to keep hooks running unconditionally
+    const safeData = validationResult.success ? validationResult.data : DEFAULT_CONFIG;
 
     const {
         buttons,
         backgroundColor
-    } = validationResult.data;
+    } = safeData;
 
-    // Configuração de fisheye magnification
+    // Configuration for fisheye magnification (useMemo called unconditionally)
     const fisheyeConfig: FisheyeConfig = useMemo(() => ({
         maxScale: 1.8,
         minScale: 1.0,
@@ -230,10 +238,10 @@ const FisheyeFooterBase = ({ config, onAction }: BlockComponentProps): React.JSX
         springMass: 0.8
     }), []);
 
-    // MotionValue para rastrear posição X do cursor/toque (sem re-renders)
+    // MotionValue to track cursor/touch X position (useMotionValue called unconditionally)
     const cursorX = useMotionValue<number | null>(null);
 
-    // 1. Calcula dimensões dinamicamente
+    // 2. Calculate dimensions dynamically (useEffect called unconditionally)
     useEffect(() => {
         const calculateDimensions = (): void => {
             if (!containerRef.current) return;
@@ -254,7 +262,7 @@ const FisheyeFooterBase = ({ config, onAction }: BlockComponentProps): React.JSX
         };
     }, []);
 
-    // 2. Rastreia movimento do cursor/toque
+    // 3. Track cursor/touch movement (useEffect called unconditionally)
     useEffect(() => {
         if (!isInitialized || !containerRef.current) return;
 
@@ -297,7 +305,7 @@ const FisheyeFooterBase = ({ config, onAction }: BlockComponentProps): React.JSX
         };
     }, [isInitialized, cursorX]);
 
-    // 3. Mapeamento de ícones Lucide
+    // 4. Lucide Icon Mapping
     const iconMap: Record<string, LucideIcon> = {
         cart: ShoppingCart,
         heart: Heart,
@@ -308,13 +316,25 @@ const FisheyeFooterBase = ({ config, onAction }: BlockComponentProps): React.JSX
         default: HelpCircle
     };
 
-    // 4. Renderiza ícone
+    // 5. Render Icon (useCallback called unconditionally)
     const renderIcon = useCallback((iconName: string, buttonColor?: string): React.JSX.Element => {
         const IconComponent = iconMap[iconName] ?? iconMap.default;
         const color = buttonColor ?? '#FFFFFF';
         
         return <IconComponent size={24} strokeWidth={2.5} style={{ color }} />;
     }, []);
+
+    // --- RENDER PHASE ---
+    
+    // Now we can conditionally return based on validation result
+    // because all hooks have been called unconditionally above.
+    if (!validationResult.success) {
+        return (
+            <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl text-[10px] text-red-400 font-mono">
+                [LEGO_ERR]: {validationResult.error.issues[0]?.message ?? 'Erro de validação'}
+            </div>
+        );
+    }
 
     if (!isInitialized) {
         return (
@@ -332,7 +352,7 @@ const FisheyeFooterBase = ({ config, onAction }: BlockComponentProps): React.JSX
                 touchAction: 'pan-y'
             }}
         >
-            {/* BARRA DE FUNDO COM GLASSMORPHISM */}
+            {/* BACKGROUND BAR WITH GLASSMORPHISM */}
             <div
                 className={cn(
                     "absolute bottom-0 left-0 w-full h-[60px] z-0",
@@ -346,7 +366,7 @@ const FisheyeFooterBase = ({ config, onAction }: BlockComponentProps): React.JSX
                 }}
             />
 
-            {/* CONTAINER DE BOTÕES COM FISHEYE EFFECT */}
+            {/* BUTTON CONTAINER WITH FISHEYE EFFECT */}
             <div
                 className={cn(
                     "relative z-10 flex items-end h-full px-4 pointer-events-auto",
@@ -376,6 +396,6 @@ const FisheyeFooterBase = ({ config, onAction }: BlockComponentProps): React.JSX
 };
 
 /**
- * Exportação do componente
+ * Export component
  */
 export const FisheyeFooter = FisheyeFooterBase;

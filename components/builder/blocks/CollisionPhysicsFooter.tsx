@@ -1,58 +1,66 @@
-// components/builder/blocks/CollisionPhysicsFooter.tsx
 'use client';
 
 import React, { useMemo, useRef, useEffect, useState } from 'react';
-import { motion, useMotionValue, useSpring, useAnimationFrame, useTransform, animate } from 'framer-motion';
+import { 
+    motion, 
+    useMotionValue, 
+    useSpring, 
+    useTransform, 
+    useAnimationFrame, 
+    animate, 
+    PanInfo 
+} from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { 
-    ShoppingCart, Heart, Package, BadgeCheck, 
+import {
+    ShoppingCart, Heart, Package, BadgeCheck,
     RefreshCw, Check, HelpCircle, Box,
     LucideIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BlockComponentProps } from '@/types/builder';
-import { InfiniteCircularFooterDataSchema, CircularFooterButton } from '@/types/footer';
+import { InfiniteCircularFooterDataSchema, CircularFooterButton, InfiniteCircularFooterData } from '@/types/footer';
 import { registerFooterUsageAction } from '@/app/actions/footer-actions';
-import { 
-    PhysicsEngine, 
+import {
+    PhysicsEngine,
     CollisionPhysicsConfig,
-    ButtonPhysicsState 
+    ButtonPhysicsState
 } from '@/lib/physics/PhysicsEngine';
+
+/**
+ * Default configuration to satisfy hooks when validation fails
+ */
+const DEFAULT_CONFIG: InfiniteCircularFooterData = {
+    buttons: [],
+    enableLongPressNavigation: false,
+    longPressThreshold: 150,
+    backgroundColor: '#5874f6',
+    centerScale: 1.3,
+    edgeScale: 0.7,
+    centerOpacity: 1,
+    edgeOpacity: 0.4
+};
 
 /**
  * CollisionPhysicsFooter: Independent Collision Physics Footer
  * 
  * Componente de rodapé com física de colisão individual para cada botão.
  * Cada botão interage via detecção de colisão e repulsão em tempo real.
- * 
- * Features:
- * - MotionValues independentes por botão
- * - Detecção de colisão em tempo real (120fps)
- * - Repulsão quando botões estão muito próximos
- * - Wrap-around individual quando sai da tela
- * - Spring constraints para posição de repouso
- * - Transferência de momentum como bolas de bilhar
  */
 const CollisionPhysicsFooterBase = ({ config, onAction }: BlockComponentProps): React.JSX.Element => {
     const pathname = usePathname();
     const containerRef = useRef<HTMLDivElement>(null);
-    
+
     // Estados para dimensões
     const [itemWidth, setItemWidth] = useState<number>(72); // w-14 = 56px + gap-4 = 16px
     const [containerWidth, setContainerWidth] = useState<number>(0);
     const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
-    // Validação via Zod
+    // 1. Validation (Executed but result used later for rendering)
     const validationResult = InfiniteCircularFooterDataSchema.safeParse(config.data);
-    
-    if (!validationResult.success) {
-        return (
-            <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl text-[10px] text-red-400 font-mono">
-                [LEGO_ERR]: {validationResult.error.issues[0]?.message ?? 'Erro de validação'}
-            </div>
-        );
-    }
+
+    // Use validated data or fallback to defaults to keep hooks running unconditionally
+    const safeData = validationResult.success ? validationResult.data : DEFAULT_CONFIG;
 
     const {
         buttons,
@@ -61,9 +69,9 @@ const CollisionPhysicsFooterBase = ({ config, onAction }: BlockComponentProps): 
         edgeScale,
         centerOpacity,
         edgeOpacity
-    } = validationResult.data;
+    } = safeData;
 
-    // Configuração de física
+    // Configuração de física (useMemo called unconditionally)
     const physicsConfig: CollisionPhysicsConfig = useMemo(() => ({
         buttonWidth: 56, // w-14 = 56px
         minDistance: itemWidth,
@@ -75,10 +83,10 @@ const CollisionPhysicsFooterBase = ({ config, onAction }: BlockComponentProps): 
         wrapAroundEnabled: true
     }), [itemWidth]);
 
-    // Instância do motor de física
+    // Instância do motor de física (useRef called unconditionally)
     const physicsEngineRef = useRef<PhysicsEngine | null>(null);
 
-    // Inicializa e atualiza motor de física
+    // Inicializa e atualiza motor de física (useEffect called unconditionally)
     useEffect(() => {
         if (containerWidth > 0) {
             if (!physicsEngineRef.current) {
@@ -89,18 +97,18 @@ const CollisionPhysicsFooterBase = ({ config, onAction }: BlockComponentProps): 
         }
     }, [containerWidth, physicsConfig]);
 
-    // 1. Calcula dimensões dinamicamente
+    // 1. Calcula dimensões dinamicamente (useEffect called unconditionally)
     useEffect(() => {
         const calculateDimensions = (): void => {
             if (!containerRef.current) return;
 
             const containerRect = containerRef.current.getBoundingClientRect();
             setContainerWidth(containerRect.width);
-            
+
             const gap = 16; // gap-4 = 16px
             const buttonSize = 56; // w-14 h-14 = 56px
             setItemWidth(buttonSize + gap);
-            
+
             setIsInitialized(true);
         };
 
@@ -112,6 +120,7 @@ const CollisionPhysicsFooterBase = ({ config, onAction }: BlockComponentProps): 
             window.removeEventListener('resize', calculateDimensions);
             clearTimeout(timeoutId);
         };
+
     }, []);
 
     // 2. Mapeamento de ícones Lucide
@@ -129,7 +138,6 @@ const CollisionPhysicsFooterBase = ({ config, onAction }: BlockComponentProps): 
     const renderIcon = (iconName: string, buttonColor?: string): React.JSX.Element => {
         const IconComponent = iconMap[iconName] ?? iconMap.default;
         const color = buttonColor ?? '#5874f6';
-        
         return <IconComponent size={24} strokeWidth={2.5} style={{ color }} />;
     };
 
@@ -156,7 +164,7 @@ const CollisionPhysicsFooterBase = ({ config, onAction }: BlockComponentProps): 
         physicsConfig
     }) => {
         const isActive = button.route === pathname;
-        
+
         // Posição inicial e de repouso
         const restPosition = useMemo(() => {
             if (containerWidth === 0) return 0;
@@ -164,7 +172,7 @@ const CollisionPhysicsFooterBase = ({ config, onAction }: BlockComponentProps): 
             const buttonOffset = (index - (buttons.length - 1) / 2) * itemWidth;
             return centerOffset + buttonOffset;
         }, [containerWidth, index, itemWidth, buttons.length]);
-        
+
         // Motion values individuais
         const x = useMotionValue(restPosition);
         const xSpring = useSpring(x, {
@@ -208,7 +216,7 @@ const CollisionPhysicsFooterBase = ({ config, onAction }: BlockComponentProps): 
         }, [containerWidth, restPosition, button.id, x]);
 
         // Calcula scale e opacity baseado na posição (Apple Watch Effect)
-        const buttonScale = useTransform(xSpring, (latestX) => {
+        const buttonScale = useTransform(xSpring, (latestX: number) => {
             if (containerWidth === 0) return centerScale;
             const centerX = containerWidth / 2;
             const distanceFromCenter = Math.abs(latestX - centerX);
@@ -218,7 +226,7 @@ const CollisionPhysicsFooterBase = ({ config, onAction }: BlockComponentProps): 
             return Math.max(edgeScale, Math.min(centerScale, calculatedScale));
         });
 
-        const buttonOpacity = useTransform(xSpring, (latestX) => {
+        const buttonOpacity = useTransform(xSpring, (latestX: number) => {
             if (containerWidth === 0) return centerOpacity;
             const centerX = containerWidth / 2;
             const distanceFromCenter = Math.abs(latestX - centerX);
@@ -249,7 +257,7 @@ const CollisionPhysicsFooterBase = ({ config, onAction }: BlockComponentProps): 
 
             // Processa física do frame
             const force = physicsEngineRef.current.processFrame(button.id, deltaTime);
-            
+
             if (Math.abs(force) > 0.01) {
                 const currentValue = x.get();
                 const newX = currentValue + force * deltaTime;
@@ -271,7 +279,7 @@ const CollisionPhysicsFooterBase = ({ config, onAction }: BlockComponentProps): 
                 drag="x"
                 dragElastic={0}
                 dragMomentum={true}
-                dragTransition={{ 
+                dragTransition={{
                     bounceStiffness: physicsConfig.springStiffness,
                     bounceDamping: physicsConfig.springDamping
                 }}
@@ -284,9 +292,9 @@ const CollisionPhysicsFooterBase = ({ config, onAction }: BlockComponentProps): 
                     const newX = currentX + info.delta.x;
                     x.set(newX);
                 }}
-                onDragEnd={(_, info) => {
+                onDragEnd={(_, info: PanInfo) => {
                     physicsStateRef.current.isDragging = false;
-                    
+
                     // Aplica inércia individual com transferência de momentum
                     const velocity = info.velocity.x;
                     if (Math.abs(velocity) > 50) {
@@ -294,7 +302,7 @@ const CollisionPhysicsFooterBase = ({ config, onAction }: BlockComponentProps): 
                         if (physicsEngineRef.current) {
                             physicsEngineRef.current.updateVelocity(button.id, velocity);
                         }
-                        
+
                         const currentX = xSpring.get();
                         const targetX = currentX + (velocity * 0.15);
                         animate(x, targetX, {
@@ -315,8 +323,8 @@ const CollisionPhysicsFooterBase = ({ config, onAction }: BlockComponentProps): 
                     "w-14 h-14",
                     "transition-colors duration-200",
                     "touch-manipulation",
-                    isActive 
-                        ? "bg-[#5874f6] border-white ring-4 ring-[#5874f6]/20" 
+                    isActive
+                        ? "bg-[#5874f6] border-white ring-4 ring-[#5874f6]/20"
                         : "bg-white border-gray-200",
                     "cursor-grab active:cursor-grabbing"
                 )}
@@ -351,7 +359,18 @@ const CollisionPhysicsFooterBase = ({ config, onAction }: BlockComponentProps): 
                 {buttonContent}
             </div>
         );
+
     };
+
+    // --- RENDER PHASE ---
+
+    if (!validationResult.success) {
+        return (
+            <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl text-[10px] text-red-400 font-mono">
+                [LEGO_ERR]: {validationResult.error.issues[0]?.message ?? 'Erro de validação'}
+            </div>
+        );
+    }
 
     if (!isInitialized) {
         return (
@@ -365,7 +384,7 @@ const CollisionPhysicsFooterBase = ({ config, onAction }: BlockComponentProps): 
         <div
             ref={containerRef}
             className="w-full relative h-[80px] flex items-end pointer-events-none overflow-hidden"
-            style={{ 
+            style={{
                 backgroundColor: backgroundColor ?? '#5874f6',
                 touchAction: 'pan-y'
             }}
@@ -403,7 +422,4 @@ const CollisionPhysicsFooterBase = ({ config, onAction }: BlockComponentProps): 
     );
 };
 
-/**
- * Exportação do componente
- */
 export const CollisionPhysicsFooter = CollisionPhysicsFooterBase;

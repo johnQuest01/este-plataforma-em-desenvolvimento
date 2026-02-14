@@ -1,5 +1,4 @@
-// lib/physics/RepulsionEngine.ts
-import { useMotionValue, MotionValue, useAnimationFrame } from 'framer-motion';
+import { motionValue, MotionValue, useAnimationFrame } from 'framer-motion';
 import { useRef, useEffect, useCallback, useMemo } from 'react';
 
 /**
@@ -44,50 +43,50 @@ export function useDistributedPhysics(
     updateDrag: (buttonIndex: number, currentX: number) => void;
     endDrag: (buttonIndex: number, velocity: number) => void;
 } {
-    // Cria MotionValues para todos os botões (fora de loops)
+    // 1. Cria MotionValues estáveis (preservam estado entre renders)
     const motionValues = useMemo(() => {
         const values: Array<{ x: MotionValue<number>; vx: MotionValue<number> }> = [];
         for (let i = 0; i < buttonCount; i++) {
             values.push({
-                x: useMotionValue(0),
-                vx: useMotionValue(0)
+                x: motionValue(0),
+                vx: motionValue(0)
             });
         }
         return values;
     }, [buttonCount]);
 
-    // Array de estados físicos para cada botão
-    const buttonStatesRef = useRef<ButtonPhysicsState[]>([]);
-    
-    // Inicializa estados físicos
-    useEffect(() => {
-        if (config.containerWidth === 0 || buttonCount === 0 || motionValues.length === 0) {
-            buttonStatesRef.current = [];
-            return;
-        }
-        
-        const states: ButtonPhysicsState[] = [];
+    // 2. Constrói a estrutura de estado declarativamente (Safe for Render)
+    const buttonStates = useMemo(() => {
+        if (config.containerWidth === 0 || buttonCount === 0) return [];
+
         const spacing = config.containerWidth / (buttonCount + 1);
         
-        for (let i = 0; i < buttonCount; i++) {
-            const targetX = spacing * (i + 1);
-            const motionValue = motionValues[i];
-            
-            // Inicializa valores
-            motionValue.x.set(targetX);
-            motionValue.vx.set(0);
-            
-            states.push({
-                x: motionValue.x,
-                vx: motionValue.vx,
-                targetX,
-                isDragging: false,
-                dragStartX: 0
-            });
-        }
-        
-        buttonStatesRef.current = states;
+        return motionValues.map((mv, i) => ({
+            x: mv.x,
+            vx: mv.vx,
+            targetX: spacing * (i + 1),
+            isDragging: false, // Reseta drag apenas se containerWidth/count mudar (resize)
+            dragStartX: 0
+        }));
     }, [buttonCount, config.containerWidth, motionValues]);
+
+    // 3. Ref para acesso dentro do loop de animação (evita stale closures)
+    const statesRef = useRef<ButtonPhysicsState[]>(buttonStates);
+
+    // Sincroniza Ref e inicializa posições quando a estrutura muda
+    useEffect(() => {
+        statesRef.current = buttonStates;
+
+        // Inicializa posições (snap) quando o layout muda
+        buttonStates.forEach(state => {
+            // Apenas define se estiver muito longe (primeira renderização ou resize brusco)
+            // Opcional: pode-se remover essa verificação para forçar snap sempre
+            if (state.x.get() === 0) {
+                state.x.set(state.targetX);
+                state.vx.set(0);
+            }
+        });
+    }, [buttonStates]);
 
     // Calcula força de repulsão entre dois botões
     const calculateRepulsionForce = useCallback((
@@ -99,10 +98,8 @@ export function useDistributedPhysics(
         const minDistance = config.repulsionRadius;
         
         if (distance < minDistance && distance > 0) {
-            // Força inversamente proporcional à proximidade (efeito "sabonete")
             const overlap = minDistance - distance;
             const direction = button1X < button2X ? -1 : 1;
-            // Curva não-linear para efeito mais suave
             const forceMagnitude = (overlap / minDistance) * config.repulsionStrength;
             return direction * forceMagnitude;
         }
@@ -120,7 +117,7 @@ export function useDistributedPhysics(
         return displacement * config.attractionStrength;
     }, []);
 
-    // Aplica infinite wrap quando botão sai da tela
+    // Aplica infinite wrap
     const applyInfiniteWrap = useCallback((
         x: number,
         config: RepulsionConfig,
@@ -141,19 +138,19 @@ export function useDistributedPhysics(
             const spacing = config.containerWidth / (buttonCount + 1);
             newTargetX = spacing;
         } else {
-            newTargetX = x; // Mantém target atual
+            newTargetX = x;
         }
         
         return { wrappedX, newTargetX };
     }, []);
 
-    // Loop de simulação física (useAnimationFrame)
+    // Loop de simulação física
     useAnimationFrame(() => {
-        const states = buttonStatesRef.current;
+        // Lê do Ref para garantir acesso aos dados mais recentes sem re-render
+        const states = statesRef.current;
         if (states.length === 0 || config.containerWidth === 0) return;
 
         states.forEach((state, index) => {
-            // Pula botão que está sendo arrastado
             if (state.isDragging) return;
 
             const currentX = state.x.get();
@@ -161,38 +158,23 @@ export function useDistributedPhysics(
 
             let totalForce = 0;
 
-            // 1. Força de atração (voltar para posição ideal)
-            const attractionForce = calculateAttractionForce(
-                currentX,
-                state.targetX,
-                config
-            );
-            totalForce += attractionForce;
+            // 1. Atração
+            totalForce += calculateAttractionForce(currentX, state.targetX, config);
 
-            // 2. Campo de repulsão (efeito "sabonete")
+            // 2. Repulsão
             states.forEach((otherState, otherIndex) => {
                 if (otherIndex === index || otherState.isDragging) return;
-                
-                const otherX = otherState.x.get();
-                const repulsionForce = calculateRepulsionForce(
-                    currentX,
-                    otherX,
-                    config
-                );
-                totalForce += repulsionForce;
+                totalForce += calculateRepulsionForce(currentX, otherState.x.get(), config);
             });
 
-            // 3. Aplica força para atualizar velocidade
+            // 3. Integração
             const newVx = currentVx + totalForce;
-            
-            // 4. Amortecimento (fricção - multiplica por fator < 1)
             const dampedVx = newVx * config.dampingFactor;
             state.vx.set(dampedVx);
 
-            // 5. Atualiza posição baseado na velocidade
             const newX = currentX + dampedVx;
             
-            // 6. Infinite wrap
+            // 4. Wrap
             const wrapResult = applyInfiniteWrap(newX, config, buttonCount);
             if (wrapResult.wrappedX !== newX) {
                 state.x.set(wrapResult.wrappedX);
@@ -203,35 +185,34 @@ export function useDistributedPhysics(
         });
     });
 
-    // Handlers para drag
+    // Handlers para drag (Usam statesRef para garantir consistência)
     const startDrag = useCallback((buttonIndex: number, startX: number): void => {
-        const state = buttonStatesRef.current[buttonIndex];
+        const state = statesRef.current[buttonIndex];
         if (!state) return;
         
         state.isDragging = true;
         state.dragStartX = startX;
-        state.vx.set(0); // Reseta velocidade ao começar drag
+        state.vx.set(0);
     }, []);
 
     const updateDrag = useCallback((buttonIndex: number, currentX: number): void => {
-        const state = buttonStatesRef.current[buttonIndex];
+        const state = statesRef.current[buttonIndex];
         if (!state || !state.isDragging) return;
         
-        // Atualiza posição diretamente durante drag
         state.x.set(currentX);
     }, []);
 
     const endDrag = useCallback((buttonIndex: number, velocity: number): void => {
-        const state = buttonStatesRef.current[buttonIndex];
+        const state = statesRef.current[buttonIndex];
         if (!state) return;
         
         state.isDragging = false;
-        // Aplica velocidade inicial ao soltar
         state.vx.set(velocity);
     }, []);
 
+    // Retorna o valor memoizado (seguro para render)
     return {
-        buttonStates: buttonStatesRef.current,
+        buttonStates,
         startDrag,
         updateDrag,
         endDrag

@@ -1,4 +1,3 @@
-// components/builder/blocks/LiquidDynamicFooter.tsx
 'use client';
 
 import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
@@ -15,7 +14,8 @@ import { BlockComponentProps } from '@/types/builder';
 import { 
     LiquidDynamicFooterDataSchema, 
     LiquidFooterButton,
-    IconName
+    IconName,
+    LiquidDynamicFooterData
 } from '@/types/footer-blocks';
 import { registerFooterUsageAction } from '@/app/actions/footer-actions';
 import { 
@@ -23,20 +23,39 @@ import {
     RepulsionConfig,
     ButtonPhysicsState
 } from '@/lib/physics/RepulsionEngine';
-import { BlockConfig } from '@/types/builder';
+
+// --- STATIC RESOURCES (Moved outside component to avoid dependency issues) ---
+
+const ICON_MAP: Record<IconName, LucideIcon> = {
+    cart: ShoppingCart,
+    heart: Heart,
+    sync: RefreshCw,
+    verified: BadgeCheck,
+    'package-check': Package,
+    inventory: Box,
+    box: Box,
+    check: Check,
+    'help-circle': HelpCircle
+};
+
+const DEFAULT_CONFIG: LiquidDynamicFooterData = {
+    buttons: [],
+    backgroundColor: '#000000',
+    repulsionRadius: 60,
+    repulsionStrength: 5,
+    attractionStrength: 0.1,
+    dampingFactor: 0.9,
+    centerScale: 1.5,
+    edgeScale: 0.8,
+    centerOpacity: 1,
+    edgeOpacity: 0.5
+};
 
 /**
  * LiquidDynamicFooter: "Liquid Soap" POS Footer (Apple Watch Style)
  * 
  * Componente de rodapé com física de "sabonete líquido".
  * Botões deslizam, se empurram e crescem drasticamente ao cruzar o centro.
- * 
- * Features:
- * - Física distribuída: cada botão com movimento independente
- * - Campo de repulsão: efeito "sabonete" - empurra quando muito perto
- * - Escala dinâmica extrema: scale 1.8 no centro, 0.6 nas bordas
- * - Posicionamento absoluto controlado por MotionValues
- * - Infinite wrap: teletransporte quando sai da tela
  */
 const LiquidDynamicFooterBase = ({ config, onAction }: BlockComponentProps): React.JSX.Element => {
     const pathname = usePathname();
@@ -46,16 +65,11 @@ const LiquidDynamicFooterBase = ({ config, onAction }: BlockComponentProps): Rea
     const [containerWidth, setContainerWidth] = useState<number>(0);
     const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
-    // Validação via Zod
+    // 1. Validation (Executed unconditionally)
     const validationResult = LiquidDynamicFooterDataSchema.safeParse(config.data);
     
-    if (!validationResult.success) {
-        return (
-            <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl text-[10px] text-red-400 font-mono">
-                [LEGO_ERR]: {validationResult.error.issues[0]?.message ?? 'Erro de validação'}
-            </div>
-        );
-    }
+    // Use validated data or fallback to defaults to keep hooks running
+    const safeData = validationResult.success ? validationResult.data : DEFAULT_CONFIG;
 
     const {
         buttons,
@@ -68,9 +82,9 @@ const LiquidDynamicFooterBase = ({ config, onAction }: BlockComponentProps): Rea
         edgeScale,
         centerOpacity,
         edgeOpacity
-    } = validationResult.data;
+    } = safeData;
 
-    // Configuração do motor de física
+    // Configuração do motor de física (Unconditional useMemo)
     const BUTTON_SIZE = 56; // w-14 h-14 = 56px
     const PADDING = 100;
 
@@ -84,13 +98,13 @@ const LiquidDynamicFooterBase = ({ config, onAction }: BlockComponentProps): Rea
         containerWidth: containerWidth
     }), [repulsionRadius, repulsionStrength, attractionStrength, dampingFactor, containerWidth]);
 
-    // Hook de física distribuída
+    // Hook de física distribuída (Unconditional Hook Call)
     const { buttonStates, startDrag, updateDrag, endDrag } = useDistributedPhysics(
         buttons.length,
         physicsConfig
     );
 
-    // 1. Calcula dimensões dinamicamente
+    // 2. Calcula dimensões dinamicamente (Unconditional useEffect)
     useEffect(() => {
         const calculateDimensions = (): void => {
             if (!containerRef.current) return;
@@ -111,28 +125,15 @@ const LiquidDynamicFooterBase = ({ config, onAction }: BlockComponentProps): Rea
         };
     }, []);
 
-    // 2. Mapeamento de ícones Lucide
-    const iconMap: Record<IconName, LucideIcon> = {
-        cart: ShoppingCart,
-        heart: Heart,
-        sync: RefreshCw,
-        verified: BadgeCheck,
-        'package-check': Package,
-        inventory: Box,
-        box: Box,
-        check: Check,
-        'help-circle': HelpCircle
-    };
-
-    // 3. Renderiza ícone
+    // 3. Renderiza ícone (Unconditional useCallback)
     const renderIcon = useCallback((iconName: IconName, buttonColor?: string): React.JSX.Element => {
-        const IconComponent = iconMap[iconName] ?? iconMap['help-circle'];
+        const IconComponent = ICON_MAP[iconName] ?? ICON_MAP['help-circle'];
         const color = buttonColor ?? '#FFFFFF';
         
         return <IconComponent size={24} strokeWidth={2.5} style={{ color }} />;
     }, []);
 
-    // 4. Componente de botão individual com física líquida
+    // 4. Componente de botão individual (Defined inside to access props, but logic is pure)
     const LiquidButton: React.FC<{
         button: LiquidFooterButton;
         index: number;
@@ -168,7 +169,6 @@ const LiquidDynamicFooterBase = ({ config, onAction }: BlockComponentProps): Rea
             const normalizedDistance = Math.min(distanceFromCenter / maxDistance, 1);
             
             // Curva gaussiana: e^(-(x^2) / (2 * sigma^2))
-            // sigma menor = curva mais acentuada
             const sigma = 0.3;
             const gaussianFactor = Math.exp(-(normalizedDistance * normalizedDistance) / (2 * sigma * sigma));
             
@@ -289,6 +289,16 @@ const LiquidDynamicFooterBase = ({ config, onAction }: BlockComponentProps): Rea
             </div>
         );
     };
+
+    // --- RENDER PHASE (Conditional Returns Allowed Here) ---
+
+    if (!validationResult.success) {
+        return (
+            <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl text-[10px] text-red-400 font-mono">
+                [LEGO_ERR]: {validationResult.error.issues[0]?.message ?? 'Erro de validação'}
+            </div>
+        );
+    }
 
     if (!isInitialized || containerWidth === 0 || buttonStates.length === 0) {
         return (
