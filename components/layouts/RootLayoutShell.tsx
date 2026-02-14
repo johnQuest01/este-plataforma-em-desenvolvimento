@@ -38,9 +38,10 @@ function RootLayoutShellBase({ children }: RootLayoutShellProps) {
           ✅ FOOTER GLOBAL ÚNICO
           Aparece em TODAS as telas automaticamente.
           Botões NUNCA desaparecem - scroll infinito verdadeiro.
+          Z-index otimizado para mobile e web.
       */}
-      <div className="fixed bottom-0 left-0 w-full z-50 pb-safe-bottom pointer-events-none">
-        <div className="pointer-events-auto">
+      <div className="fixed bottom-0 left-0 w-full z-50 pointer-events-none">
+        <div className="w-full pointer-events-auto">
           <ButtonsFooter items={GLOBAL_FOOTER_ITEMS} style={GLOBAL_FOOTER_STYLE} />
         </div>
       </div>

@@ -6,8 +6,6 @@ import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProductDetailContent } from '@/components/shop/ProductDetailContent';
-import { FooterBlock } from '@/components/builder/blocks/Footer';
-import { BlockConfig } from '@/types/builder';
 import { ProductData } from '@/app/actions/product'; 
 
 // ✅ Importação do Guardian
@@ -15,11 +13,10 @@ import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
 interface ProductPageShellProps {
   product: ProductData | null;
-  footerBlock?: BlockConfig;
 }
 
 // 1. Componente Base (Visual)
-function ProductPageShellBase({ product, footerBlock }: ProductPageShellProps) {
+function ProductPageShellBase({ product }: ProductPageShellProps) {
   return (
     <main className="w-full h-dvh-real bg-white lg:bg-gray-100 lg:flex lg:justify-center lg:items-center lg:py-8 overflow-hidden">
       <div className={cn(
@@ -51,13 +48,7 @@ function ProductPageShellBase({ product, footerBlock }: ProductPageShellProps) {
           </div>
         )}
 
-        {footerBlock && footerBlock.isVisible && (
-          <div className="absolute bottom-0 left-0 w-full z-50 pb-safe-bottom bg-transparent pointer-events-none">
-            <div className="pointer-events-auto">
-              <FooterBlock config={footerBlock} />
-            </div>
-          </div>
-        )}
+        {/* ✅ Footer removido - Agora é gerenciado globalmente pelo RootLayoutShell.tsx */}
 
       </div>
     </main>
@@ -68,7 +59,7 @@ function ProductPageShellBase({ product, footerBlock }: ProductPageShellProps) {
 export const ProductPageShell = withGuardian(
   ProductPageShellBase,
   "components/shop/ProductPageShell.tsx",
-  "LAYOUT",
+  "UI_COMPONENT",
   {
     label: "Shell da Página de Produto",
     description: "Container principal da PDP (Product Detail Page). Gerencia o layout responsivo e o estado de 'Produto não encontrado'.",
@@ -80,9 +71,9 @@ export const ProductPageShell = withGuardian(
         description: "Renderiza os detalhes internos (fotos, preço, botão comprar)" 
       },
       { 
-        target: "components/builder/blocks/Footer.tsx", 
+        target: "components/layouts/RootLayoutShell.tsx", 
         type: "COMPONENT", 
-        description: "Rodapé fixo da loja" 
+        description: "Footer global gerenciado pelo shell principal" 
       }
     ],
     tags: ["PDP", "Shell", "Layout"]

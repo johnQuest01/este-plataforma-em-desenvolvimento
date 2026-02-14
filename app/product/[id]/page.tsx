@@ -1,8 +1,6 @@
 // path: src/app/product/[id]/page.tsx
 import React from 'react';
 import { getProductByIdAction } from '@/app/actions/product';
-import { INITIAL_BLOCKS } from '@/data/initial-state';
-import { BlockConfig } from '@/types/builder';
 
 // ✅ Importamos o Shell Rastreado
 import { ProductPageShell } from '@/components/shop/ProductPageShell';
@@ -19,13 +17,11 @@ export default async function ProductPage({ params }: PageProps) {
   
   // 2. Buscamos dados no servidor
   const product = await getProductByIdAction(id);
-  const footerBlock = INITIAL_BLOCKS.find(b => b.type === 'footer') as BlockConfig | undefined;
 
-  // 3. Renderizamos o Shell (que contém o Guardian)
+  // 3. Renderizamos o Shell (Footer agora é global via RootLayoutShell)
   return (
     <ProductPageShell 
       product={product} 
-      footerBlock={footerBlock} 
     />
   );
 }

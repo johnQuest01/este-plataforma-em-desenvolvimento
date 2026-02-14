@@ -9,7 +9,6 @@ import { usePathname } from 'next/navigation';
 
 // Importa a Engine e o Template
 import { BlockRenderer } from '@/components/builder/BlockRender';
-import { FooterBlock } from '@/components/builder/blocks/Footer'; // Importe explícito do Footer
 import { ADMIN_TEMPLATE } from '@/data/templates/admin';
 
 export const GlobalAdmin = () => {
@@ -42,9 +41,8 @@ export const GlobalAdmin = () => {
     };
   }, []);
 
-  // --- ESTRATÉGIA LEGO: Separar Header e Footer do resto ---
+  // --- ESTRATÉGIA LEGO: Separar Header do resto ---
   const headerBlock = ADMIN_TEMPLATE.find(b => b.type === 'header');
-  const footerBlock = ADMIN_TEMPLATE.find(b => b.type === 'footer');
   
   // O conteúdo do meio é tudo que NÃO é header nem footer
   const scrollableBlocks = ADMIN_TEMPLATE.filter(b => b.type !== 'footer' && b.type !== 'header');
@@ -139,14 +137,7 @@ export const GlobalAdmin = () => {
                 </div>
               </div>
 
-              {/* --- 3. FOOTER UNIVERSAL (FIXO) --- */}
-              {footerBlock && footerBlock.isVisible && (
-                <div className="absolute bottom-0 left-0 w-full z-50 pb-safe-bottom bg-transparent pointer-events-none">
-                  <div className="pointer-events-auto">
-                    <FooterBlock config={footerBlock} />
-                  </div>
-                </div>
-              )}
+              {/* ✅ Footer removido - Agora é gerenciado globalmente pelo RootLayoutShell.tsx */}
 
             </motion.div>
           </div>
