@@ -35,8 +35,7 @@ type IconName = FooterItem['icon'];
 // CONSTANTS
 // ========================================
 
-const GAP_WIDTH = 8; // gap-2 = 8px in Tailwind (antes era 16px)
-const STRICT_THRESHOLD = 30; // Distance in pixels to be considered "centered"
+const GAP_WIDTH = 8; // gap-2 = 8px in Tailwind
 
 // ========================================
 // ICON RENDERING HELPER
@@ -88,52 +87,9 @@ const FooterButton = ({
     isHighlight
 }: FooterButtonProps): React.JSX.Element => {
     const buttonRef = useRef<HTMLDivElement>(null);
-    const [isCenter, setIsCenter] = useState<boolean>(false);
     
     const isActive = item.route === pathname;
     const transitionClass = "transition-all duration-100 ease-out";
-
-    // Apple-style Magnification Effect - APENAS UM BOTÃO
-    useAnimationFrame(() => {
-        if (!buttonRef.current || !containerRef.current) {
-            setIsCenter(false);
-            return;
-        }
-
-        const buttonRect = buttonRef.current.getBoundingClientRect();
-        const containerRect = containerRef.current.getBoundingClientRect();
-        
-        // Calculate button center relative to container
-        const buttonCenterX = buttonRect.left - containerRect.left + buttonRect.width / 2;
-        const containerCenterX = containerRect.width / 2;
-        const distanceFromCenter = Math.abs(buttonCenterX - containerCenterX);
-        
-        // Early return se está longe
-        if (distanceFromCenter >= STRICT_THRESHOLD) {
-            setIsCenter(false);
-            return;
-        }
-
-        // Buscar o botão MAIS PRÓXIMO do centro
-        const allButtons = containerRef.current.querySelectorAll('[data-button-item]');
-        let closestDistance = Infinity;
-        let closestButton: Element | null = null;
-
-        allButtons.forEach((btn) => {
-            const rect = btn.getBoundingClientRect();
-            const btnCenterX = rect.left - containerRect.left + rect.width / 2;
-            const dist = Math.abs(btnCenterX - containerCenterX);
-            
-            if (dist < closestDistance) {
-                closestDistance = dist;
-                closestButton = btn;
-            }
-        });
-
-        // Apenas o botão MAIS PRÓXIMO fica em destaque (mas sem scale)
-        const isThisButtonClosest = closestButton === buttonRef.current;
-        setIsCenter(isThisButtonClosest);
-    });
 
     const buttonContent = (
         <motion.div
@@ -253,23 +209,28 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
             const containerRect = containerRef.current.getBoundingClientRect();
             
             const itemWidth = buttonRect.width + GAP_WIDTH;
-            const totalContentWidth = visibleItems.length * itemWidth;
+            const totalContentWidth = visibleItems.length * itemWidth - GAP_WIDTH; // Remove último gap
             const viewportWidth = containerRect.width;
 
             setContentWidth(totalContentWidth);
             setContainerWidth(viewportWidth);
 
-            // ✅ NOVO: Se todos os botões cabem na tela, centraliza tudo
+            // ✅ SEMPRE centralizar os botões como um grupo
             if (totalContentWidth <= viewportWidth) {
-                // Botões cabem na tela - centralizar e não permitir scroll
+                // Botões cabem na tela - centralizar perfeitamente e TRAVAR
                 const centerOffset = (viewportWidth - totalContentWidth) / 2;
                 setDragConstraints({
                     left: centerOffset,
                     right: centerOffset
                 });
-                x.set(centerOffset);
+                
+                // ✅ SÓ muda posição se ainda não foi setada
+                const currentX = x.get();
+                if (currentX === 0 || Math.abs(currentX) < 1) {
+                    x.set(centerOffset);
+                }
             } else {
-                // Botões não cabem - scroll normal com limites
+                // Botões não cabem - scroll com limites
                 const maxScrollLeft = -(totalContentWidth - viewportWidth);
                 const maxScrollRight = 0;
 
@@ -278,68 +239,29 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
                     right: maxScrollRight
                 });
 
-                // Centralizar primeiro botão ativo
-                const activeIndex = visibleItems.findIndex(item => item.route === pathname);
-                const targetIndex = activeIndex >= 0 ? activeIndex : 0;
-                const targetPosition = -(targetIndex * itemWidth) + (viewportWidth / 2) - (buttonRect.width / 2);
-                
-                // Limitar posição inicial dentro dos constraints
-                const clampedPosition = Math.max(maxScrollLeft, Math.min(maxScrollRight, targetPosition));
-                x.set(clampedPosition);
+                // ✅ SÓ muda posição se ainda não foi setada
+                const currentX = x.get();
+                if (currentX === 0 || Math.abs(currentX) < 1) {
+                    x.set(0);
+                }
             }
         };
 
-        calculateDimensions();
-        window.addEventListener('resize', calculateDimensions);
+        // ✅ Calcula apenas no mount e resize
         const timeoutId = setTimeout(calculateDimensions, 100);
+        window.addEventListener('resize', calculateDimensions);
 
         return () => {
             window.removeEventListener('resize', calculateDimensions);
             clearTimeout(timeoutId);
         };
-    }, [visibleItems, pathname, x]);
+    }, [visibleItems.length]); // ✅ Removido 'x' e 'pathname' das dependências
 
     // ========================================
-    // STEP 3: Auto-center active route
+    // STEP 3: Auto-center active route (DESABILITADO)
     // ========================================
-    useEffect(() => {
-        if (contentWidth === 0 || !containerRef.current || !contentRef.current) return;
-        
-        const activeItem = visibleItems.find(item => item.route === pathname);
-        if (!activeItem) return;
-
-        const timeoutId = setTimeout(() => {
-            if (!containerRef.current || !contentRef.current) return;
-
-            // Find active button
-            const allButtons = Array.from(contentRef.current.querySelectorAll('[data-button-item]')) as HTMLElement[];
-            let activeButton: HTMLElement | null = null;
-
-            for (const btnElement of allButtons) {
-                const btnId = btnElement.getAttribute('data-button-id');
-                if (btnId === activeItem.id) {
-                    activeButton = btnElement;
-                    break;
-                }
-            }
-
-            if (!activeButton || !containerRef.current) return;
-
-            const buttonRect = activeButton.getBoundingClientRect();
-            const containerRect = containerRef.current.getBoundingClientRect();
-            const buttonCenterX = buttonRect.left - containerRect.left + buttonRect.width / 2;
-            const containerCenterX = containerRect.width / 2;
-            const offset = buttonCenterX - containerCenterX;
-
-            const targetX = x.get() - offset;
-            
-            // Limitar dentro dos constraints
-            const clampedX = Math.max(dragConstraints.left, Math.min(dragConstraints.right, targetX));
-            x.set(clampedX);
-        }, 100);
-
-        return () => clearTimeout(timeoutId);
-    }, [pathname, contentWidth, visibleItems, x, dragConstraints]);
+    // Removida auto-centralização ao trocar de rota
+    // Mantém posição centralizada do grupo de botões
 
     // ========================================
     // RENDER
