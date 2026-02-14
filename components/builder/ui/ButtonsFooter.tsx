@@ -259,25 +259,34 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
             setContentWidth(totalContentWidth);
             setContainerWidth(viewportWidth);
 
-            // Calcular limites de drag
-            // left (max scroll esquerda) = -(contentWidth - containerWidth)
-            // right (max scroll direita) = 0
-            const maxScrollLeft = -(totalContentWidth - viewportWidth);
-            const maxScrollRight = 0;
+            // ✅ NOVO: Se todos os botões cabem na tela, centraliza tudo
+            if (totalContentWidth <= viewportWidth) {
+                // Botões cabem na tela - centralizar e não permitir scroll
+                const centerOffset = (viewportWidth - totalContentWidth) / 2;
+                setDragConstraints({
+                    left: centerOffset,
+                    right: centerOffset
+                });
+                x.set(centerOffset);
+            } else {
+                // Botões não cabem - scroll normal com limites
+                const maxScrollLeft = -(totalContentWidth - viewportWidth);
+                const maxScrollRight = 0;
 
-            setDragConstraints({
-                left: maxScrollLeft < 0 ? maxScrollLeft : 0,
-                right: maxScrollRight
-            });
+                setDragConstraints({
+                    left: maxScrollLeft,
+                    right: maxScrollRight
+                });
 
-            // Centralizar primeiro botão ativo ou primeiro botão
-            const activeIndex = visibleItems.findIndex(item => item.route === pathname);
-            const targetIndex = activeIndex >= 0 ? activeIndex : 0;
-            const targetPosition = -(targetIndex * itemWidth) + (viewportWidth / 2) - (buttonRect.width / 2);
-            
-            // Limitar posição inicial dentro dos constraints
-            const clampedPosition = Math.max(maxScrollLeft, Math.min(maxScrollRight, targetPosition));
-            x.set(clampedPosition);
+                // Centralizar primeiro botão ativo
+                const activeIndex = visibleItems.findIndex(item => item.route === pathname);
+                const targetIndex = activeIndex >= 0 ? activeIndex : 0;
+                const targetPosition = -(targetIndex * itemWidth) + (viewportWidth / 2) - (buttonRect.width / 2);
+                
+                // Limitar posição inicial dentro dos constraints
+                const clampedPosition = Math.max(maxScrollLeft, Math.min(maxScrollRight, targetPosition));
+                x.set(clampedPosition);
+            }
         };
 
         calculateDimensions();
@@ -389,7 +398,7 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
                     contain: 'layout'
                 }}
                 className={cn(
-                    "relative z-10 flex items-center h-full px-4",
+                    "relative z-10 flex items-center h-full",
                     "gap-2",
                     "cursor-grab active:cursor-grabbing",
                     "select-none"
