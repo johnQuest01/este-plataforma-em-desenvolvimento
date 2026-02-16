@@ -196,3 +196,15 @@ model DevelopmentCardPercentage {
   updatedAt      DateTime  @updatedAt
   createdAt      DateTime  @default(now())
 }
+
+// --- CONTROLE DE ACESSO ADMIN ---
+model AdminAccess {
+  id            String   @id @default("admin-access-single-record")
+  passwordHash  String   // Hash da senha de acesso
+  isUnlocked    Boolean  @default(false) // Se está desbloqueado na sessão atual
+  lastAccess    DateTime? // Última vez que foi acessado
+  accessCount   Int      @default(0) // Contador de acessos
+  buttonPosition Json?   @default("{\"x\": 0, \"y\": 0}") // Posição do botão (x, y)
+  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now())
+}
