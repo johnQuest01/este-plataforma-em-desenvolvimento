@@ -17,7 +17,7 @@ export const AspectRatioEnum = z.enum(['16/9', '1/1', '4/5', '9/16']);
 // Schema de criação de banner
 export const BannerCreatorSchema = z.object({
   title: z
-    .string({ required_error: 'Título é obrigatório' })
+    .string({ message: 'Título é obrigatório' })
     .min(3, 'Título deve ter no mínimo 3 caracteres')
     .max(100, 'Título deve ter no máximo 100 caracteres')
     .trim(),
