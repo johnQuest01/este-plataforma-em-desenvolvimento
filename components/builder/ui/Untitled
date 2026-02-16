@@ -1,0 +1,49 @@
+No meu projeto de E-commerce com arquitetura em blocos (Lego), preciso implementar um sistema de "Criador de Banners" na tela de cadastro de produtos. O objetivo é garantir que os banners criados tenham proporções exatas e não fiquem distorcidos no mobile.
+
+Contexto: O código local já possui funcionalidades de Drag-and-Drop sendo testadas na dashboard, então crie o novo formulário de forma isolada para não conflitar, mas que gere o JSON compatível com meu renderizador de blocos.
+
+Implemente as seguintes funcionalidades:
+
+Novo Componente de Formulário (BannerBuilderForm):
+
+Deve ser um componente independente (para abrir em Modal/Dialog).
+
+Campo Título: Input de texto obrigatório (para controle interno do admin).
+
+Campo Tipo de Mídia: Toggle para selecionar entre 'Imagem' ou 'Vídeo'.
+
+Seleção de Proporção (Aspect Ratio): Crie botões visuais para selecionar o formato do banner:
+
+Full Horizontal (16:9): Para desktop ou topos.
+
+Quadrado (1:1): Para listas menores.
+
+Retrato (4:5): Banner vertical médio (ocupa 70% da tela mobile, incentivando o scroll).
+
+Full Stories (9:16): Banner de tela cheia.
+
+Upload: Área para soltar o arquivo.
+
+Preview em Tempo Real ("Celular Virtual"):
+
+Crie uma visualização ao lado do formulário que simule a tela de um celular.
+
+Ao fazer upload da imagem e selecionar uma proporção (ex: 4:5), exiba a imagem dentro desse "celular" aplicando exatamente a classe CSS de aspecto selecionada com object-cover.
+
+Isso serve para eu ver exatamente onde a imagem será cortada antes de salvar.
+
+Integração na Tela de Cadastro:
+
+Localize a página de registro de produtos.
+
+Adicione um botão de destaque chamado "Criar Novo Banner".
+
+Ao clicar, abra este novo formulário.
+
+Regras Técnicas:
+
+Use Zod para validar o formulário (título min 3 chars, arquivo obrigatório).
+
+Use Tailwind 4 para estilização.
+
+Não apague a lógica existente da página, apenas adicione essa nova funcionalidade.

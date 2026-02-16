@@ -141,68 +141,78 @@ const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBase
           <p className="text-sm">Nenhum produto nesta categoria ainda.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto -mx-4 px-4 pb-2">
-          <div className="flex gap-4" style={{ width: 'max-content' }}>
-            {products.map((product, idx) => (
-              <motion.div
-                key={product.id}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.05, duration: 0.3 }}
-                className="flex-shrink-0 w-40 sm:w-48"
-              >
-                <button
-                  onClick={() => handleProductClick(product)}
-                  className="w-full group"
-                >
-                  {/* Imagem do Produto */}
-                  <div 
-                    className="relative w-full rounded-2xl overflow-hidden mb-3 bg-gradient-to-br from-gray-100 to-gray-200"
-                    style={{ aspectRatio: '3/4' }}
-                  >
-                    {product.imageUrl ? (
-                      <img
-                        src={product.imageUrl}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
-                        <ShoppingBag size={32} className="text-gray-400" />
-                      </div>
-                    )}
-                    
-                    {/* Badge de Estoque */}
-                    {product.stock > 0 && (
-                      <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-full">
-                        <span className="text-[10px] font-bold text-white">
-                          {product.stock} un
-                        </span>
-                      </div>
-                    )}
-                  </div>
+        <div className="overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
+          <div className="flex gap-3">
+            {products.map((product, idx) => {
+              // 🎯 NETFLIX UX: Largura FIXA de 150px para TODOS os cards
+              // Garante uniformidade total independente da quantidade
+              const cardWidth = '150px';
 
-                  {/* Info do Produto */}
-                  <div className="text-left">
-                    <h3 
-                      className="text-sm font-semibold line-clamp-2 mb-1 group-hover:opacity-70 transition-opacity"
-                      style={{ color: textColor }}
+              return (
+                <motion.div
+                  key={product.id}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.05, duration: 0.3 }}
+                  className="shrink-0"
+                  style={{
+                    width: cardWidth,
+                    minWidth: cardWidth
+                  }}
+                >
+                  <button
+                    onClick={() => handleProductClick(product)}
+                    className="w-full group"
+                  >
+                    {/* Imagem do Produto */}
+                    <div 
+                      className="relative w-full rounded-2xl overflow-hidden mb-3 bg-linear-to-br from-gray-100 to-gray-200"
+                      style={{ aspectRatio: '3/4' }}
                     >
-                      {product.name}
-                    </h3>
-                    <p 
-                      className="text-base font-bold"
-                      style={{ color: config.style.accentColor ?? '#5874f6' }}
-                    >
-                      {new Intl.NumberFormat('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL'
-                      }).format(product.price)}
-                    </p>
-                  </div>
-                </button>
-              </motion.div>
-            ))}
+                      {product.imageUrl ? (
+                        <img
+                          src={product.imageUrl}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-gray-200 to-gray-300">
+                          <ShoppingBag size={32} className="text-gray-400" />
+                        </div>
+                      )}
+                      
+                      {/* Badge de Estoque */}
+                      {product.stock > 0 && (
+                        <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-full">
+                          <span className="text-[10px] font-bold text-white">
+                            {product.stock} un
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Info do Produto */}
+                    <div className="text-left">
+                      <h3 
+                        className="text-sm font-semibold line-clamp-2 mb-1 group-hover:opacity-70 transition-opacity"
+                        style={{ color: textColor }}
+                      >
+                        {product.name}
+                      </h3>
+                      <p 
+                        className="text-base font-bold"
+                        style={{ color: config.style.accentColor ?? '#5874f6' }}
+                      >
+                        {new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL'
+                        }).format(product.price)}
+                      </p>
+                    </div>
+                  </button>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       )}

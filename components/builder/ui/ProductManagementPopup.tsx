@@ -9,12 +9,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Trash2, Package, AlertTriangle, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Trash2, Package, AlertTriangle, Loader2, ChevronDown, ChevronUp, ImagePlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getProductsAction, deleteProductAction, deleteCategoryAction, ProductData } from '@/app/actions/product';
 import { formatCurrencyBRL } from '@/lib/utils/currency';
 import Image from 'next/image';
 import { withGuardian } from '@/components/guardian/GuardianBeacon';
+import { BannerBuilderForm } from '@/components/builder/blocks/BannerBuilderForm';
 
 interface ProductManagementPopupProps {
   isOpen: boolean;
@@ -29,6 +30,9 @@ const ProductManagementPopupBase = ({ isOpen, onClose, onProductDeleted }: Produ
   const [deletingCategory, setDeletingCategory] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string; type: 'product' | 'category' } | null>(null);
+  
+  // 🎨 NOVO: Estado para o Banner Builder
+  const [showBannerBuilder, setShowBannerBuilder] = useState(false);
 
   // Carrega produtos
   useEffect(() => {
@@ -118,6 +122,17 @@ const ProductManagementPopupBase = ({ isOpen, onClose, onProductDeleted }: Produ
     }
   };
 
+  // 🎨 NOVO: Handler de sucesso do Banner Builder
+  const handleBannerCreated = () => {
+    setShowBannerBuilder(false);
+    // Toast ou notificação de sucesso
+    alert('✅ Banner criado com sucesso!');
+    // Recarregar produtos (ou dashboard) se necessário
+    if (onProductDeleted) {
+      onProductDeleted();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -157,13 +172,23 @@ const ProductManagementPopupBase = ({ isOpen, onClose, onProductDeleted }: Produ
               <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
                 <Package size={24} />
               </div>
-              <div>
+              <div className="flex-1">
                 <h2 className="text-2xl font-black tracking-tight">Gerenciar Produtos</h2>
                 <p className="text-sm text-white/80 font-medium mt-1">
                   {products.length} produto{products.length !== 1 ? 's' : ''} • {categories.length} categoria{categories.length !== 1 ? 's' : ''}
                 </p>
               </div>
             </div>
+
+            {/* 🎨 NOVO: Botão Criar Banner */}
+            <button
+              type="button"
+              onClick={() => setShowBannerBuilder(true)}
+              className="w-full mt-4 py-3 px-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-black hover:from-blue-600 hover:to-cyan-600 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+            >
+              <ImagePlus size={20} />
+              Criar Novo Banner
+            </button>
           </div>
 
           {/* Content */}
@@ -339,6 +364,54 @@ const ProductManagementPopupBase = ({ isOpen, onClose, onProductDeleted }: Produ
                 </button>
               </div>
             </div>
+          </motion.div>
+        )}
+
+        {/* 🎨 NOVO: Banner Builder Modal */}
+        {showBannerBuilder && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-20 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            onClick={() => setShowBannerBuilder(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-5xl max-h-[90vh] overflow-y-auto"
+            >
+              {/* Header do Banner Builder */}
+              <div className="shrink-0 bg-gradient-to-r from-blue-500 to-cyan-500 p-6 text-white relative">
+                <button
+                  onClick={() => setShowBannerBuilder(false)}
+                  className="absolute top-4 right-4 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+                
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <ImagePlus size={24} />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black tracking-tight">Criar Novo Banner</h2>
+                    <p className="text-sm text-white/80 font-medium mt-1">
+                      Proporções rígidas para mobile perfeito
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Formulário */}
+              <BannerBuilderForm
+                onSuccess={handleBannerCreated}
+                onCancel={() => setShowBannerBuilder(false)}
+              />
+            </motion.div>
           </motion.div>
         )}
       </div>

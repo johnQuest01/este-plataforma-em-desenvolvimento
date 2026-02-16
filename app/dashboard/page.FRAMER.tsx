@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, Reorder } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Wand2, GripVertical, Lock, Unlock } from 'lucide-react';
+import { Wand2, GripVertical } from 'lucide-react';
 import { LocalDB } from '@/lib/local-db';
 
 import { BlockConfig, CategoryItem } from '@/types/builder';
@@ -107,21 +107,18 @@ export default function DashboardPage() {
     };
   }, [blocks]);
 
-  // 🎯 DND: Estado local para reordenação usando Framer Motion
+  // 🎯 DND: Estado local para reordenação
   const [reorderableContent, setReorderableContent] = useState<BlockConfig[]>([]);
-  
-  // 🔒 DND: Estado de lock APENAS para o Banner
-  const [isBannerLocked, setIsBannerLocked] = useState<boolean>(true);
 
   // Sincroniza conteúdo reordenável quando layout.content muda
   useEffect(() => {
     setReorderableContent(layout.content);
   }, [layout.content]);
 
-  // 🔒 Toggle lock/unlock APENAS do Banner
-  const toggleBannerLock = () => {
-    setIsBannerLocked(prev => !prev);
-    console.log('🔒 [DND] Toggle Banner lock:', !isBannerLocked);
+  // 🎯 DND: Handler de reordenação
+  const handleReorder = (newOrder: BlockConfig[]) => {
+    setReorderableContent(newOrder);
+    console.log('🎯 [DND] Blocos reordenados:', newOrder.map(b => b.type));
   };
 
   const handleBlockAction = (action: string, payload?: unknown) => {
@@ -229,84 +226,45 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* 🎯 DND: Área de Scroll com Blocos DRAGGABLE (Framer Motion Reorder) */}
+        {/* 🎯 DND: Área de Scroll com Blocos REORDENÁVEIS */}
         <div className="flex-1 overflow-y-auto scrollbar-hide bg-transparent relative w-full pb-32 z-10">
           <div className="flex flex-col min-h-full p-4">
-            <Reorder.Group
-              axis="y"
-              values={reorderableContent}
-              onReorder={setReorderableContent}
-              className="flex flex-col gap-4"
-            >
-              {reorderableContent.map((block) => {
-                // 🎯 Verifica se é o Banner
-                const isBanner = block.type === 'banner';
-                
-                // 🔒 Apenas o Banner pode ser locked/unlocked
-                const isLocked = isBanner ? isBannerLocked : false; // Outros sempre desbloqueados internamente
-                
-                // 🎯 Apenas o Banner pode ser arrastado pelo usuário
-                const canDrag = isBanner && !isLocked;
-                
-                return (
+            <AnimatePresence mode='wait'>
+              <Reorder.Group
+                key={currentTheme}
+                axis="y"
+                values={reorderableContent}
+                onReorder={handleReorder}
+                className="flex flex-col gap-4"
+              >
+                {reorderableContent.map((block) => (
                   <Reorder.Item
                     key={block.id}
                     value={block}
-                    className="relative group"
-                    dragListener={canDrag} // 🔒 Só Banner desbloqueado pode ser arrastado
+                    className="relative group touch-none"
+                    dragListener={false}
                     dragControls={undefined}
-                    whileDrag={{
-                      scale: 1, // ✅ SEM escala - mantém tamanho original
-                      boxShadow: 'none', // ✅ SEM sombra durante arraste
-                      zIndex: canDrag ? 100 : 'auto',
-                      opacity: canDrag ? 0.9 : 1 // ✨ Levemente transparente ao arrastar
-                    }}
-                    transition={{
-                      type: 'spring',
-                      stiffness: 600, // ⬆️ Ainda mais rápido
-                      damping: 40,    // ⬆️ Mais amortecimento
-                      mass: 0.3       // ⬇️ Mais leve
-                    }}
-                    layout // ✨ Ativa layout animation para transições suaves
-                    layoutId={block.id} // ✨ ID único para animação otimizada
                   >
-                    {/* 🔒 Botão de Lock/Unlock (APENAS no Banner) */}
-                    {isBanner && (
-                      <button
-                        onClick={toggleBannerLock}
-                        className={cn(
-                          "absolute -right-2 -top-2 z-50 p-2 rounded-lg shadow-lg transition-all",
-                          "hover:scale-110 active:scale-95",
-                          isLocked 
-                            ? "bg-red-500 text-white hover:bg-red-600" 
-                            : "bg-green-500 text-white hover:bg-green-600"
-                        )}
-                        title={isLocked ? "Clique para desbloquear e arrastar o Banner" : "Clique para travar o Banner"}
-                      >
-                        {isLocked ? <Lock size={16} /> : <Unlock size={16} />}
-                      </button>
-                    )}
-
-                    {/* 🎯 Handle de Arraste (APENAS no Banner desbloqueado) */}
-                    {isBanner && !isLocked && (
-                      <div className="absolute -left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                        <div className="bg-blue-500 text-white p-2 rounded-lg shadow-lg pointer-events-auto cursor-grab active:cursor-grabbing">
-                          <GripVertical size={20} />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Indicador Visual quando Banner está LOCKED */}
-                    {isBanner && isLocked && (
-                      <div className="absolute inset-0 bg-gray-900/5 border-2 border-red-500/20 rounded-lg pointer-events-none" />
-                    )}
+                    {/* 🎯 Handle de Arraste (Visível no hover) */}
+                    <div
+                      className="absolute left-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity z-50 bg-blue-500 text-white p-2 rounded-lg shadow-lg cursor-grab active:cursor-grabbing"
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        // O Reorder.Item vai capturar o drag automaticamente
+                      }}
+                    >
+                      <GripVertical size={20} />
+                    </div>
 
                     {/* Bloco Original */}
-                    <BlockRenderer key={block.id} config={block} onAction={handleBlockAction} />
+                    <BlockRenderer 
+                      config={block} 
+                      onAction={handleBlockAction}
+                    />
                   </Reorder.Item>
-                );
-              })}
-            </Reorder.Group>
+                ))}
+              </Reorder.Group>
+            </AnimatePresence>
           </div>
         </div>
 

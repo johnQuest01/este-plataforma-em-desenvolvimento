@@ -160,11 +160,30 @@ model GuardianConfig {
 
 // --- CONFIGURAÇÃO DE LAYOUT LEGO (FIX BUILD ERROR) ---
 model UIConfig {
-  id        String   @id @default(cuid())
-  pageSlug  String   @unique // ex: 'home', 'pos', 'inventory'
-  layout    Json     @default("[]") // Onde ficam os blocos Lego
-  updatedAt DateTime @updatedAt
-  createdAt DateTime @default(now())
+  id              String   @id @default(cuid())
+  pageSlug        String   @unique // ex: 'home', 'pos', 'inventory'
+  layout          Json     @default("[]") // Onde ficam os blocos Lego
+  dashboardLayout Json?    // 🎨 NOVO: Layout específico da dashboard (com banners)
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+}
+
+// --- BANNERS (CRIADOR DE BANNERS) ---
+model Banner {
+  id           String   @id @default(cuid())
+  title        String   // Título do banner
+  mediaType    String   // 'image' ou 'video'
+  mediaUrl     String   @db.Text // URL da mídia (pode ser Base64)
+  aspectRatio  String   // '16/9', '1/1', '4/5', '9/16'
+  orderIndex   Int      @default(0) // Ordem de exibição
+  isVisible    Boolean  @default(true) // Visibilidade
+  linkUrl      String?  // Link de destino (opcional)
+  description  String?  // Descrição (opcional)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([orderIndex])
+  @@index([isVisible])
 }
 
 // --- DEVELOPMENT CARD PERCENTAGE (Sincronização entre dispositivos) ---

@@ -104,17 +104,25 @@ export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps) =>
             // Key única garantida (ID ou fallback para index)
             const uniqueKey = item.id ? `prod-${item.id}` : `prod-idx-${index}`;
 
+            // 🎯 NETFLIX UX: Largura FIXA de 150px para TODOS os cards
+            // Garante uniformidade total independente da quantidade
+            const cardWidth = '150px';
+
             return (
               <div
                 key={uniqueKey}
-                className="min-w-[170px] max-w-[170px] border border-gray-200 rounded-xl overflow-hidden bg-white relative flex flex-col shadow-sm snap-start shrink-0 cursor-pointer active:scale-[0.98] transition-transform duration-200"
+                className="border border-gray-200 rounded-xl overflow-hidden bg-white relative flex flex-col shadow-sm snap-start shrink-0 cursor-pointer active:scale-[0.98] transition-transform duration-200"
+                style={{
+                  width: cardWidth,
+                  minWidth: cardWidth
+                }}
                 onClick={() => handleProductClick(item)}
               >
                 <div className="text-center py-1 text-[10px] uppercase tracking-wider font-bold text-gray-500 border-b border-gray-100 bg-gray-50/50">
                   {item.id ? 'Novo' : (item.tag || 'Oferta')}
                 </div>
 
-                <div className="relative aspect-[3/4] bg-gray-100 group overflow-hidden">
+                <div className="relative aspect-3/4 bg-gray-100 group overflow-hidden">
                   <Image
                     src={imageUrl}
                     alt={name}
