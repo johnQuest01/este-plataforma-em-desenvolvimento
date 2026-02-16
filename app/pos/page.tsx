@@ -12,7 +12,7 @@ import { ProductData, getProductsAction } from '@/app/actions/product';
 import { createOrderAction, getOrdersAction } from '@/app/actions/order';
 import { getCashRegisterStatus, openCashRegister, closeCashRegister, CashRegisterData } from '@/app/actions/cash';
 import { getReadyForStoreItemsAction, dispatchFromStoreAction, returnToProductionAction } from '@/app/actions/production';
-import { CartItem, PaymentMethod, ProductionItemData, CartVariation, CartProduct, FooterItem } from '@/types/builder'; // Import CartProduct e CartVariation
+import { CartItem, PaymentMethod, ProductionItemData, CartVariation, CartProduct } from '@/types/builder';
 
 // COMPONENTES
 import { CartSidebar } from './components/CartSidebar';
@@ -310,8 +310,8 @@ export default function POSPage() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 lg:p-6 scrollbar-hide">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-4 pb-24 lg:pb-0">
+        <div className="flex-1 overflow-y-scroll p-4 lg:p-6 pb-32 lg:pb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-4 pb-32 lg:pb-0">
             {filteredProducts.map(product => {
               const variants = product.variants || [];
               const totalStock = variants.reduce((acc: number, v) => acc + (v.stock || 0), 0);
@@ -321,7 +321,7 @@ export default function POSPage() {
                   key={product.id} 
                   onClick={() => addToCart(product)} 
                   disabled={!cashStatus?.isOpen || totalStock === 0} 
-                  className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm hover:border-[#5874f6] hover:shadow-md transition-all active:scale-95 flex flex-col gap-2 group text-left h-full disabled:opacity-50"
+                  className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm hover:border-[#5874f6] hover:shadow-md transition-all active:scale-95 flex flex-col gap-2 group text-left disabled:opacity-50"
                 >
                   <div className="aspect-square bg-gray-50 rounded-xl overflow-hidden relative">
                     {product.imageUrl ? (
@@ -341,7 +341,7 @@ export default function POSPage() {
                       {totalStock > 0 ? `${totalStock} un` : 'Esgotado'}
                     </div>
                   </div>
-                  <div className="flex flex-col gap-0.5">
+                  <div className="flex flex-col gap-0.5 pb-1">
                     <span className="text-xs lg:text-sm font-bold text-gray-800 line-clamp-2 leading-tight min-h-[2.5em]">
                       {product.name}
                     </span>
@@ -378,18 +378,18 @@ export default function POSPage() {
       </div>
 
       {/* --- MOBILE BAR (PDV específico) --- */}
-      <div className="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-4 pb-20 z-40 flex items-center justify-between shadow-[0_-5px_20px_rgba(0,0,0,0.1)]">
+      <div className="lg:hidden fixed bottom-16 left-0 w-full bg-white border-t border-gray-200 p-3 z-[60] flex items-center justify-between shadow-[0_-5px_20px_rgba(0,0,0,0.1)]">
         <div className="flex flex-col" onClick={() => setIsMobileCartOpen(true)}>
-          <span className="text-xs font-bold text-gray-400 uppercase">Total</span>
-          <span className="text-xl font-black text-gray-900">
+          <span className="text-[10px] font-bold text-gray-400 uppercase">Total</span>
+          <span className="text-lg font-black text-gray-900">
             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(subtotal)}
           </span>
         </div>
         <button 
           onClick={() => setIsMobileCartOpen(true)} 
-          className="bg-[#5874f6] text-white px-6 py-3 rounded-xl font-bold shadow-lg active:scale-95 flex items-center gap-2"
+          className="bg-[#5874f6] text-white px-5 py-2.5 rounded-xl font-bold shadow-lg active:scale-95 flex items-center gap-2 text-sm"
         >
-          <ShoppingBag size={20} /> <span>Ver Sacola</span>
+          <ShoppingBag size={18} /> <span>Ver Sacola</span>
         </button>
       </div>
 
