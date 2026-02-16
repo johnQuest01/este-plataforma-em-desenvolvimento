@@ -10,13 +10,9 @@ import { z } from 'zod';
  */
 
 // Enums
-export const MediaTypeEnum = z.enum(['image', 'video'], {
-  errorMap: () => ({ message: 'Tipo de mídia inválido. Use "image" ou "video".' })
-});
+export const MediaTypeEnum = z.enum(['image', 'video']);
 
-export const AspectRatioEnum = z.enum(['16/9', '1/1', '4/5', '9/16'], {
-  errorMap: () => ({ message: 'Proporção inválida. Escolha entre: 16/9, 1/1, 4/5 ou 9/16.' })
-});
+export const AspectRatioEnum = z.enum(['16/9', '1/1', '4/5', '9/16']);
 
 // Schema de criação de banner
 export const BannerCreatorSchema = z.object({
