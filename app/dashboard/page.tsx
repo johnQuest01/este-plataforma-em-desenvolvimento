@@ -28,21 +28,21 @@ const isCategoryItem = (payload: unknown): payload is CategoryItem => {
 export default function DashboardPage() {
   const router = useRouter();
 
-  const[blocks, setBlocks] = useState<BlockConfig[]>([]);
+  const [blocks, setBlocks] = useState<BlockConfig[]>([]);
   const [isLoadingLayout, setIsLoadingLayout] = useState(true);
   const [currentTheme, setCurrentTheme] = useState('clothing');
-  const[showAdmin, setShowAdmin] = useState(false);
-  const [activeReelsItem, setActiveReelsItem] = useState<CategoryItem | null>(null);
-  const [isReady, setIsReady] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const[activeReelsItem, setActiveReelsItem] = useState<CategoryItem | null>(null);
+  const[isReady, setIsReady] = useState(false);
   
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const[password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const[isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [password, setPassword] = useState('');
+  const[showPassword, setShowPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   
-  const [buttonPosition, setButtonPosition] = useState({ x: 16, y: 16 });
-  const [isDragging, setIsDragging] = useState(false);
+  const[buttonPosition, setButtonPosition] = useState({ x: 16, y: 16 });
+  const[isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     const loadDynamicLayout = async () => {
@@ -52,7 +52,7 @@ export default function DashboardPage() {
         setBlocks(layout);
         console.log('🏠 [Dashboard] Layout carregado:', layout.length, 'blocos');
       } catch (error) {
-        console.error('❌ [Dashboard] Erro ao carregar layout:', error);
+        console.error('❌[Dashboard] Erro ao carregar layout:', error);
         setBlocks(CLOTHING);
       } finally {
         setIsLoadingLayout(false);
@@ -81,6 +81,23 @@ export default function DashboardPage() {
     };
     loadButtonPosition();
   }, [router]);
+
+  // 🔒 NOVO: Bloqueia o scroll da página quando o modal de senha está aberto
+  useEffect(() => {
+    if (isPasswordModalOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none'; // Previne scroll elástico no iOS
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    }
+
+    // Cleanup function para garantir que o scroll volte se o componente desmontar
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    };
+  }, [isPasswordModalOpen]);
 
   const switchTheme = async (theme: string) => {
     setCurrentTheme(theme);
@@ -131,8 +148,6 @@ export default function DashboardPage() {
     console.log('🔒 [DND] Toggle Banner lock:', !isBannerLocked);
   };
 
-  // 🛡️ CORREÇÃO APLICADA: Assinatura exata exigida pelo BlockRenderer
-  // O Type Guard (isCategoryItem) e o typeof garantem a tipagem interna sem usar "as"
   const handleBlockAction = (action: string, payload?: unknown) => {
     if (action === 'openReels' && isCategoryItem(payload)) {
       setActiveReelsItem(payload);
@@ -203,13 +218,14 @@ export default function DashboardPage() {
     <main className="w-full h-dvh-real bg-gray-900 lg:flex lg:justify-center lg:items-center lg:py-8 overflow-hidden relative">
      
       {isPasswordModalOpen && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 overscroll-none">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setIsPasswordModalOpen(false)}
+            style={{ touchAction: 'none' }}
           />
 
           <motion.div
