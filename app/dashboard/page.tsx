@@ -19,30 +19,37 @@ import { StoreHeader } from '@/components/builder/blocks/Header';
 import { getHomeLayoutAction } from '@/app/actions/ui-config';
 import { verifyAdminPasswordAction, getAdminAccessStatusAction, updateAdminButtonPositionAction } from '@/app/actions/admin-access';
 
-// 🛡️ TYPE GUARD: Validação segura em tempo de execução que informa ao TS o tipo exato
-// Isso elimina a necessidade de usar "as CategoryItem"
+// 🛡️ TYPE GUARD 1: Validação de CategoryItem
 const isCategoryItem = (payload: unknown): payload is CategoryItem => {
   return typeof payload === 'object' && payload !== null && !Array.isArray(payload);
+};
+
+// 🛡️ TYPE GUARD 2: Validação estrita de Objetos (Substitui o uso proibido de "as Record<string, unknown>")
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
 export default function DashboardPage() {
   const router = useRouter();
 
-  const [blocks, setBlocks] = useState<BlockConfig[]>([]);
+  const[blocks, setBlocks] = useState<BlockConfig[]>([]);
   const [isLoadingLayout, setIsLoadingLayout] = useState(true);
   const [currentTheme, setCurrentTheme] = useState('clothing');
-  const [showAdmin, setShowAdmin] = useState(false);
-  const[activeReelsItem, setActiveReelsItem] = useState<CategoryItem | null>(null);
-  const[isReady, setIsReady] = useState(false);
+  const[showAdmin, setShowAdmin] = useState(false);
+  const [activeReelsItem, setActiveReelsItem] = useState<CategoryItem | null>(null);
+  const [isReady, setIsReady] = useState(false);
   
-  const[isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [password, setPassword] = useState('');
-  const[showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
-  const [isVerifying, setIsVerifying] = useState(false);
+  const[isVerifying, setIsVerifying] = useState(false);
   
-  const[buttonPosition, setButtonPosition] = useState({ x: 16, y: 16 });
-  const[isDragging, setIsDragging] = useState(false);
+  const [buttonPosition, setButtonPosition] = useState({ x: 16, y: 16 });
+  const [isDragging, setIsDragging] = useState(false);
+
+  // 📱 ESTADO NOVO: Altura real da viewport (descontando o teclado)
+  const [viewportHeight, setViewportHeight] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     const loadDynamicLayout = async () => {
@@ -82,20 +89,43 @@ export default function DashboardPage() {
     loadButtonPosition();
   }, [router]);
 
-  // 🔒 NOVO: Bloqueia o scroll da página quando o modal de senha está aberto
+  // 🔒 NOVO: Bloqueia o scroll da página e ajusta a altura dinamicamente com o teclado
   useEffect(() => {
-    if (isPasswordModalOpen) {
-      document.body.style.overflow = 'hidden';
-      document.body.style.touchAction = 'none'; // Previne scroll elástico no iOS
-    } else {
+    if (!isPasswordModalOpen) {
       document.body.style.overflow = '';
       document.body.style.touchAction = '';
+      return;
     }
 
-    // Cleanup function para garantir que o scroll volte se o componente desmontar
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+
+    // Função para recalcular a altura visível quando o teclado sobe/desce
+    const handleResize = () => {
+      if (window.visualViewport) {
+        setViewportHeight(window.visualViewport.height);
+      } else {
+        setViewportHeight(window.innerHeight);
+      }
+    };
+
+    // Função para garantir que o layout se reajuste se o usuário sair e voltar pro app
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        setTimeout(handleResize, 100); // Pequeno delay para o SO renderizar o teclado
+      }
+    };
+
+    window.visualViewport?.addEventListener('resize', handleResize);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    handleResize(); // Chamada inicial
+
     return () => {
       document.body.style.overflow = '';
       document.body.style.touchAction = '';
+      window.visualViewport?.removeEventListener('resize', handleResize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isPasswordModalOpen]);
 
@@ -136,8 +166,8 @@ export default function DashboardPage() {
     };
   }, [blocks]);
 
-  const[reorderableContent, setReorderableContent] = useState<BlockConfig[]>([]);
-  const[isBannerLocked, setIsBannerLocked] = useState<boolean>(true);
+  const [reorderableContent, setReorderableContent] = useState<BlockConfig[]>([]);
+  const [isBannerLocked, setIsBannerLocked] = useState<boolean>(true);
 
   useEffect(() => {
     setReorderableContent(layout.content);
@@ -145,7 +175,7 @@ export default function DashboardPage() {
 
   const toggleBannerLock = () => {
     setIsBannerLocked(prev => !prev);
-    console.log('🔒 [DND] Toggle Banner lock:', !isBannerLocked);
+    console.log('🔒[DND] Toggle Banner lock:', !isBannerLocked);
   };
 
   const handleBlockAction = (action: string, payload?: unknown) => {
@@ -218,7 +248,10 @@ export default function DashboardPage() {
     <main className="w-full h-dvh-real bg-gray-900 lg:flex lg:justify-center lg:items-center lg:py-8 overflow-hidden relative">
      
       {isPasswordModalOpen && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 overscroll-none">
+        <div 
+          className="fixed top-0 left-0 w-full z-[10000] flex items-center justify-center p-4 overscroll-none transition-all duration-100 ease-out"
+          style={{ height: viewportHeight ? `${viewportHeight}px` : '100dvh' }}
+        >
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -232,9 +265,9 @@ export default function DashboardPage() {
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-full"
           >
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-6 text-white">
+            <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-6 text-white shrink-0">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
@@ -254,7 +287,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <form onSubmit={handleVerifyPassword} className="p-6 space-y-4">
+            <form onSubmit={handleVerifyPassword} className="p-6 space-y-4 overflow-y-auto">
               <div className="space-y-2">
                 <label className="text-sm font-bold text-gray-700">
                   Senha de Acesso
@@ -323,7 +356,7 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsPasswordModalOpen(false)}
@@ -434,8 +467,9 @@ export default function DashboardPage() {
             <StoreHeader
               style={layout.header.style}
               data={{
-                address: layout.header.data && typeof layout.header.data === 'object' && 'address' in layout.header.data && typeof (layout.header.data as Record<string, unknown>).address === 'string' 
-                  ? (layout.header.data as Record<string, unknown>).address as string
+                // 🛡️ USO DO TYPE GUARD: Sem "as", sem "any". 100% Seguro.
+                address: isRecord(layout.header.data) && typeof layout.header.data.address === 'string' 
+                  ? layout.header.data.address
                   : '',
                 title: 'Maryland SaaS'
               }}
