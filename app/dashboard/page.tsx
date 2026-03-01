@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { AnimatePresence, Reorder, motion } from 'framer-motion';
+import { AnimatePresence, Reorder, motion, PanInfo } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Wand2, GripVertical, Lock, Unlock, X, Eye, EyeOff } from 'lucide-react';
 import { LocalDB } from '@/lib/local-db';
@@ -16,35 +16,34 @@ import { FooterBlock } from '@/components/builder/blocks/Footer';
 import { BlockRenderer } from '@/components/builder/BlockRender';
 import { ReelsModal } from '@/components/builder/ui/ReelsModal';
 import { StoreHeader } from '@/components/builder/blocks/Header';
-import { getHomeLayoutAction } from '@/app/actions/ui-config'; // 🧱 CMS DINÂMICO
+import { getHomeLayoutAction } from '@/app/actions/ui-config';
 import { verifyAdminPasswordAction, getAdminAccessStatusAction, updateAdminButtonPositionAction } from '@/app/actions/admin-access';
-// REMOVIDO: Imports de modal - Agora navega para página /product/[id]
-// REMOVIDO: import { HealthMonitorBlock ... (Já está no RootLayoutShell)
+
+// 🛡️ TYPE GUARD: Validação segura em tempo de execução que informa ao TS o tipo exato
+// Isso elimina a necessidade de usar "as CategoryItem"
+const isCategoryItem = (payload: unknown): payload is CategoryItem => {
+  return typeof payload === 'object' && payload !== null && !Array.isArray(payload);
+};
 
 export default function DashboardPage() {
   const router = useRouter();
 
-  // 🧱 CMS DINÂMICO: Estado inicial será carregado do banco
-  const [blocks, setBlocks] = useState<BlockConfig[]>([]);
+  const[blocks, setBlocks] = useState<BlockConfig[]>([]);
   const [isLoadingLayout, setIsLoadingLayout] = useState(true);
   const [currentTheme, setCurrentTheme] = useState('clothing');
-  const [showAdmin, setShowAdmin] = useState(false);
+  const[showAdmin, setShowAdmin] = useState(false);
   const [activeReelsItem, setActiveReelsItem] = useState<CategoryItem | null>(null);
   const [isReady, setIsReady] = useState(false);
   
-  // 🔒 Estados do modal de senha
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [password, setPassword] = useState('');
+  const[password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   
-  // 🎯 Estados de drag do botão
   const [buttonPosition, setButtonPosition] = useState({ x: 16, y: 16 });
   const [isDragging, setIsDragging] = useState(false);
-  // REMOVIDO: Estados de modal de produto - Agora usa navegação
 
-  // 🧱 CMS DINÂMICO: Carrega layout do banco de dados
   useEffect(() => {
     const loadDynamicLayout = async () => {
       try {
@@ -54,7 +53,6 @@ export default function DashboardPage() {
         console.log('🏠 [Dashboard] Layout carregado:', layout.length, 'blocos');
       } catch (error) {
         console.error('❌ [Dashboard] Erro ao carregar layout:', error);
-        // Fallback para template inicial
         setBlocks(CLOTHING);
       } finally {
         setIsLoadingLayout(false);
@@ -62,7 +60,7 @@ export default function DashboardPage() {
     };
 
     loadDynamicLayout();
-  }, []); // Executa apenas uma vez no mount
+  },[]);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -75,7 +73,6 @@ export default function DashboardPage() {
     };
     checkAuth();
     
-    // 🎯 Carrega posição salva do botão
     const loadButtonPosition = async () => {
       const status = await getAdminAccessStatusAction();
       if (status.success && status.buttonPosition) {
@@ -85,15 +82,11 @@ export default function DashboardPage() {
     loadButtonPosition();
   }, [router]);
 
-  /**
-   * Troca de Temas
-   */
   const switchTheme = async (theme: string) => {
     setCurrentTheme(theme);
-    let newBlocks: BlockConfig[] = [];
+    let newBlocks: BlockConfig[] =[];
 
     if (theme === 'clothing') {
-      // 🧱 CMS DINÂMICO: Recarrega layout do banco quando volta para clothing
       try {
         newBlocks = await getHomeLayoutAction();
         console.log('🔄 [Dashboard] Layout dinâmico recarregado');
@@ -102,7 +95,6 @@ export default function DashboardPage() {
         newBlocks = CLOTHING;
       }
     } else {
-      // Templates estáticos
       if (theme === 'barber') newBlocks = BARBER;
       if (theme === 'tech') newBlocks = TECH;
       if (theme === 'xmas') newBlocks = XMAS;
@@ -119,7 +111,6 @@ export default function DashboardPage() {
     return 'bg-gray-50';
   };
 
-  // Memoização da filtragem para performance (React 19)
   const layout = useMemo(() => {
     return {
       header: blocks.find(b => b.type === 'header'),
@@ -128,36 +119,30 @@ export default function DashboardPage() {
     };
   }, [blocks]);
 
-  // 🎯 DND: Estado local para reordenação usando Framer Motion
-  const [reorderableContent, setReorderableContent] = useState<BlockConfig[]>([]);
-  
-  // 🔒 DND: Estado de lock APENAS para o Banner
-  const [isBannerLocked, setIsBannerLocked] = useState<boolean>(true);
+  const[reorderableContent, setReorderableContent] = useState<BlockConfig[]>([]);
+  const[isBannerLocked, setIsBannerLocked] = useState<boolean>(true);
 
-  // Sincroniza conteúdo reordenável quando layout.content muda
   useEffect(() => {
     setReorderableContent(layout.content);
   }, [layout.content]);
 
-  // 🔒 Toggle lock/unlock APENAS do Banner
   const toggleBannerLock = () => {
     setIsBannerLocked(prev => !prev);
     console.log('🔒 [DND] Toggle Banner lock:', !isBannerLocked);
   };
 
+  // 🛡️ CORREÇÃO APLICADA: Assinatura exata exigida pelo BlockRenderer
+  // O Type Guard (isCategoryItem) e o typeof garantem a tipagem interna sem usar "as"
   const handleBlockAction = (action: string, payload?: unknown) => {
-    if (action === 'openReels' && payload) {
-      setActiveReelsItem(payload as CategoryItem);
+    if (action === 'openReels' && isCategoryItem(payload)) {
+      setActiveReelsItem(payload);
     }
     
-    // 🧱 NOVO: Handler para navegar para página de produto
-    if (action === 'open_product_details' && payload) {
-      const productId = payload as string;
-      handleOpenProductDetails(productId);
+    if (action === 'open_product_details' && typeof payload === 'string') {
+      handleOpenProductDetails(payload);
     }
   };
 
-  // 🧱 NOVO: Função para navegar para página de produto
   const handleOpenProductDetails = (productId: string) => {
     router.push(`/product/${productId}`);
   };
@@ -167,7 +152,6 @@ export default function DashboardPage() {
     setShowAdmin(false);
   };
 
-  // 🔒 Função para verificar senha
   const handleVerifyPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordError('');
@@ -180,24 +164,21 @@ export default function DashboardPage() {
       setPassword('');
       setShowAdmin(true);
     } else {
-      // ❌ Senha errada - mostra erro
       setPasswordError('Senha errada');
-      setPassword(''); // Limpa o campo
+      setPassword('');
       setTimeout(() => setPasswordError(''), 4000);
     }
 
     setIsVerifying(false);
   };
 
-  // 🔒 Handler do botão do lápis
   const handleWandClick = () => {
     if (!isDragging) {
       setIsPasswordModalOpen(true);
     }
   };
 
-  // 🎯 Handler de drag do botão
-  const handleDragEnd = async (event: any, info: any) => {
+  const handleDragEnd = async (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     setIsDragging(false);
     const newPosition = {
       x: Math.max(0, Math.min(window.innerWidth - 60, info.point.x - 24)),
@@ -221,10 +202,8 @@ export default function DashboardPage() {
   return (
     <main className="w-full h-dvh-real bg-gray-900 lg:flex lg:justify-center lg:items-center lg:py-8 overflow-hidden relative">
      
-      {/* 🔒 Modal de Senha */}
       {isPasswordModalOpen && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -233,14 +212,12 @@ export default function DashboardPage() {
             onClick={() => setIsPasswordModalOpen(false)}
           />
 
-          {/* Modal */}
           <motion.div
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
             className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
           >
-            {/* Header */}
             <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-6 text-white">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
@@ -261,9 +238,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Body */}
             <form onSubmit={handleVerifyPassword} className="p-6 space-y-4">
-              {/* Input de Senha */}
               <div className="space-y-2">
                 <label className="text-sm font-bold text-gray-700">
                   Senha de Acesso
@@ -271,7 +246,7 @@ export default function DashboardPage() {
                 <motion.div 
                   className="relative"
                   animate={passwordError ? {
-                    x: [0, -10, 10, -10, 10, 0],
+                    x:[0, -10, 10, -10, 10, 0],
                     transition: { duration: 0.5 }
                   } : {}}
                 >
@@ -302,7 +277,6 @@ export default function DashboardPage() {
                   </button>
                 </motion.div>
                 
-                {/* Mensagem de Erro */}
                 {passwordError && (
                   <motion.div
                     initial={{ opacity: 0, x: -10 }}
@@ -333,7 +307,6 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {/* Botões */}
               <div className="flex gap-3">
                 <button
                   type="button"
@@ -360,7 +333,6 @@ export default function DashboardPage() {
         </div>
       )}
      
-      {/* 🎯 Botão Flutuante de Admin ARRASTÁVEL */}
       <motion.div
         drag
         dragMomentum={false}
@@ -389,14 +361,12 @@ export default function DashboardPage() {
         >
           <Wand2 size={24} className="text-purple-600" />
           
-          {/* Indicador de arrasto */}
           {!isDragging && (
             <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-purple-500 rounded-full border-2 border-white animate-pulse" />
           )}
         </button>
       </motion.div>
      
-      {/* Menu Dropdown (quando senha está correta) */}
       {showAdmin && (
         <div 
           className="fixed z-[9998] bg-white p-2 rounded-xl shadow-2xl flex flex-col gap-2 min-w-[140px] animate-in fade-in slide-in-from-top-2"
@@ -427,7 +397,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Frame do Dispositivo (Mobile Viewport) */}
       <div className={cn(
         "w-full h-full flex flex-col relative overflow-hidden transition-colors duration-500",
         "lg:h-[850px] lg:max-h-[90vh] lg:w-full lg:max-w-[420px]",
@@ -436,16 +405,10 @@ export default function DashboardPage() {
         getAppBg()
       )}>
        
-        {/* 
-            REMOVIDO: <HealthMonitorBlock /> 
-            Motivo: Agora ele é injetado globalmente no RootLayoutShell.tsx
-        */}
-
         {currentTheme === 'tech' && (
           <div className="absolute inset-0 pointer-events-none opacity-20 z-0" style={{ backgroundImage: 'linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
         )}
 
-        {/* Header Fixo */}
         <div className={cn(
           "shrink-0 z-[60] relative transition-colors duration-300",
           currentTheme === 'tech' ? 'bg-[#050505]' : currentTheme === 'barber' ? 'bg-[#F5F5DC]' : currentTheme === 'xmas' ? 'bg-[#D42426]' : 'bg-white'
@@ -455,14 +418,15 @@ export default function DashboardPage() {
             <StoreHeader
               style={layout.header.style}
               data={{
-                address: layout.header.data.address as string,
+                address: layout.header.data && typeof layout.header.data === 'object' && 'address' in layout.header.data && typeof (layout.header.data as Record<string, unknown>).address === 'string' 
+                  ? (layout.header.data as Record<string, unknown>).address as string
+                  : '',
                 title: 'Maryland SaaS'
               }}
             />
           )}
         </div>
 
-        {/* 🎯 DND: Área de Scroll com Blocos DRAGGABLE (Framer Motion Reorder) */}
         <div className="flex-1 overflow-y-auto scrollbar-hide ios-scroll-enabled bg-transparent relative w-full pb-32 z-10">
           <div className="flex flex-col min-h-full p-4">
             <Reorder.Group
@@ -471,18 +435,13 @@ export default function DashboardPage() {
               onReorder={setReorderableContent}
               className="flex flex-col gap-4"
               style={{
-                touchAction: 'pan-y', // 🍎 Permite scroll vertical mas habilita drag horizontal
-                WebkitOverflowScrolling: 'touch' // 🍎 Scroll suave no iOS
+                touchAction: 'pan-y',
+                WebkitOverflowScrolling: 'touch'
               }}
             >
               {reorderableContent.map((block) => {
-                // 🎯 Verifica se é o Banner
                 const isBanner = block.type === 'banner';
-                
-                // 🔒 Apenas o Banner pode ser locked/unlocked
-                const isLocked = isBanner ? isBannerLocked : false; // Outros sempre desbloqueados internamente
-                
-                // 🎯 Apenas o Banner pode ser arrastado pelo usuário
+                const isLocked = isBanner ? isBannerLocked : false;
                 const canDrag = isBanner && !isLocked;
                 
                 return (
@@ -490,32 +449,31 @@ export default function DashboardPage() {
                     key={block.id}
                     value={block}
                     className={cn("relative group", canDrag && "ios-drag-enabled")}
-                    dragListener={canDrag} // 🔒 Só Banner desbloqueado pode ser arrastado
+                    dragListener={canDrag}
                     dragControls={undefined}
-                    dragElastic={0.1} // 🍎 Reduz elasticidade para melhor controle no iOS
-                    dragMomentum={false} // 🍎 Desabilita momentum para melhor controle no iOS
+                    dragElastic={0.1}
+                    dragMomentum={false}
                     whileDrag={{
-                      scale: 1, // ✅ SEM escala - mantém tamanho original
-                      boxShadow: 'none', // ✅ SEM sombra durante arraste
+                      scale: 1,
+                      boxShadow: 'none',
                       zIndex: canDrag ? 100 : 'auto',
-                      opacity: canDrag ? 0.9 : 1, // ✨ Levemente transparente ao arrastar
-                      cursor: 'grabbing' // 🍎 Cursor visual
+                      opacity: canDrag ? 0.9 : 1,
+                      cursor: 'grabbing'
                     }}
                     transition={{
                       type: 'spring',
-                      stiffness: 600, // ⬆️ Ainda mais rápido
-                      damping: 40,    // ⬆️ Mais amortecimento
-                      mass: 0.3       // ⬇️ Mais leve
+                      stiffness: 600,
+                      damping: 40,
+                      mass: 0.3
                     }}
-                    layout // ✨ Ativa layout animation para transições suaves
-                    layoutId={block.id} // ✨ ID único para animação otimizada
+                    layout
+                    layoutId={block.id}
                     style={{ 
-                      touchAction: canDrag ? 'none' : 'auto', // 🍎 CRÍTICO: Desabilita scroll nativo do iOS durante drag
-                      WebkitUserSelect: 'none', // 🍎 Previne seleção de texto no iOS
-                      userSelect: 'none' // 🍎 Previne seleção de texto
+                      touchAction: canDrag ? 'none' : 'auto',
+                      WebkitUserSelect: 'none',
+                      userSelect: 'none'
                     }}
                   >
-                    {/* 🔒 Botão de Lock/Unlock (APENAS no Banner) */}
                     {isBanner && (
                       <button
                         onClick={toggleBannerLock}
@@ -532,14 +490,13 @@ export default function DashboardPage() {
                       </button>
                     )}
 
-                    {/* 🎯 Handle de Arraste (APENAS no Banner desbloqueado) */}
                     {isBanner && !isLocked && (
                       <div className="absolute -left-2 top-1/2 -translate-y-1/2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity z-50">
                         <div 
                           className="bg-blue-500 text-white p-3 rounded-lg shadow-lg cursor-grab active:cursor-grabbing touch-none"
                           style={{
-                            touchAction: 'none', // 🍎 CRÍTICO: Desabilita gestos nativos do iOS
-                            WebkitTouchCallout: 'none', // 🍎 Desabilita menu de contexto do iOS
+                            touchAction: 'none',
+                            WebkitTouchCallout: 'none',
                             WebkitUserSelect: 'none',
                             userSelect: 'none'
                           }}
@@ -549,17 +506,14 @@ export default function DashboardPage() {
                       </div>
                     )}
 
-                    {/* Indicador Visual quando Banner está LOCKED */}
                     {isBanner && isLocked && (
                       <div className="absolute inset-0 bg-gray-900/5 border-2 border-red-500/20 rounded-lg pointer-events-none" />
                     )}
                     
-                    {/* 🍎 Indicador Visual quando Banner está UNLOCKED (pronto para arrastar) */}
                     {isBanner && !isLocked && (
                       <div className="absolute inset-0 bg-green-500/5 border-2 border-green-500/30 rounded-lg pointer-events-none animate-pulse" />
                     )}
 
-                    {/* Bloco Original */}
                     <BlockRenderer key={block.id} config={block} onAction={handleBlockAction} />
                   </Reorder.Item>
                 );
@@ -570,7 +524,6 @@ export default function DashboardPage() {
 
         <ReelsModal isOpen={!!activeReelsItem} item={activeReelsItem} onClose={() => setActiveReelsItem(null)} />
         
-        {/* REMOVIDO: Modal de produto - Agora usa navegação para /product/[id] */}
       </div>
     </main>
   );
