@@ -18,13 +18,14 @@ import { ReelsModal } from '@/components/builder/ui/ReelsModal';
 import { StoreHeader } from '@/components/builder/blocks/Header';
 import { getHomeLayoutAction } from '@/app/actions/ui-config';
 import { verifyAdminPasswordAction, getAdminAccessStatusAction, updateAdminButtonPositionAction } from '@/app/actions/admin-access';
+import { updateLayoutOrderAction } from '@/app/actions/layout-order';
 
 // 🛡️ TYPE GUARD 1: Validação de CategoryItem
 const isCategoryItem = (payload: unknown): payload is CategoryItem => {
   return typeof payload === 'object' && payload !== null && !Array.isArray(payload);
 };
 
-// 🛡️ TYPE GUARD 2: Validação estrita de Objetos (Substitui o uso proibido de "as Record<string, unknown>")
+// 🛡️ TYPE GUARD 2: Validação estrita de Objetos
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
@@ -32,24 +33,23 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
 export default function DashboardPage() {
   const router = useRouter();
 
-  const[blocks, setBlocks] = useState<BlockConfig[]>([]);
+  const [blocks, setBlocks] = useState<BlockConfig[]>([]);
   const [isLoadingLayout, setIsLoadingLayout] = useState(true);
-  const [currentTheme, setCurrentTheme] = useState('clothing');
-  const[showAdmin, setShowAdmin] = useState(false);
+  const[currentTheme, setCurrentTheme] = useState('clothing');
+  const [showAdmin, setShowAdmin] = useState(false);
   const [activeReelsItem, setActiveReelsItem] = useState<CategoryItem | null>(null);
   const [isReady, setIsReady] = useState(false);
   
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const[isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [passwordError, setPasswordError] = useState('');
-  const[isVerifying, setIsVerifying] = useState(false);
+  const[passwordError, setPasswordError] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
   
   const [buttonPosition, setButtonPosition] = useState({ x: 16, y: 16 });
   const [isDragging, setIsDragging] = useState(false);
 
-  // 📱 ESTADO NOVO: Altura real da viewport (descontando o teclado)
-  const [viewportHeight, setViewportHeight] = useState<number | undefined>(undefined);
+  const[viewportHeight, setViewportHeight] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     const loadDynamicLayout = async () => {
@@ -89,7 +89,6 @@ export default function DashboardPage() {
     loadButtonPosition();
   }, [router]);
 
-  // 🔒 NOVO: Bloqueia o scroll da página e ajusta a altura dinamicamente com o teclado
   useEffect(() => {
     if (!isPasswordModalOpen) {
       document.body.style.overflow = '';
@@ -100,7 +99,6 @@ export default function DashboardPage() {
     document.body.style.overflow = 'hidden';
     document.body.style.touchAction = 'none';
 
-    // Função para recalcular a altura visível quando o teclado sobe/desce
     const handleResize = () => {
       if (window.visualViewport) {
         setViewportHeight(window.visualViewport.height);
@@ -109,17 +107,16 @@ export default function DashboardPage() {
       }
     };
 
-    // Função para garantir que o layout se reajuste se o usuário sair e voltar pro app
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        setTimeout(handleResize, 100); // Pequeno delay para o SO renderizar o teclado
+        setTimeout(handleResize, 100);
       }
     };
 
     window.visualViewport?.addEventListener('resize', handleResize);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    handleResize(); // Chamada inicial
+    handleResize();
 
     return () => {
       document.body.style.overflow = '';
@@ -166,16 +163,34 @@ export default function DashboardPage() {
     };
   }, [blocks]);
 
-  const [reorderableContent, setReorderableContent] = useState<BlockConfig[]>([]);
-  const [isBannerLocked, setIsBannerLocked] = useState<boolean>(true);
+  const[reorderableContent, setReorderableContent] = useState<BlockConfig[]>([]);
+  const[isBannerLocked, setIsBannerLocked] = useState<boolean>(true);
 
   useEffect(() => {
     setReorderableContent(layout.content);
   }, [layout.content]);
 
-  const toggleBannerLock = () => {
-    setIsBannerLocked(prev => !prev);
-    console.log('🔒[DND] Toggle Banner lock:', !isBannerLocked);
+  // 💾 NOVO: Salva a ordem no banco ao finalizar o Drag
+  const handleBlockDragEnd = async () => {
+    const currentOrder = reorderableContent.map(block => block.id);
+    console.log('🖱️[DND] Drag finalizado. Salvando ordem no banco:', currentOrder);
+    
+    const result = await updateLayoutOrderAction('home', currentOrder);
+    if (!result.success) {
+      console.error('❌ Erro ao salvar a nova ordem:', result.error);
+    }
+  };
+
+  // 🔒 NOVO: Salva a ordem no banco ao bloquear o cadeado
+  const toggleBannerLock = async () => {
+    const newLockedState = !isBannerLocked;
+    setIsBannerLocked(newLockedState);
+    
+    if (newLockedState) {
+      const currentOrder = reorderableContent.map(block => block.id);
+      console.log('🔒 [DND] Bloqueando e garantindo salvamento no banco:', currentOrder);
+      await updateLayoutOrderAction('home', currentOrder);
+    }
   };
 
   const handleBlockAction = (action: string, payload?: unknown) => {
@@ -223,7 +238,7 @@ export default function DashboardPage() {
     }
   };
 
-  const handleDragEnd = async (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+  const handleButtonDragEnd = async (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     setIsDragging(false);
     const newPosition = {
       x: Math.max(0, Math.min(window.innerWidth - 60, info.point.x - 24)),
@@ -387,7 +402,7 @@ export default function DashboardPage() {
         dragMomentum={false}
         dragElastic={0}
         onDragStart={() => setIsDragging(true)}
-        onDragEnd={handleDragEnd}
+        onDragEnd={handleButtonDragEnd}
         initial={{ scale: 1, opacity: 1, x: buttonPosition.x, y: buttonPosition.y }}
         animate={{ x: buttonPosition.x, y: buttonPosition.y }}
         whileDrag={{ scale: 1.05, cursor: "grabbing" }}
@@ -467,7 +482,6 @@ export default function DashboardPage() {
             <StoreHeader
               style={layout.header.style}
               data={{
-                // 🛡️ USO DO TYPE GUARD: Sem "as", sem "any". 100% Seguro.
                 address: isRecord(layout.header.data) && typeof layout.header.data.address === 'string' 
                   ? layout.header.data.address
                   : '',
@@ -503,6 +517,7 @@ export default function DashboardPage() {
                     dragControls={undefined}
                     dragElastic={0.1}
                     dragMomentum={false}
+                    onDragEnd={canDrag ? handleBlockDragEnd : undefined} // 💾 NOVO: Salva ao soltar
                     whileDrag={{
                       scale: 1,
                       boxShadow: 'none',

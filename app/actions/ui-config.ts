@@ -1,56 +1,45 @@
 'use server';
 
-/**
- * 🧱 BLOCO LEGO: Sistema de Configuração de UI (UI Config Management)
- * 
- * Server Actions para gerenciar layouts dinâmicos das páginas.
- * Integrado com o sistema CMS Dinâmico para buscar blocos do banco de dados.
- * 
- * 📦 CONTEXTO:
- * - Busca layouts salvos no banco (UIConfig)
- * - Fallback para templates iniciais se não houver layout
- * - Suporta múltiplas páginas (home, dashboard, inventory)
- */
-
 import { prisma } from '@/lib/prisma';
 import { BlockConfig } from '@/types/builder';
 import { INITIAL_BLOCKS } from '@/data/initial-state';
 
-/**
- * 🔍 Busca o layout de uma página específica
- * 
- * @param pageSlug - Identificador da página ('home', 'dashboard', 'inventory')
- * @returns Array de BlockConfig ou null se não encontrado
- */
+// 🛡️ TYPE GUARD 1: Validação estrita de Objetos
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+};
+
+// 🛡️ TYPE GUARD 2: Validação estrita do Array de BlockConfig (Substitui o "as unknown as BlockConfig[]")
+const isBlockConfigArray = (data: unknown): data is BlockConfig[] => {
+  if (!Array.isArray(data)) return false;
+  return data.every(item => isRecord(item) && typeof item.id === 'string' && typeof item.type === 'string');
+};
+
 export async function getPageLayoutAction(pageSlug: string): Promise<BlockConfig[] | null> {
   try {
     const uiConfig = await prisma.uIConfig.findUnique({
       where: { pageSlug }
     });
 
-    if (!uiConfig) {
+    if (!uiConfig || !uiConfig.layout) {
       console.log(`ℹ️ [UI Config] Layout não encontrado para "${pageSlug}". Usando fallback.`);
       return null;
     }
 
-    // Parse do JSON para BlockConfig[]
-    const layout = uiConfig.layout as unknown as BlockConfig[];
-    console.log(`✅ [UI Config] Layout carregado para "${pageSlug}": ${layout.length} blocos`);
-    
-    return layout;
+    // 🛡️ Validação estrita em tempo de execução (Zero-Any)
+    if (isBlockConfigArray(uiConfig.layout)) {
+      console.log(`✅ [UI Config] Layout carregado para "${pageSlug}": ${uiConfig.layout.length} blocos`);
+      return uiConfig.layout;
+    }
+
+    console.error(`❌ [UI Config] Formato de layout inválido no banco para "${pageSlug}".`);
+    return null;
   } catch (error) {
     console.error(`❌ [UI Config] Erro ao buscar layout de "${pageSlug}":`, error);
     return null;
   }
 }
 
-/**
- * 💾 Salva o layout de uma página
- * 
- * @param pageSlug - Identificador da página
- * @param layout - Array de BlockConfig
- * @returns Success boolean
- */
 export async function savePageLayoutAction(
   pageSlug: string, 
   layout: BlockConfig[]
@@ -70,7 +59,7 @@ export async function savePageLayoutAction(
     console.log(`✅ [UI Config] Layout salvo para "${pageSlug}"`);
     return { success: true };
   } catch (error) {
-    console.error(`❌ [UI Config] Erro ao salvar layout de "${pageSlug}":`, error);
+    console.error(`❌[UI Config] Erro ao salvar layout de "${pageSlug}":`, error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Erro desconhecido' 
@@ -78,10 +67,6 @@ export async function savePageLayoutAction(
   }
 }
 
-/**
- * 🏠 Busca o layout da Home (Dashboard)
- * Com fallback para INITIAL_BLOCKS
- */
 export async function getHomeLayoutAction(): Promise<BlockConfig[]> {
   const layout = await getPageLayoutAction('home');
   return layout || INITIAL_BLOCKS;
