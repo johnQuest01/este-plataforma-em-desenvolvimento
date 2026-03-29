@@ -34,22 +34,22 @@ export default function DashboardPage() {
   const router = useRouter();
 
   const [blocks, setBlocks] = useState<BlockConfig[]>([]);
-  const[isLoadingLayout, setIsLoadingLayout] = useState(true);
-  const [currentTheme, setCurrentTheme] = useState('clothing');
+  const [isLoadingLayout, setIsLoadingLayout] = useState(true);
+  const[currentTheme, setCurrentTheme] = useState('clothing');
   const [showAdmin, setShowAdmin] = useState(false);
-  const[activeReelsItem, setActiveReelsItem] = useState<CategoryItem | null>(null);
-  const[isReady, setIsReady] = useState(false);
+  const [activeReelsItem, setActiveReelsItem] = useState<CategoryItem | null>(null);
+  const [isReady, setIsReady] = useState(false);
   
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const[isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [password, setPassword] = useState('');
-  const[showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   
-  const[buttonPosition, setButtonPosition] = useState({ x: 16, y: 16 });
-  const[isDragging, setIsDragging] = useState(false);
+  const [buttonPosition, setButtonPosition] = useState({ x: 16, y: 16 });
+  const [isDragging, setIsDragging] = useState(false);
 
-  const [viewportHeight, setViewportHeight] = useState<number | undefined>(undefined);
+  const[viewportHeight, setViewportHeight] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     const loadDynamicLayout = async () => {
@@ -58,8 +58,6 @@ export default function DashboardPage() {
         const layout = await getHomeLayoutAction();
         
         // 🛡️ ARQUITETURA DE AUTO-CURA (Self-Healing)
-        // O banco de dados pode não ter o novo bloco 'walking-model'. 
-        // Comparamos o DB com o INITIAL_BLOCKS e injetamos o que faltar.
         const dbBlockIds = new Set(layout.map(b => b.id));
         const missingBlocks = CLOTHING.filter(b => !dbBlockIds.has(b.id));
         
@@ -150,7 +148,6 @@ export default function DashboardPage() {
       try {
         const layout = await getHomeLayoutAction();
         
-        // 🛡️ Aplica a Auto-Cura também ao trocar de tema
         const dbBlockIds = new Set(layout.map(b => b.id));
         const missingBlocks = CLOTHING.filter(b => !dbBlockIds.has(b.id));
         
@@ -184,22 +181,58 @@ export default function DashboardPage() {
     return 'bg-gray-50';
   };
 
+  // 🧠 CÉREBRO DA LOJA: INJEÇÃO FORÇADA NO LAYOUT.CONTENT
   const layout = useMemo(() => {
-    return {
-      header: blocks.find(b => b.type === 'header'),
-      footer: blocks.find(b => b.type === 'footer'),
-      content: blocks.filter(b => b.type !== 'footer' && b.type !== 'header')
-    };
+    const header = blocks.find(b => b.type === 'header');
+    const footer = blocks.find(b => b.type === 'footer');
+    const content = blocks.filter(b => b.type !== 'footer' && b.type !== 'header');
+
+    // 🛡️ INJEÇÃO FORÇADA: Garantir que a modelo caminhando exista
+    const hasWalkingModel = content.some(b => b.type === 'walking-model');
+    
+    if (!hasWalkingModel) {
+      const walkingModelBlock: BlockConfig = {
+        id: 'blk_walking_models_main_forced',
+        type: 'walking-model',
+        isVisible: true,
+        data: {
+          walkingModelImages:[
+            '/models/modelo.1.png',
+            '/models/modelo.2.png',
+            '/models/modelo.3.png',
+            '/models/modelo.4.png',
+            '/models/modelo.5.png',
+            '/models/modelo.6.png'
+          ],
+          animationDurationSeconds: 12
+        },
+        style: { bgColor: 'transparent' }
+      };
+
+      // Encontra o índice do bloco de categorias (Reels)
+      const categoriesIndex = content.findIndex(b => b.type === 'categories');
+      
+      if (categoriesIndex !== -1) {
+        // Insere cirurgicamente logo após as categorias
+        content.splice(categoriesIndex + 1, 0, walkingModelBlock);
+        console.log('💉[Injeção Forçada] Modelo inserida após as categorias.');
+      } else {
+        // Se não houver categorias, insere no topo do conteúdo
+        content.unshift(walkingModelBlock);
+        console.log('💉[Injeção Forçada] Modelo inserida no topo do conteúdo.');
+      }
+    }
+
+    return { header, footer, content };
   }, [blocks]);
 
-  const[reorderableContent, setReorderableContent] = useState<BlockConfig[]>([]);
-  const[isBannerLocked, setIsBannerLocked] = useState<boolean>(true);
+  const [reorderableContent, setReorderableContent] = useState<BlockConfig[]>([]);
+  const [isBannerLocked, setIsBannerLocked] = useState<boolean>(true);
 
   useEffect(() => {
     setReorderableContent(layout.content);
-  }, [layout.content]);
+  },[layout.content]);
 
-  // 💾 NOVO: Salva a ordem no banco ao finalizar o Drag
   const handleBlockDragEnd = async () => {
     const currentOrder = reorderableContent.map(block => block.id);
     console.log('🖱️[DND] Drag finalizado. Salvando ordem no banco:', currentOrder);
@@ -210,7 +243,6 @@ export default function DashboardPage() {
     }
   };
 
-  // 🔒 NOVO: Salva a ordem no banco ao bloquear o cadeado
   const toggleBannerLock = async () => {
     const newLockedState = !isBannerLocked;
     setIsBannerLocked(newLockedState);
