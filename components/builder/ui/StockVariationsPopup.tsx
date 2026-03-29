@@ -62,7 +62,7 @@ export interface VariationItem {
 interface StockVariationsPopupProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave?: (items: VariationItem[], metadata?: { name: string; category: string }) => void; // 🧱 CMS: Adicionado category
+  onSave?: (items: VariationItem[], metadata?: { name: string; category: string }) => void;
   initialItems?: VariationItem[];
 }
 
@@ -200,12 +200,12 @@ function SortablePhotoItem({ id, url, onRemove }: { id: string, url: string, onR
   );
 }
 
-// --- Main Component (Renomeado para Base) ---
+// --- Main Component ---
 
 const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }: StockVariationsPopupProps) => {
-  const [variations, setVariations] = useState<VariationItem[]>(initialItems);
+  const[variations, setVariations] = useState<VariationItem[]>(initialItems);
   
-  const [draft, setDraft] = useState<DraftState>(() => {
+  const[draft, setDraft] = useState<DraftState>(() => {
     const lastItem = initialItems.length > 0 ? initialItems[initialItems.length - 1] : null;
     return {
       name: lastItem?.name || "",
@@ -214,21 +214,21 @@ const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }
       color: lastItem?.color || "",
       type: lastItem?.variation || lastItem?.type || "",
       types: [], 
-      images: lastItem?.images || [],
+      images: lastItem?.images ||[],
       stockLocations: lastItem?.stockLocations || ['Loja Principal']
     };
   });
 
-  const [availableStocks, setAvailableStocks] = useState<string[]>(['Loja Principal', 'Depósito', 'Vitrine']);
+  const[availableStocks, setAvailableStocks] = useState<string[]>(['Loja Principal', 'Depósito', 'Vitrine']);
   const [newStockName, setNewStockName] = useState("");
-  const [qtyModalOpen, setQtyModalOpen] = useState(false);
+  const[qtyModalOpen, setQtyModalOpen] = useState(false);
   const [editingSize, setEditingSize] = useState<string | null>(null);
   const [tempQty, setTempQty] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
+  const[isSaving, setIsSaving] = useState(false);
   const [isSendingToProduction, setIsSendingToProduction] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const sizes = ['PP', 'P', 'M', 'G', 'GG', 'XG'];
+  const sizes =['PP', 'P', 'M', 'G', 'GG', 'XG'];
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
@@ -247,7 +247,7 @@ const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }
           keyword: last.keyword,
           color: last.color,
           type: last.variation || last.type || "",
-          types: [],
+          types:[],
           images: last.images,
           stockLocations: last.stockLocations
         });
@@ -279,7 +279,7 @@ const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }
 
   const handleAddType = () => {
     if (draft.type.trim() && !draft.types.includes(draft.type.trim())) {
-        updateDraft('types', [...draft.types, draft.type.trim()]);
+        updateDraft('types',[...draft.types, draft.type.trim()]);
         updateDraft('type', ''); 
     }
   };
@@ -321,7 +321,7 @@ const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }
       setAvailableStocks(prev => [...prev, trimmed]);
     }
     if (!draft.stockLocations.includes(trimmed)) {
-      updateDraft('stockLocations', [...draft.stockLocations, trimmed]);
+      updateDraft('stockLocations',[...draft.stockLocations, trimmed]);
     }
     setNewStockName("");
   };
@@ -330,7 +330,7 @@ const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }
     const current = draft.stockLocations;
     const newSelection = current.includes(stock) 
       ? current.filter(s => s !== stock) 
-      : [...current, stock];
+      :[...current, stock];
     updateDraft('stockLocations', newSelection);
   };
 
@@ -375,7 +375,7 @@ const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }
         qty: qty,
       }));
 
-      setVariations(prev => [...prev, ...newItems]);
+      setVariations(prev =>[...prev, ...newItems]);
     }
     setQtyModalOpen(false);
     setEditingSize(null);
@@ -387,7 +387,7 @@ const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }
       color: "", 
       type: "", 
       types: [], 
-      images: [] 
+      images:[] 
     }));
   };
 
@@ -416,7 +416,7 @@ const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }
 
     onSave(processedVariations, { 
       name: formattedName,
-      category: draft.category || 'Geral' // 🧱 CMS: Passa a categoria
+      category: draft.category || 'Geral'
     });
     setIsSaving(false);
     onClose();
@@ -687,8 +687,14 @@ const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }
 
       <AnimatePresence>
         {qtyModalOpen && (
-          <div className="absolute inset-0 z-[60] flex items-center justify-center bg-gray-900/40 p-6 pb-60 touch-none cursor-default">
-            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="bg-white w-full max-w-[280px] rounded-2xl shadow-2xl p-5 flex flex-col items-center gap-4 relative overflow-hidden">
+          <div className="absolute inset-0 z-[60] flex items-center justify-center bg-gray-900/40 p-6 touch-none cursor-default">
+            <motion.div 
+              // ✅ AJUSTE: y: -20 para compensar o aumento da altura e max-w-[300px] (aumentado de 280px)
+              initial={{ scale: 0.9, opacity: 0, y: 0 }} 
+              animate={{ scale: 1, opacity: 1, y: -20 }} 
+              exit={{ scale: 0.9, opacity: 0, y: 0 }} 
+              className="bg-white w-full max-w-[300px] rounded-2xl shadow-2xl p-5 flex flex-col items-center gap-4 relative overflow-hidden"
+            >
                <div className="w-full flex items-center gap-3 p-2 bg-gray-50 rounded-xl mb-1">
                    <div className="relative w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
                        {draft.images.length > 0 ? (
@@ -728,8 +734,6 @@ const StockVariationsPopupBase = ({ isOpen, onClose, onSave, initialItems = [] }
   );
 };
 
-// 📚 ESTUDO: 4. Exportação com a "Etiqueta Inteligente"
-// Adicionamos o 4º argumento com os metadados para o Guardian OS.
 export const StockVariationsPopup = withGuardian(
   StockVariationsPopupBase, 
   "components/builder/ui/StockVariationsPopup.tsx", 
@@ -744,7 +748,7 @@ export const StockVariationsPopup = withGuardian(
 - **UX**: Implementa Drag-and-Drop para ordenação de fotos.
 - **Fluxo**: Geralmente invocado via 'StockRegisterView'.
     `.trim(),
-    connectsTo: [
+    connectsTo:[
       { 
         target: "components/views/StockRegisterView.tsx", 
         type: "COMPONENT", 

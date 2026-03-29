@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowRight, PackageX } from 'lucide-react';
-// ✅ CORREÇÃO: Removido 'ProductItem' que não estava sendo usado
 import { BlockConfig } from '@/types/builder';
 import { ProductData, getProductsAction } from '@/app/actions/product';
 import { useRouter } from 'next/navigation';
@@ -13,12 +12,12 @@ export const PRODUCT_UPDATE_EVENT = 'product_db_updated';
 
 interface ProductGridBlockProps {
   config: BlockConfig;
-  onAction?: (action: string, payload?: unknown) => void; // 🧱 NOVO: Suporte para ações
+  onAction?: (action: string, payload?: unknown) => void;
 }
 
-export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps) => {
+export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps): React.JSX.Element => {
   const router = useRouter();
-  const [products, setProducts] = useState<ProductData[]>([]);
+  const[products, setProducts] = useState<ProductData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProducts = useCallback(async () => {
@@ -30,7 +29,7 @@ export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps) =>
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  },[]);
 
   useEffect(() => {
     fetchProducts();
@@ -41,7 +40,7 @@ export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps) =>
       window.addEventListener(PRODUCT_UPDATE_EVENT, handleUpdate);
     }
 
-    const interval = setInterval(fetchProducts, 10000); // Polling de 10s
+    const interval = setInterval(fetchProducts, 10000); 
 
     return () => {
       if (typeof window !== 'undefined') {
@@ -52,12 +51,10 @@ export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps) =>
   }, [fetchProducts]);
 
   const hasDbProducts = products.length > 0;
-  // Cast seguro pois ProductData é compatível com a estrutura esperada, mas priorizamos DB
-  const displayProducts = hasDbProducts ? products : (config.data.products as unknown as ProductData[] || []);
+  const displayProducts = hasDbProducts ? products : (config.data.products as unknown as ProductData[] ||[]);
   const title = config.data.title as string;
 
   const handleProductClick = (product: ProductData) => {
-    // 🧱 NOVO: Usa modal se onAction estiver disponível, senão navega
     if (onAction) {
       onAction('open_product_details', product.id);
     } else {
@@ -67,32 +64,31 @@ export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps) =>
 
   return (
     <div
-      className="w-full py-6 flex flex-col gap-4 relative min-h-[200px]"
+      className="w-full py-2 flex flex-col gap-1.5 relative min-h-[100px]"
       style={{ backgroundColor: config.style.bgColor || 'transparent' }}
     >
       {title && (
-        <div className="px-4 flex items-center justify-between">
-          <h3 className="font-bold text-lg tracking-tight" style={{ color: config.style.textColor || '#000000' }}>
+        <div className="px-4 flex items-center justify-between pt-1">
+          <h3 className="font-bold text-sm tracking-tight" style={{ color: config.style.textColor || '#000000' }}>
             {title}
           </h3>
-          <div className="flex items-center text-xs font-medium text-gray-400 gap-1 cursor-pointer hover:text-blue-600 transition-colors">
-            Ver tudo <ArrowRight size={12} />
+          <div className="flex items-center text-[10px] font-medium text-gray-400 gap-1 cursor-pointer hover:text-blue-600 transition-colors">
+            Ver tudo <ArrowRight size={10} />
           </div>
         </div>
       )}
 
       {displayProducts.length === 0 && !isLoading ? (
-        <div className="px-4 py-8 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 mx-4 rounded-xl bg-gray-50">
-          <PackageX size={32} className="mb-2 opacity-50"/>
-          <span className="text-xs font-bold uppercase tracking-wide">Sem produtos</span>
+        <div className="px-4 py-2 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 mx-4 rounded-md bg-gray-50">
+          <PackageX size={16} className="mb-1 opacity-50"/>
+          <span className="text-[8px] font-bold uppercase tracking-wide">Sem produtos</span>
         </div>
       ) : (
-        <div className="flex gap-3 overflow-x-auto px-4 pb-4 scrollbar-hide snap-x snap-mandatory">
+        <div className="flex gap-2 overflow-x-auto px-4 pb-1.5 scrollbar-hide snap-x snap-mandatory">
           {displayProducts.map((item, index) => {
             const name = item.name;
-            const price = item.price; // String ISO ou formatada
+            const price = item.price;
 
-            // Lógica de imagem prioritária
             let imageUrl = item.imageUrl;
             if (!imageUrl && item.variants && item.variants.length > 0) {
                imageUrl = item.variants[0].images?.[0];
@@ -101,24 +97,22 @@ export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps) =>
                imageUrl = `https://placehold.co/800x800/e2e8f0/white?text=${name.substring(0,3)}`;
             }
 
-            // Key única garantida (ID ou fallback para index)
             const uniqueKey = item.id ? `prod-${item.id}` : `prod-idx-${index}`;
 
-            // 🎯 NETFLIX UX: Largura FIXA de 150px para TODOS os cards
-            // Garante uniformidade total independente da quantidade
-            const cardWidth = '150px';
+            // ✅ AJUSTE: Largura do card sincronizada para 96px
+            const cardWidth = '96px';
 
             return (
               <div
                 key={uniqueKey}
-                className="border border-gray-200 rounded-xl overflow-hidden bg-white relative flex flex-col shadow-sm snap-start shrink-0 cursor-pointer active:scale-[0.98] transition-transform duration-200"
+                className="border border-gray-200 rounded-md overflow-hidden bg-white relative flex flex-col shadow-sm snap-start shrink-0 cursor-pointer active:scale-[0.98] transition-transform duration-200"
                 style={{
                   width: cardWidth,
                   minWidth: cardWidth
                 }}
                 onClick={() => handleProductClick(item)}
               >
-                <div className="text-center py-1 text-[10px] uppercase tracking-wider font-bold text-gray-500 border-b border-gray-100 bg-gray-50/50">
+                <div className="text-center py-[2px] text-[7px] leading-none uppercase tracking-wider font-bold text-gray-500 border-b border-gray-100 bg-gray-50/50">
                   {item.id ? 'Novo' : (item.tag || 'Oferta')}
                 </div>
 
@@ -128,20 +122,34 @@ export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps) =>
                     alt={name}
                     fill
                     className="object-cover transition-transform duration-700 group-hover:scale-110"
-                    sizes="(max-width: 768px) 170px, 200px"
+                    sizes="(max-width: 768px) 96px, 120px"
                   />
                 </div>
 
-                <div className="p-3 text-left border-t border-gray-100 flex-1 flex flex-col justify-between">
+                <div className="p-1.5 text-left border-t border-gray-100 flex-1 flex flex-col justify-between">
                   <div>
-                    <p className="font-medium text-gray-800 text-sm line-clamp-2 leading-tight h-9">
+                    <p className="font-medium text-gray-800 text-[10px] line-clamp-2 leading-tight h-7 mb-0.5">
                       {name}
                     </p>
-                    {price && (
-                      <p className="font-black text-gray-900 text-base mt-1">
-                        {formatCurrencyBRL(price)}
-                      </p>
-                    )}
+                    
+                    {/* 🏷️ CONTAINER PREÇO + ETIQUETA VENDIDO */}
+                    <div className="flex items-center justify-between pt-0.5">
+                      {price && (
+                        <p className="font-black text-gray-900 text-[11px] leading-none truncate pr-1">
+                          {formatCurrencyBRL(price)}
+                        </p>
+                      )}
+                      
+                      {/* 🏷️ ETIQUETA VENDIDO (Aparece quando estoque é 0) */}
+                      {item.stock <= 0 && (
+                        <div className="bg-orange-500 rounded-[2px] px-1.5 py-[2px] shrink-0 shadow-sm">
+                          <span className="text-white text-[7px] font-bold uppercase leading-none block tracking-wider">
+                            Vendido
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
                   </div>
                 </div>
               </div>

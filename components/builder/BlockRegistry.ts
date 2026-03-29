@@ -16,6 +16,7 @@ import { BannerBlock } from './blocks/Banner';
 import { CategoriesBlock } from './blocks/Categories';
 import { CategorySectionBlock } from './blocks/CategorySectionBlock'; // 🧱 CMS DINÂMICO
 import { FooterBlock } from './blocks/Footer';
+import { WalkingModelBlock } from './blocks/WalkingModelBlock'; // ✅ NOVO: Import do Walking Model
 
 // --- Imports de Blocos Funcionais ---
 import { UserInfoBlock } from './blocks/UserInfo';
@@ -56,8 +57,9 @@ import { HistoryLinksBlock } from './blocks/HistoryLinksBlock';
 import { ProductionListBlock } from './blocks/ProductionListBlock';
 import { ReadyStockListBlock } from './blocks/ReadyStockListBlock';
 
-// --- Novos Blocos de Inteligência ---
+// --- Novos Blocos de Inteligência e Conta ---
 import { TotalSalesBlock } from './blocks/TotalSalesBlock';
+import { AccountScreenBlock } from './blocks/AccountScreenBlock'; // ✅ NOVO: Bloco de Minha Conta
 
 /**
  * Definição Estrita do Componente Lego
@@ -68,7 +70,7 @@ type LegoComponent = React.FC<BlockComponentProps>;
 export const COMPONENT_MAP: Record<string, LegoComponent> = {
   // Infraestrutura e Governança
   'master-guardian-dashboard': MasterGuardianDashboard,
-  'health-monitor': HealthMonitorBlock, // Mantido no registro para compatibilidade, mas usado diretamente no layout
+  'health-monitor': HealthMonitorBlock, 
   'standard-button': StandardButtonBlock,
 
   // Layout Base
@@ -82,7 +84,8 @@ export const COMPONENT_MAP: Record<string, LegoComponent> = {
   'liquid-dynamic-footer': LiquidDynamicFooter,
   'banner': BannerBlock,
   'categories': CategoriesBlock,
-  'category-section': CategorySectionBlock, // 🧱 CMS DINÂMICO: Seção auto-gerada
+  'category-section': CategorySectionBlock, 
+  'walking-model': WalkingModelBlock, // ✅ NOVO: Registro do Bloco de Modelos em Movimento
 
   // Ecommerce e Catálogo
   'product-grid': ProductGridBlock,
@@ -103,12 +106,13 @@ export const COMPONENT_MAP: Record<string, LegoComponent> = {
   'order-variant-selector': OrderVariantSelectorBlock,
   'order-summary-footer': OrderSummaryFooterBlock,
 
-  // Fluxos de Negócio (Inventory/Admin)
+  // Fluxos de Negócio (Inventory/Admin/Account)
   'user-info': UserInfoBlock,
   'inventory-feature': InventoryFeatureBlock,
   'action-buttons': ActionButtonsBlock,
   'grid-buttons': GridButtonsBlock,
   'admin-user-card': AdminUserCardBlock,
+  'account-screen': AccountScreenBlock, 
  
   // Histórico e Logística
   'history-search': HistorySearchBlock,

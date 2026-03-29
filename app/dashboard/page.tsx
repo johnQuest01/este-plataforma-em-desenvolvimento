@@ -34,30 +34,46 @@ export default function DashboardPage() {
   const router = useRouter();
 
   const [blocks, setBlocks] = useState<BlockConfig[]>([]);
-  const [isLoadingLayout, setIsLoadingLayout] = useState(true);
-  const[currentTheme, setCurrentTheme] = useState('clothing');
+  const[isLoadingLayout, setIsLoadingLayout] = useState(true);
+  const [currentTheme, setCurrentTheme] = useState('clothing');
   const [showAdmin, setShowAdmin] = useState(false);
-  const [activeReelsItem, setActiveReelsItem] = useState<CategoryItem | null>(null);
-  const [isReady, setIsReady] = useState(false);
+  const[activeReelsItem, setActiveReelsItem] = useState<CategoryItem | null>(null);
+  const[isReady, setIsReady] = useState(false);
   
-  const[isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const[passwordError, setPasswordError] = useState('');
+  const[showPassword, setShowPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   
-  const [buttonPosition, setButtonPosition] = useState({ x: 16, y: 16 });
-  const [isDragging, setIsDragging] = useState(false);
+  const[buttonPosition, setButtonPosition] = useState({ x: 16, y: 16 });
+  const[isDragging, setIsDragging] = useState(false);
 
-  const[viewportHeight, setViewportHeight] = useState<number | undefined>(undefined);
+  const [viewportHeight, setViewportHeight] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     const loadDynamicLayout = async () => {
       try {
         setIsLoadingLayout(true);
         const layout = await getHomeLayoutAction();
-        setBlocks(layout);
-        console.log('🏠 [Dashboard] Layout carregado:', layout.length, 'blocos');
+        
+        // 🛡️ ARQUITETURA DE AUTO-CURA (Self-Healing)
+        // O banco de dados pode não ter o novo bloco 'walking-model'. 
+        // Comparamos o DB com o INITIAL_BLOCKS e injetamos o que faltar.
+        const dbBlockIds = new Set(layout.map(b => b.id));
+        const missingBlocks = CLOTHING.filter(b => !dbBlockIds.has(b.id));
+        
+        let finalLayout = layout;
+        if (missingBlocks.length > 0) {
+          console.log('🔧 [Dashboard] Auto-Cura: Injetando blocos novos não encontrados no DB:', missingBlocks.map(b => b.id));
+          finalLayout = CLOTHING.map(initialBlock => {
+            const existingDbBlock = layout.find(b => b.id === initialBlock.id);
+            return existingDbBlock || initialBlock;
+          });
+        }
+
+        setBlocks(finalLayout);
+        console.log('🏠 [Dashboard] Layout carregado:', finalLayout.length, 'blocos');
       } catch (error) {
         console.error('❌[Dashboard] Erro ao carregar layout:', error);
         setBlocks(CLOTHING);
@@ -132,10 +148,23 @@ export default function DashboardPage() {
 
     if (theme === 'clothing') {
       try {
-        newBlocks = await getHomeLayoutAction();
-        console.log('🔄 [Dashboard] Layout dinâmico recarregado');
+        const layout = await getHomeLayoutAction();
+        
+        // 🛡️ Aplica a Auto-Cura também ao trocar de tema
+        const dbBlockIds = new Set(layout.map(b => b.id));
+        const missingBlocks = CLOTHING.filter(b => !dbBlockIds.has(b.id));
+        
+        if (missingBlocks.length > 0) {
+          newBlocks = CLOTHING.map(initialBlock => {
+            const existingDbBlock = layout.find(b => b.id === initialBlock.id);
+            return existingDbBlock || initialBlock;
+          });
+        } else {
+          newBlocks = layout;
+        }
+        console.log('🔄 [Dashboard] Layout dinâmico recarregado com Auto-Cura');
       } catch (error) {
-        console.error('❌ [Dashboard] Erro ao recarregar:', error);
+        console.error('❌[Dashboard] Erro ao recarregar:', error);
         newBlocks = CLOTHING;
       }
     } else {
@@ -188,7 +217,7 @@ export default function DashboardPage() {
     
     if (newLockedState) {
       const currentOrder = reorderableContent.map(block => block.id);
-      console.log('🔒 [DND] Bloqueando e garantindo salvamento no banco:', currentOrder);
+      console.log('🔒[DND] Bloqueando e garantindo salvamento no banco:', currentOrder);
       await updateLayoutOrderAction('home', currentOrder);
     }
   };
@@ -492,12 +521,12 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex-1 overflow-y-auto scrollbar-hide ios-scroll-enabled bg-transparent relative w-full pb-32 z-10">
-          <div className="flex flex-col min-h-full p-4">
+          <div className="flex flex-col min-h-full py-4">
             <Reorder.Group
               axis="y"
               values={reorderableContent}
               onReorder={setReorderableContent}
-              className="flex flex-col gap-4"
+              className="flex flex-col gap-1"
               style={{
                 touchAction: 'pan-y',
                 WebkitOverflowScrolling: 'touch'
@@ -517,7 +546,7 @@ export default function DashboardPage() {
                     dragControls={undefined}
                     dragElastic={0.1}
                     dragMomentum={false}
-                    onDragEnd={canDrag ? handleBlockDragEnd : undefined} // 💾 NOVO: Salva ao soltar
+                    onDragEnd={canDrag ? handleBlockDragEnd : undefined}
                     whileDrag={{
                       scale: 1,
                       boxShadow: 'none',

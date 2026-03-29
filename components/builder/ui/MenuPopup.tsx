@@ -1,9 +1,10 @@
-// path: src/components/builder/ui/MenuPopup.tsx
+// path: /components/builder/ui/MenuPopup.tsx
 'use client';
 
 import React, { useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation'; // ✅ NOVO: Importação do Router
 import { 
   X, Home, History, Award, AlertTriangle, CreditCard, Shirt, 
   ShoppingCart, Store, UserCircle, DoorOpen, Share2, User, 
@@ -66,6 +67,7 @@ const MenuPopupBase = ({
   onItemClick 
 }: MenuPopupProps) => {
   const isClient = useIsClient();
+  const router = useRouter(); // ✅ NOVO: Instância do Router
 
   const styles = {
     overlay: { backgroundColor: theme?.overlayColor || 'rgba(0,0,0,0.6)' },
@@ -75,6 +77,24 @@ const MenuPopupBase = ({
   };
 
   if (!isClient) return null;
+
+  // ✅ NOVO: Função interceptadora de cliques para navegação
+  const handleItemInteraction = (item: MenuItem) => {
+    // Se o item tiver um link direto ou a ação for 'account', navega para a tela
+    if (item.link === '/account' || item.action === 'account' || item.icon === 'account') {
+      router.push('/account');
+      onClose();
+      return;
+    }
+
+    // Comportamento padrão
+    if (item.link) {
+      router.push(item.link);
+      onClose();
+    } else {
+      onItemClick?.(item);
+    }
+  };
 
   return createPortal(
     <div className="fixed inset-0 z-[99999] pointer-events-none flex flex-col justify-center items-center px-2 sm:px-4">
@@ -131,7 +151,7 @@ const MenuPopupBase = ({
                   return (
                     <button 
                       key={item.id} 
-                      onClick={() => onItemClick?.(item)}
+                      onClick={() => handleItemInteraction(item)} // ✅ NOVO: Usando a função interceptadora
                       className={cn(
                         "flex flex-col items-center justify-center",
                         "gap-1.5 sm:gap-2 md:gap-2.5",

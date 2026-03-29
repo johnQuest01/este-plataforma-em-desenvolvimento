@@ -61,18 +61,15 @@ export interface CartVariation {
   qty: number;
   size?: string;
   color?: string;
-  // Adicione outros campos se necessário, mas evite 'any' se possível
   [key: string]: unknown; 
 }
 
 export interface CartProduct {
   id: string;
   name: string;
-  // ✅ CORREÇÃO: Alterado de string para number para alinhar com o backend
   price: number; 
   mainImage: string;
   variations: CartVariation[];
-  // Permitir propriedades extras do ProductData se necessário
   [key: string]: unknown;
 }
 
@@ -107,7 +104,7 @@ export type BlockType =
   | 'product-grid'
   | 'banner'
   | 'categories'
-  | 'category-section'        // 🧱 CMS DINÂMICO: Seção de categoria auto-gerada
+  | 'category-section'        
   | 'footer'
   | 'user-info'
   | 'grid-buttons'
@@ -138,8 +135,10 @@ export type BlockType =
   | 'total-sales'
   | 'standard-button'
   | 'jeans-registration'
-  | 'health-monitor'            // ✅ Adicionado para fixar TS(2322)
-  | 'master-guardian-dashboard'; // ✅ Adicionado conforme seu Registry
+  | 'health-monitor'            
+  | 'master-guardian-dashboard' 
+  | 'account-screen'
+  | 'walking-model'; // ✅ NOVO: Adicionado para o bloco de modelos em movimento
 
 export interface MenuItem {
   id: string;
@@ -312,8 +311,18 @@ export interface BlockData {
   fullWidthMobile?: boolean;
 
   // --- CAMPOS ESPECÍFICOS DO CATEGORY-SECTION (CMS DINÂMICO) ---
-  filterTag?: string;          // Tag normalizada para filtro (ex: "camisetas-femininas")
-  categoryName?: string;        // Nome legível da categoria (ex: "Camisetas Femininas")
+  filterTag?: string;          
+  categoryName?: string;        
+
+  // --- CAMPOS ESPECÍFICOS DA TELA DE CONTA ---
+  userIdentifier?: string;
+  userEmail?: string;
+  userDocument?: string;
+  userWhatsapp?: string;
+
+  // --- CAMPOS ESPECÍFICOS DO WALKING MODEL ---
+  walkingModelImages?: string[];
+  animationDurationSeconds?: number;
 
   [key: string]: string | number | boolean | null | undefined | object | unknown;
 }

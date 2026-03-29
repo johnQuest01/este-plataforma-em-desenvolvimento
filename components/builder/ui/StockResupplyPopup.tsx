@@ -9,7 +9,7 @@ import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import Image from 'next/image'; // ✅ Importação do Next Image
+import Image from 'next/image';
 import { ProductData, getProductsAction } from '@/app/actions/product';
 
 // --- UTILS ---
@@ -28,22 +28,19 @@ interface ProductImageProps {
 }
 
 const ProductImage = ({ src, alt, totalQty, className }: ProductImageProps) => {
-  // Fallback para evitar erro se a URL estiver vazia
   const validSrc = src && src.length > 0 ? src : 'https://placehold.co/100x120/e2e8f0/94a3b8?text=Sem+Img';
 
   return (
     <div className={cn("relative w-20 h-24 bg-gray-100 rounded-xl overflow-hidden border border-gray-100 shrink-0", className)}>
-      {/* ✅ CORREÇÃO: Substituído img por Image do Next.js */}
       <Image 
         src={validSrc} 
         alt={alt} 
         fill
         className="object-cover"
         sizes="(max-width: 768px) 80px, 100px"
-        unoptimized // Garante que funcione com URLs externas sem config extra
+        unoptimized
       />
       
-      {/* Badge Flutuante de Quantidade Total */}
       <div className="absolute bottom-1 inset-x-1 bg-black/70 backdrop-blur-sm text-center py-1 rounded-lg z-10">
         <span className="text-[10px] text-white font-bold block leading-none">
           {totalQty} total
@@ -64,7 +61,7 @@ interface StockResupplyPopupProps {
 
 const StockResupplyPopupBase = ({ isOpen, onClose }: StockResupplyPopupProps) => {
   const [products, setProducts] = useState<ProductData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const[loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
@@ -91,7 +88,7 @@ const StockResupplyPopupBase = ({ isOpen, onClose }: StockResupplyPopupProps) =>
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center sm:p-4">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -103,11 +100,13 @@ const StockResupplyPopupBase = ({ isOpen, onClose }: StockResupplyPopupProps) =>
 
           {/* Modal Container */}
           <motion.div
-            initial={{ x: "100%", opacity: 0 }} 
-            animate={{ x: 0, opacity: 1 }}      
-            exit={{ x: "100%", opacity: 0 }}    
+            // ✅ AJUSTE: y: -20 para compensar o aumento da altura
+            initial={{ x: "100%", opacity: 0, y: -20 }} 
+            animate={{ x: 0, opacity: 1, y: -20 }}      
+            exit={{ x: "100%", opacity: 0, y: -20 }}    
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative bg-[#f0f2f5] w-full h-full sm:h-[85vh] sm:w-full sm:max-w-[420px] sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden border-0 sm:border border-gray-200"
+            // ✅ AJUSTE: max-w-[440px] e h-[85dvh] (aumentados levemente)
+            className="relative bg-[#f0f2f5] w-full max-w-[440px] h-[85dvh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-200"
           >
             {/* Header */}
             <div className="bg-white px-5 py-4 border-b border-gray-100 flex justify-between items-center shrink-0 shadow-sm z-10 pt-safe-top">
@@ -150,7 +149,6 @@ const StockResupplyPopupBase = ({ isOpen, onClose }: StockResupplyPopupProps) =>
                 </div>
               ) : (
                 filtered.map(product => {
-                  // Cálculo seguro da quantidade total
                   const totalQty = product.variants?.reduce((acc, v) => acc + (v.qty ?? 0), 0) || 0;
                   
                   return (
@@ -240,7 +238,6 @@ const StockResupplyPopupBase = ({ isOpen, onClose }: StockResupplyPopupProps) =>
   );
 };
 
-// 🛡️ GUARDIAN: Exportação com metadados
 export const StockResupplyPopup = withGuardian(
   StockResupplyPopupBase,
   "components/builder/ui/StockResupplyPopup.tsx",
@@ -255,7 +252,7 @@ export const StockResupplyPopup = withGuardian(
 - **UX**: Busca de produtos, filtro por estoque, loading state
 - **Fluxo**: Exibe produtos com baixo estoque para facilitar reposição
     `.trim(),
-    connectsTo: [
+    connectsTo:[
       {
         target: "app/actions/product.ts",
         type: "DATABASE",

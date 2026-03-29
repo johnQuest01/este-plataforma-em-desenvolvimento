@@ -1,3 +1,4 @@
+// components/builder/blocks/CategorySectionBlock.tsx
 'use client';
 
 /**
@@ -14,7 +15,7 @@
  * 
  * 📦 STACK:
  * - React 19
- * - Framer Motion para animações
+ * - Framer Motion para animations
  * - Next.js Image para otimização
  * - TypeScript Strict Mode
  */
@@ -28,8 +29,8 @@ import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
 interface CategorySectionBlockBaseProps extends BlockComponentProps {}
 
-const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBaseProps) => {
-  const [products, setProducts] = useState<ProductData[]>([]);
+const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBaseProps): React.JSX.Element | null => {
+  const[products, setProducts] = useState<ProductData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const title = config.data.title ?? config.data.categoryName ?? 'Produtos';
@@ -42,14 +43,12 @@ const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBase
         const allProducts = await getProductsAction();
         
         // 🔍 FILTRO POR CATEGORIA:
-        // Filtra produtos que têm a categoria correspondente
         let filtered = allProducts;
         
         if (filterTag) {
           filtered = allProducts.filter(product => {
             if (!product.category) return false;
             
-            // Normaliza a categoria do produto para comparação
             const normalizedCategory = product.category
               .toLowerCase()
               .normalize('NFD')
@@ -77,7 +76,7 @@ const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBase
 
   const handleProductClick = (product: ProductData) => {
     if (onAction) {
-      onAction('open_product_details', product.id); // 🧱 CORRIGIDO: Padronizado para open_product_details com ID
+      onAction('open_product_details', product.id); 
     }
   };
 
@@ -90,71 +89,84 @@ const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBase
     }
   };
 
-  const bgColor = config.style.bgColor ?? '#ffffff';
+  const rawBgColor = config.style.bgColor ?? 'transparent';
+  const bgColor = rawBgColor === '#ffffff' ? 'transparent' : rawBgColor;
   const textColor = config.style.textColor ?? '#000000';
 
-  // 🧱 NOVO: Não renderiza se não houver produtos após carregar
+  // 🧱 Não renderiza se não houver produtos após carregar
   if (!isLoading && products.length === 0) {
     return null;
   }
 
   return (
     <section 
-      className="w-full py-6 px-4"
+      // 🛡️ overflow-x-hidden: Impede que a página inteira balance horizontalmente
+      className="w-full relative pt-4 pb-6 mt-2 mb-4 overflow-x-hidden"
       style={{ backgroundColor: bgColor }}
     >
-      {/* Header da Seção */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 
-          className="text-2xl font-bold tracking-tight"
-          style={{ color: textColor }}
-        >
-          {title}
-        </h2>
+      {/* 🎀 BACKGROUND PINK ABSOLUTO (Efeito de Card com Limites)
+          - touch-pan-y: Bloqueia arrasto horizontal no fundo pink. Só permite scroll vertical.
+      */}
+      <div className="absolute top-0 bottom-0 left-4 right-4 bg-pink-50 rounded-2xl shadow-sm border border-pink-100 touch-pan-y" />
+      
+      {/* CONTEÚDO RELATIVO (Fica por cima do background pink) */}
+      <div className="relative z-10 flex flex-col w-full">
         
-        <button
-          onClick={handleViewAllClick}
-          className="flex items-center gap-1 text-sm font-semibold hover:opacity-70 transition-opacity"
-          style={{ color: config.style.accentColor ?? '#5874f6' }}
-        >
-          Ver todos
-          <ChevronRight size={16} strokeWidth={3} />
-        </button>
-      </div>
+        {/* Header da Seção */}
+        <div className="flex items-center justify-between mb-4 px-8">
+          <h2 
+            className="text-sm font-bold tracking-tight"
+            style={{ color: textColor }}
+          >
+            {title}
+          </h2>
+          
+          <button
+            onClick={handleViewAllClick}
+            className="flex items-center gap-1 text-[10px] font-medium hover:opacity-70 transition-opacity"
+            style={{ color: config.style.accentColor ?? '#5874f6' }}
+          >
+            Ver todos
+            <ChevronRight size={12} strokeWidth={3} />
+          </button>
+        </div>
 
-      {/* Grid de Produtos */}
-      {isLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, idx) => (
-            <div 
-              key={idx}
-              className="bg-gray-200 animate-pulse rounded-2xl"
-              style={{ aspectRatio: '3/4' }}
-            />
-          ))}
-        </div>
-      ) : products.length === 0 ? (
-        <div 
-          className="text-center py-12 text-gray-400"
-          style={{ color: `${textColor}40` }}
-        >
-          <p className="text-sm">Nenhum produto nesta categoria ainda.</p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
-          <div className="flex gap-3">
+        {/* Grid de Produtos */}
+        {isLoading ? (
+          <div className="flex overflow-x-hidden pb-2 w-full gap-3 scrollbar-hide">
+            <div className="w-5 shrink-0" />
+            {[...Array(4)].map((_, idx) => (
+              <div 
+                key={idx}
+                className="bg-white border border-gray-100 shadow-sm rounded-xl p-1.5 shrink-0"
+                style={{ width: '144px' }}
+              >
+                <div className="bg-gray-200 animate-pulse rounded-lg w-full" style={{ aspectRatio: '3/4' }} />
+                <div className="bg-gray-200 animate-pulse h-3 w-3/4 mt-2 rounded-sm" />
+                <div className="bg-gray-200 animate-pulse h-3 w-1/2 mt-1 rounded-sm" />
+              </div>
+            ))}
+            <div className="w-5 shrink-0" />
+          </div>
+        ) : (
+          /* 
+            🛡️ overscroll-x-contain: Impede que o scroll do carrossel puxe a página inteira ao chegar no fim.
+          */
+          <div className="flex overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x snap-mandatory w-full gap-3 scroll-pl-8 overscroll-x-contain">
+            
+            {/* Spacer Esquerdo: Mantém o alinhamento perfeito de 32px */}
+            <div className="w-5 shrink-0" />
+
             {products.map((product, idx) => {
-              // 🎯 NETFLIX UX: Largura FIXA de 150px para TODOS os cards
-              // Garante uniformidade total independente da quantidade
-              const cardWidth = '150px';
+              const cardWidth = '144px';
 
               return (
                 <motion.div
                   key={product.id}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05, duration: 0.3 }}
-                  className="shrink-0"
+                  className="shrink-0 snap-start bg-white rounded-xl shadow-sm border border-gray-200 p-1.5 flex flex-col"
                   style={{
                     width: cardWidth,
                     minWidth: cardWidth
@@ -162,11 +174,11 @@ const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBase
                 >
                   <button
                     onClick={() => handleProductClick(product)}
-                    className="w-full group"
+                    className="w-full group text-left flex flex-col"
                   >
                     {/* Imagem do Produto */}
                     <div 
-                      className="relative w-full rounded-2xl overflow-hidden mb-3 bg-linear-to-br from-gray-100 to-gray-200"
+                      className="relative w-full rounded-lg overflow-hidden mb-2 bg-linear-to-br from-gray-100 to-gray-200"
                       style={{ aspectRatio: '3/4' }}
                     >
                       {product.imageUrl ? (
@@ -177,14 +189,14 @@ const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBase
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-gray-200 to-gray-300">
-                          <ShoppingBag size={32} className="text-gray-400" />
+                          <ShoppingBag size={20} className="text-gray-400" />
                         </div>
                       )}
                       
                       {/* Badge de Estoque */}
                       {product.stock > 0 && (
-                        <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-full">
-                          <span className="text-[10px] font-bold text-white">
+                        <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 bg-black/60 backdrop-blur-sm rounded-full">
+                          <span className="text-[8px] font-bold text-white leading-none">
                             {product.stock} un
                           </span>
                         </div>
@@ -192,15 +204,15 @@ const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBase
                     </div>
 
                     {/* Info do Produto */}
-                    <div className="text-left">
+                    <div className="text-left px-1 flex flex-col w-full">
                       <h3 
-                        className="text-sm font-semibold line-clamp-2 mb-1 group-hover:opacity-70 transition-opacity"
+                        className="text-[11px] font-medium line-clamp-2 mb-1 leading-tight h-8 group-hover:opacity-70 transition-opacity"
                         style={{ color: textColor }}
                       >
                         {product.name}
                       </h3>
                       <p 
-                        className="text-base font-bold"
+                        className="text-xs font-black leading-none pt-0.5"
                         style={{ color: config.style.accentColor ?? '#5874f6' }}
                       >
                         {new Intl.NumberFormat('pt-BR', {
@@ -208,14 +220,26 @@ const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBase
                           currency: 'BRL'
                         }).format(product.price)}
                       </p>
+
+                      {/* 🏷️ ETIQUETA VENDIDO (Abaixo do preço) */}
+                      {product.stock <= 0 && (
+                        <div className="mt-2 bg-orange-500 rounded-[4px] px-2 py-1 w-fit shadow-sm">
+                          <span className="text-white text-[9px] font-bold uppercase leading-none block tracking-wider">
+                            Vendido
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </button>
                 </motion.div>
               );
             })}
+            
+            {/* Spacer Direito */}
+            <div className="w-5 shrink-0" />
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 };
@@ -231,16 +255,16 @@ export const CategorySectionBlock = withGuardian(
   "UI_COMPONENT",
   {
     label: "Seção de Categoria (CMS Dinâmico)",
-    description: "Bloco gerado automaticamente ao cadastrar produtos com nova categoria. Exibe produtos filtrados em slider horizontal.",
+    description: "Bloco gerado automaticamente ao cadastrar produtos com nova categoria. Exibe produtos filtrados em slider horizontal com efeito de flutuação sobre um card de fundo.",
     orientationNotes: `
 ⚠️ **Pontos de Atenção**:
 - **Geração Automática**: Criado dinamicamente por \`saveProductAction\`
 - **Dependências**: \`getProductsAction\`, \`ProductData\`
-- **UX**: Slider horizontal, cards clicáveis, loading states
+- **UX**: Slider horizontal full-bleed. O fundo pink usa \`touch-pan-y\` e a section usa \`overflow-x-hidden\` para impedir que a página balance horizontalmente ao tentar arrastar o fundo. O carrossel usa \`overscroll-x-contain\` para isolar o scroll.
 - **Filtro**: Usa \`filterTag\` para buscar produtos por categoria (campo Product.category)
 - **Fluxo**: onAction('open-product-detail') ao clicar no produto
     `.trim(),
-    connectsTo: [
+    connectsTo:[
       {
         target: "app/actions/product.ts",
         type: "DATABASE",
