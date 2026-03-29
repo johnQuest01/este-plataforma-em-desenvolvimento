@@ -1,6 +1,6 @@
 import { BlockConfig } from '@/types/builder';
 
-export const CLOTHING_TEMPLATE: BlockConfig[] = [
+export const CLOTHING_TEMPLATE: BlockConfig[] =[
   {
     id: 'inv_header',
     type: 'header',
@@ -25,7 +25,7 @@ export const CLOTHING_TEMPLATE: BlockConfig[] = [
     type: 'grid-buttons',
     isVisible: true,
     data: {
-      buttons: [
+      buttons:[
         { id: 'btn_hist', label: 'Histórico de Compras' },
         { id: 'btn_stock', label: 'Estoque', action: 'openStockModal' },
         { id: 'btn_login', label: 'Login / Senha' },
@@ -51,7 +51,7 @@ export const CLOTHING_TEMPLATE: BlockConfig[] = [
     type: 'action-buttons',
     isVisible: true,
     data: {
-      buttons: [
+      buttons:[
         { id: 'act_my_purchases', label: 'Minhas compras', bgColor: '#5874f6', textColor: '#fff' },
         {
           id: 'act_make_order',
@@ -66,12 +66,32 @@ export const CLOTHING_TEMPLATE: BlockConfig[] = [
     },
     style: { bgColor: '#eeeeee' }
   },
+  // ✅ NOVO: Bloco da Modelo Caminhando (Antes do Footer)
+  {
+    id: 'inv_walking_models',
+    type: 'walking-model',
+    isVisible: true,
+    data: {
+      walkingModelImages:[
+        '/models/modelo.1.png',
+        '/models/modelo.2.png',
+        '/models/modelo.3.png',
+        '/models/modelo.4.png',
+        '/models/modelo.5.png',
+        '/models/modelo.6.png'
+      ],
+      animationDurationSeconds: 12
+    },
+    style: {
+      bgColor: 'transparent'
+    }
+  },
   {
     id: 'inv_footer',
     type: 'footer',
     isVisible: true,
     data: {
-      footerItems: [
+      footerItems:[
         { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
         { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
         { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },

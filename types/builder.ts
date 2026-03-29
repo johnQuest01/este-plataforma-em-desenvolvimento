@@ -61,15 +61,17 @@ export interface CartVariation {
   qty: number;
   size?: string;
   color?: string;
-  [key: string]: unknown; 
+  // Adicione outros campos se necessário, mas evite 'any' se possível[key: string]: unknown; 
 }
 
 export interface CartProduct {
   id: string;
   name: string;
+  // ✅ CORREÇÃO: Alterado de string para number para alinhar com o backend
   price: number; 
   mainImage: string;
   variations: CartVariation[];
+  // Permitir propriedades extras do ProductData se necessário
   [key: string]: unknown;
 }
 
@@ -104,7 +106,7 @@ export type BlockType =
   | 'product-grid'
   | 'banner'
   | 'categories'
-  | 'category-section'        
+  | 'category-section'        // 🧱 CMS DINÂMICO: Seção de categoria auto-gerada
   | 'footer'
   | 'user-info'
   | 'grid-buttons'
@@ -135,10 +137,10 @@ export type BlockType =
   | 'total-sales'
   | 'standard-button'
   | 'jeans-registration'
-  | 'health-monitor'            
-  | 'master-guardian-dashboard' 
-  | 'account-screen'
-  | 'walking-model'; // ✅ NOVO: Adicionado para o bloco de modelos em movimento
+  | 'health-monitor'            // ✅ Adicionado para fixar TS(2322)
+  | 'master-guardian-dashboard' // ✅ Adicionado conforme seu Registry
+  | 'account-screen'            // ✅ NOVO: Adicionado para a tela de Minha Conta
+  | 'walking-model';            // ✅ NOVO: Adicionado para a modelo caminhando
 
 export interface MenuItem {
   id: string;
@@ -311,8 +313,8 @@ export interface BlockData {
   fullWidthMobile?: boolean;
 
   // --- CAMPOS ESPECÍFICOS DO CATEGORY-SECTION (CMS DINÂMICO) ---
-  filterTag?: string;          
-  categoryName?: string;        
+  filterTag?: string;          // Tag normalizada para filtro (ex: "camisetas-femininas")
+  categoryName?: string;        // Nome legível da categoria (ex: "Camisetas Femininas")
 
   // --- CAMPOS ESPECÍFICOS DA TELA DE CONTA ---
   userIdentifier?: string;

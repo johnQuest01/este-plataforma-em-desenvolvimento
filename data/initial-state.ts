@@ -1,7 +1,7 @@
 // data/initial-state.ts
 import { BlockConfig } from '@/types/builder';
 
-export const INITIAL_BLOCKS: BlockConfig[] = [
+export const INITIAL_BLOCKS: BlockConfig[] =[
   {
     id: 'blk_header_main',
     type: 'header',
@@ -30,7 +30,7 @@ export const INITIAL_BLOCKS: BlockConfig[] = [
     type: 'categories',
     isVisible: true,
     data: {
-      items: [
+      items:[
         { 
           label: 'Praia', 
           icon: 'sun', 
@@ -67,13 +67,33 @@ export const INITIAL_BLOCKS: BlockConfig[] = [
       accentColor: '#111827'
     }
   },
+  // ✅ NOVO: Bloco da Modelo Caminhando (Abaixo dos Reels)
+  {
+    id: 'blk_walking_models_main',
+    type: 'walking-model',
+    isVisible: true,
+    data: {
+      walkingModelImages:[
+        '/models/modelo.1.png',
+        '/models/modelo.2.png',
+        '/models/modelo.3.png',
+        '/models/modelo.4.png',
+        '/models/modelo.5.png',
+        '/models/modelo.6.png'
+      ],
+      animationDurationSeconds: 12
+    },
+    style: {
+      bgColor: 'transparent'
+    }
+  },
   // 🧱 REMOVIDO: Seção "Lançamentos da Semana" - Produtos serão exibidos apenas por categoria
   {
     id: 'blk_footer_main',
     type: 'footer',
     isVisible: true,
     data: {
-      footerItems: [
+      footerItems:[
         { id: 'f1', icon: 'cart', isVisible: true, route: '/cart' },
         { id: 'f2', icon: 'heart', isVisible: true, route: '/favorites' },
         { id: 'f3', icon: 'sync', isVisible: true, isHighlight: true, route: '/dashboard' },

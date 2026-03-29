@@ -7,13 +7,10 @@ import { BlockComponentProps } from '@/types/builder';
 export const WalkingModelBlock: React.FC<BlockComponentProps> = ({ config }) => {
   const { data, style } = config;
 
+  // Imagens padrão localizadas em /public/models/
   const defaultImages: string[] = [
-    '/models/modelo.1.png',
-    '/models/modelo.2.png',
-    '/models/modelo.3.png',
-    '/models/modelo.4.png',
-    '/models/modelo.5.png',
-    '/models/modelo.6.png'
+    '/models/modelo.1.png', '/models/modelo.2.png', '/models/modelo.3.png',
+    '/models/modelo.4.png', '/models/modelo.5.png', '/models/modelo.6.png'
   ];
 
   const imagesArray: string[] = Array.isArray(data.walkingModelImages) && data.walkingModelImages.length > 0
@@ -24,25 +21,25 @@ export const WalkingModelBlock: React.FC<BlockComponentProps> = ({ config }) => 
     ? data.animationDurationSeconds
     : 12;
 
-  const frameCount = imagesArray.length;
   const [frameIndex, setFrameIndex] = useState<number>(0);
 
+  // Ciclo de Sprite (Troca de PNGs)
   useEffect(() => {
-    if (frameCount <= 1) return;
+    if (imagesArray.length <= 1) return;
     const intervalId = setInterval(() => {
-      setFrameIndex((current) => (current + 1) % frameCount);
-    }, 80); 
+      setFrameIndex((current) => (current + 1) % imagesArray.length);
+    }, 100); // 100ms para um passo fluido
     return () => clearInterval(intervalId);
-  }, [frameCount]);
+  }, [imagesArray.length]);
 
-  if (frameCount === 0) return null;
+  if (imagesArray.length === 0) return null;
 
   return (
-    <section
+    <section 
       className="w-full overflow-hidden py-2 relative flex items-center pointer-events-none"
       style={{ backgroundColor: style.bgColor || 'transparent' }}
     >
-      {/* 🚀 SOLUÇÃO ANTI-FLICKER: Preloading das imagens */}
+      {/* 🚀 ANTI-FLICKER: Força o browser a manter as imagens em cache */}
       <div className="hidden">
         {imagesArray.map((img) => (
           <img key={img} src={img} alt="preload" />
@@ -50,21 +47,21 @@ export const WalkingModelBlock: React.FC<BlockComponentProps> = ({ config }) => 
       </div>
 
       <motion.div
-        initial={{ x: '110vw' }}
-        animate={{ x: '-20vw' }}
+        initial={{ x: '110vw' }} // Começa fora da tela (Direita)
+        animate={{ x: '-20vw' }}  // Termina fora da tela (Esquerda)
         transition={{
           repeat: Infinity,
           duration: animationDuration,
           ease: 'linear',
         }}
+        // 📏 TAMANHO SINCRONIZADO: w-24 (96px) para bater com seus Product Cards
         className="relative w-24 flex-shrink-0 pointer-events-auto"
-        style={{ 
-            aspectRatio: '271 / 920',
-            // Usamos backgroundImage com swap instantâneo para performance máxima
-            backgroundImage: `url(${imagesArray[frameIndex]})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat'
+        style={{
+          aspectRatio: '271 / 920',
+          backgroundImage: `url(${imagesArray[frameIndex]})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
         }}
       />
     </section>
