@@ -61,17 +61,15 @@ export interface CartVariation {
   qty: number;
   size?: string;
   color?: string;
-  // Adicione outros campos se necessário, mas evite 'any' se possível[key: string]: unknown; 
+  [key: string]: unknown; 
 }
 
 export interface CartProduct {
   id: string;
   name: string;
-  // ✅ CORREÇÃO: Alterado de string para number para alinhar com o backend
   price: number; 
   mainImage: string;
   variations: CartVariation[];
-  // Permitir propriedades extras do ProductData se necessário
   [key: string]: unknown;
 }
 
@@ -98,15 +96,12 @@ export interface ProductVariationData {
   quantity: number;
 }
 
-/**
- * ✅ ATUALIZAÇÃO: Registro de novos blocos na união estrita
- */
 export type BlockType =
   | 'header'
   | 'product-grid'
   | 'banner'
   | 'categories'
-  | 'category-section'        // 🧱 CMS DINÂMICO: Seção de categoria auto-gerada
+  | 'category-section'        
   | 'footer'
   | 'user-info'
   | 'grid-buttons'
@@ -137,10 +132,10 @@ export type BlockType =
   | 'total-sales'
   | 'standard-button'
   | 'jeans-registration'
-  | 'health-monitor'            // ✅ Adicionado para fixar TS(2322)
-  | 'master-guardian-dashboard' // ✅ Adicionado conforme seu Registry
-  | 'account-screen'            // ✅ NOVO: Adicionado para a tela de Minha Conta
-  | 'walking-model';            // ✅ NOVO: Adicionado para a modelo caminhando
+  | 'health-monitor'            
+  | 'master-guardian-dashboard' 
+  | 'account-screen'            
+  | 'walking-model';            
 
 export interface MenuItem {
   id: string;
@@ -267,7 +262,6 @@ export interface BlockData {
   variantOptions?: VariantOption[];
   availableStock?: number;
 
-  // Campos Histórico
   role?: string;
   since?: string;
   contact?: string;
@@ -275,48 +269,39 @@ export interface BlockData {
   name?: string; 
   sellerName?: string;
 
-  // Campos Transações/Header
   showBack?: boolean;
   transactionType?: 'in' | 'out';
   transactionDate?: string;
   transactionValue?: string;
   valueColor?: string;
 
-  // Campos Card Simples/Detalhado
   productSize?: string;
   productVariation?: string;
   productColor?: string;
   detailedVariations?: ProductVariationData[];
 
-  // Campos do Card Popup (Antigo)
   detailsBox?: string;
   qty?: number;
   price?: string;
 
-  // Campos de Produção
   productionItems?: ProductionItemData[];
 
-  // Campos de Distribuição de Estoque
   saleswomen?: SaleswomanData[];
   totalStock?: number;
   labels?: StockDistributionLabels;
 
-  // Campos de Vendas Totais
   sales?: SaleRecord[];
   primaryColor?: string;
 
-  // --- CAMPOS ESPECÍFICOS DO STANDARD BUTTON ---
   label?: string;
   variant?: 'primary' | 'secondary' | 'outline' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   actionType?: string;
   fullWidthMobile?: boolean;
 
-  // --- CAMPOS ESPECÍFICOS DO CATEGORY-SECTION (CMS DINÂMICO) ---
-  filterTag?: string;          // Tag normalizada para filtro (ex: "camisetas-femininas")
-  categoryName?: string;        // Nome legível da categoria (ex: "Camisetas Femininas")
+  filterTag?: string;          
+  categoryName?: string;        
 
-  // --- CAMPOS ESPECÍFICOS DA TELA DE CONTA ---
   userIdentifier?: string;
   userEmail?: string;
   userDocument?: string;
@@ -324,6 +309,7 @@ export interface BlockData {
 
   // --- CAMPOS ESPECÍFICOS DO WALKING MODEL ---
   walkingModelImages?: string[];
+  walkingModelBanner?: string; // ✅ NOVO: Imagem do Banner
   animationDurationSeconds?: number;
 
   [key: string]: string | number | boolean | null | undefined | object | unknown;
