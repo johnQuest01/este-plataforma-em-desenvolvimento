@@ -12,15 +12,19 @@ datasource db {
 // --- MODELOS DE USUÁRIO E LOJA ---
 
 model User {
-  id        String   @id @default(cuid())
-  email     String?  @unique
-  document  String   @unique
-  name      String?
-  whatsapp  String?
-  role      String   @default("customer")
-  stores    Store[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  email              String?  @unique
+  document           String   @unique
+  documentType       String   @default("CPF") // "CPF" ou "CNPJ"
+  name               String?
+  whatsapp           String?
+  address            String?  // Endereço da loja/físico
+  profilePictureUrl  String?  // Foto de perfil (Quadrada)
+  backgroundImageUrl String?  // Foto de fundo (720x448)
+  role               String   @default("customer")
+  stores             Store[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 model Store {
@@ -48,13 +52,8 @@ model Product {
   name            String
   description     String?
   price           Decimal          @db.Decimal(10, 2)
- 
-  // Campo essencial para o cadastro inteligente
   reference       String?          
- 
-  // 🧱 CMS DINÂMICO: Categoria para filtragem automática
   category        String?
- 
   imageColor      String?
   imageUrl        String?
   tags            String[]
@@ -68,9 +67,8 @@ model Product {
   orderItems      OrderItem[]
   productionItems ProductionItem[]
 
-  // Índice para busca rápida no upload em massa
   @@index([reference])
-  @@index([category]) // 🧱 CMS DINÂMICO: Índice para busca por categoria
+  @@index([category]) 
 }
 
 model ProductVariant {
@@ -158,27 +156,25 @@ model GuardianConfig {
   createdAt DateTime @default(now())
 }
 
-// --- CONFIGURAÇÃO DE LAYOUT LEGO (FIX BUILD ERROR) ---
 model UIConfig {
   id              String   @id @default(cuid())
-  pageSlug        String   @unique // ex: 'home', 'pos', 'inventory'
-  layout          Json     @default("[]") // Onde ficam os blocos Lego
-  dashboardLayout Json?    // 🎨 NOVO: Layout específico da dashboard (com banners)
+  pageSlug        String   @unique 
+  layout          Json     @default("[]") 
+  dashboardLayout Json?    
   updatedAt       DateTime @updatedAt
   createdAt       DateTime @default(now())
 }
 
-// --- BANNERS (CRIADOR DE BANNERS) ---
 model Banner {
   id           String   @id @default(cuid())
-  title        String   // Título do banner
-  mediaType    String   // 'image' ou 'video'
-  mediaUrl     String   @db.Text // URL da mídia (pode ser Base64)
-  aspectRatio  String   // '16/9', '1/1', '4/5', '9/16'
-  orderIndex   Int      @default(0) // Ordem de exibição
-  isVisible    Boolean  @default(true) // Visibilidade
-  linkUrl      String?  // Link de destino (opcional)
-  description  String?  // Descrição (opcional)
+  title        String   
+  mediaType    String   
+  mediaUrl     String   @db.Text 
+  aspectRatio  String   
+  orderIndex   Int      @default(0) 
+  isVisible    Boolean  @default(true) 
+  linkUrl      String?  
+  description  String?  
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -186,25 +182,32 @@ model Banner {
   @@index([isVisible])
 }
 
-// --- DEVELOPMENT CARD PERCENTAGE (Sincronização entre dispositivos) ---
 model DevelopmentCardPercentage {
   id             String   @id @default("development-card-single-record")
-  percentage     Int      @default(69) // Valor entre 0 e 100
-  isManual       Boolean  @default(false) // Se foi alterado manualmente
-  lastManualUpdate DateTime? // Última vez que foi alterado manualmente
-  lastAutoUpdate  DateTime  @default(now()) // Última vez que foi atualizado automaticamente
+  percentage     Int      @default(69) 
+  isManual       Boolean  @default(false) 
+  lastManualUpdate DateTime? 
+  lastAutoUpdate  DateTime  @default(now()) 
   updatedAt      DateTime  @updatedAt
   createdAt      DateTime  @default(now())
 }
 
-// --- CONTROLE DE ACESSO ADMIN ---
 model AdminAccess {
   id            String   @id @default("admin-access-single-record")
-  passwordHash  String   // Hash da senha de acesso
-  isUnlocked    Boolean  @default(false) // Se está desbloqueado na sessão atual
-  lastAccess    DateTime? // Última vez que foi acessado
-  accessCount   Int      @default(0) // Contador de acessos
-  buttonPosition Json?   @default("{\"x\": 0, \"y\": 0}") // Posição do botão (x, y)
+  passwordHash  String   
+  isUnlocked    Boolean  @default(false) 
+  lastAccess    DateTime? 
+  accessCount   Int      @default(0) 
+  buttonPosition Json?   @default("{\"x\": 0, \"y\": 0}") 
   updatedAt     DateTime @updatedAt
   createdAt     DateTime @default(now())
+}
+
+// --- NOVO: CONFIGURAÇÃO DE VÍDEO DE FUNDO ---
+model FormVideoConfig {
+  id        String   @id @default("global-video-config")
+  videoUrl  String   @default("") @db.Text
+  isActive  Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
 }

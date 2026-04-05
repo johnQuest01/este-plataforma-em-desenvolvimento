@@ -41,3 +41,7 @@ yarn-error.log*
 next-env.d.ts
 
 /lib/generated/prisma
+
+# Vídeos de fundo do login (enviados pelo admin)
+/public/uploads/login-video/*
+!/public/uploads/login-video/.gitkeep

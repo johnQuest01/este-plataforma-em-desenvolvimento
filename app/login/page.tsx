@@ -2,171 +2,335 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Building2, ArrowRight, ShieldCheck, Store, Phone, UserCircle } from 'lucide-react';
-import clsx from 'clsx';
-import { LocalDB } from '@/lib/local-db'; 
+import { User, Building2, ArrowRight, ShieldCheck, Phone, UserCircle, Mail, MapPin, Lock, LogIn } from 'lucide-react';
+import { clsx } from 'clsx';
+import { registerNewUserAction } from '@/app/actions/registration-actions';
+import { authenticateUserAction } from '@/app/actions/auth-actions';
+import { getFormVideoAction } from '@/app/actions/video-bg-actions';
+import { AuthInputField } from '@/components/auth/AuthInputField';
 
-// --- Máscaras ---
-const masks = {
-  cpf: (v: string) => v.replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4').substring(0, 14),
-  cnpj: (v: string) => v.replace(/\D/g, '').replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5').substring(0, 18),
-  phone: (v: string) => v.replace(/\D/g, '').replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3').substring(0, 15),
+const inputMasks = {
+  cpf: (value: string) =>
+    value.replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4').substring(0, 14),
+  cnpj: (value: string) =>
+    value.replace(/\D/g, '').replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5').substring(0, 18),
+  phone: (value: string) =>
+    value.replace(/\D/g, '').replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3').substring(0, 15),
 };
 
-type PersonType = 'fisica' | 'juridica';
+function loginVideoMime(src: string): string {
+  const base = src.split('?')[0].toLowerCase();
+  if (base.endsWith('.webm')) return 'video/webm';
+  if (base.endsWith('.mov')) return 'video/quicktime';
+  return 'video/mp4';
+}
 
-export default function EntryPage() {
+type PersonDocumentType = 'CPF' | 'CNPJ';
+type AuthenticationMode = 'LOGIN' | 'REGISTER';
+
+export default function AuthenticationPage(): React.JSX.Element {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true); 
-  const [personType, setPersonType] = useState<PersonType>('fisica');
-  
-  // Estado do Formulário
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [authMode, setAuthMode] = useState<AuthenticationMode>('REGISTER');
+  const [personType, setPersonType] = useState<PersonDocumentType>('CPF');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string>('');
+  const [videoActive, setVideoActive] = useState<boolean>(false);
+
   const [formData, setFormData] = useState({
-    name: '',
-    document: '',
-    storeName: '',
-    whatsapp: ''
+    fullName: '',
+    emailAddress: '',
+    phoneNumber: '',
+    physicalAddress: '',
+    documentNumber: '',
+    password: '',
   });
 
-  // 1. Verifica se já existe cadastro ao iniciar o app
   useEffect(() => {
-    // CORREÇÃO: Usamos um setTimeout para jogar a verificação para o final da fila de execução.
-    // Isso evita o erro de "Synchronous State Update" do React.
-    const checkUser = setTimeout(() => {
-        const existingUser = LocalDB.getUser();
-        
-        if (existingUser) {
-          console.log("Usuário encontrado no DB Local:", existingUser);
-          router.push('/dashboard'); 
-        } else {
-          setIsLoading(false); // Agora seguro, pois roda após o ciclo inicial
-        }
-    }, 100); // Um pequeno delay (100ms) ajuda a suavizar a transição visual também
+    const fetchVideo = async () => {
+      const response = await getFormVideoAction();
+      if (response.success && response.data) {
+        setVideoUrl(response.data.videoUrl || '');
+        setVideoActive(response.data.isActive ?? true);
+      }
+    };
+    fetchVideo();
+  }, []);
 
-    return () => clearTimeout(checkUser);
-  }, [router]);
+  const showVideo = Boolean(videoActive && videoUrl.trim() !== '');
+  const onVideo = showVideo;
 
-  const handleChange = (field: string, value: string) => {
+  const handleInputChange = (field: keyof typeof formData, value: string) => {
     let finalValue = value;
-    if (field === 'document') {
-        finalValue = personType === 'fisica' ? masks.cpf(value) : masks.cnpj(value);
-    }
-    if (field === 'whatsapp') {
-        finalValue = masks.phone(value);
-    }
-    setFormData(prev => ({ ...prev, [field]: finalValue }));
+    if (field === 'documentNumber')
+      finalValue = personType === 'CPF' ? inputMasks.cpf(value) : inputMasks.cnpj(value);
+    if (field === 'phoneNumber') finalValue = inputMasks.phone(value);
+    setFormData((prev) => ({ ...prev, [field]: finalValue }));
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAuthenticationSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setIsLoading(true);
+    setErrorMessage(null);
 
-    // Simulação de processamento
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Salva no Banco de Dados Local
-    LocalDB.saveUser({
-      type: personType,
-      name: formData.name,
-      document: formData.document,
-      whatsapp: formData.whatsapp,
-      storeName: personType === 'juridica' ? formData.storeName : undefined
-    });
-
-    alert("Cadastro salvo com sucesso! Bem-vindo.");
-    router.push('/dashboard'); 
+    try {
+      if (authMode === 'REGISTER') {
+        const response = await registerNewUserAction({
+          fullName: formData.fullName,
+          emailAddress: formData.emailAddress,
+          phoneNumber: formData.phoneNumber,
+          physicalAddress: formData.physicalAddress,
+          documentType: personType,
+          documentNumber: formData.documentNumber,
+          password: formData.password,
+        });
+        if (!response.success) {
+          setErrorMessage(response.error || 'Erro ao criar conta.');
+          setIsLoading(false);
+          return;
+        }
+        router.push('/dashboard');
+      } else {
+        const response = await authenticateUserAction({
+          documentOrEmail: formData.emailAddress || formData.documentNumber,
+          password: formData.password,
+        });
+        if (!response.success) {
+          setErrorMessage(response.error || 'Erro ao fazer login.');
+          setIsLoading(false);
+          return;
+        }
+        router.push('/dashboard');
+      }
+    } catch {
+      setErrorMessage('Erro de conexão com o servidor.');
+      setIsLoading(false);
+    }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#f0f2f5] flex items-center justify-center">
-        <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="w-16 h-16 bg-gray-200 rounded-full" />
-          <div className="h-4 w-32 bg-gray-200 rounded" />
-        </div>
-      </div>
-    );
-  }
+  const titleShadow = onVideo ? '[text-shadow:0_2px_18px_rgba(0,0,0,0.9)]' : '';
+  const iconDrop = onVideo ? 'drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)]' : '';
 
   return (
-    <div className="min-h-screen bg-[#f0f2f5] flex items-center justify-center p-4 sm:p-6 relative overflow-hidden">
-      {/* Background Decorativo */}
-      <div className="absolute top-[-10%] right-[-5%] w-64 h-64 bg-[#5874f6]/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-[-10%] left-[-5%] w-64 h-64 bg-[#5874f6]/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="relative min-h-dvh w-full overflow-x-hidden overflow-y-auto">
+      {showVideo ? (
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="fixed inset-0 z-0 h-full w-full object-cover"
+          aria-hidden
+        >
+          <source src={videoUrl} type={loginVideoMime(videoUrl)} />
+        </video>
+      ) : (
+        <div
+          className="fixed inset-0 z-0 bg-linear-to-br from-slate-200 via-slate-100 to-slate-300"
+          aria-hidden
+        />
+      )}
 
-      <div className="bg-white w-full max-w-[420px] rounded-3xl shadow-2xl border border-gray-100 p-6 sm:p-8 relative z-10">
-        
-        {/* Header */}
-        <div className="flex flex-col items-center mb-6 text-center">
-          <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-3 shadow-sm border border-blue-100">
-            <ShieldCheck size={28} className="text-[#5874f6]" strokeWidth={2} />
+      <div
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-1 h-28 bg-linear-to-t from-black/25 to-transparent"
+        aria-hidden
+      />
+
+      <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-[440px] flex-col items-center px-5 py-10 sm:py-14">
+        {/* UI flutuante: sem painel de fundo — só ícone + título sobre o vídeo */}
+        <header className="mb-6 flex w-full max-w-[400px] flex-col items-center gap-2 text-center">
+          <ShieldCheck
+            size={36}
+            strokeWidth={2.2}
+            className={clsx(iconDrop, onVideo ? 'text-white' : 'text-slate-800')}
+            aria-hidden
+          />
+          <h1
+            className={clsx(
+              'text-xl font-black leading-tight tracking-tight sm:text-2xl',
+              onVideo ? clsx('text-white', titleShadow) : 'text-slate-900'
+            )}
+          >
+            {authMode === 'REGISTER' ? 'Identifique-se' : 'Acesse sua Conta'}
+          </h1>
+        </header>
+
+        {errorMessage ? (
+          <p
+            className={clsx(
+              'mb-4 w-full max-w-[400px] text-center text-xs font-bold',
+              onVideo
+                ? 'text-red-100 [text-shadow:0_1px_8px_rgba(0,0,0,0.9)]'
+                : 'text-red-700'
+            )}
+            role="alert"
+          >
+            {errorMessage}
+          </p>
+        ) : null}
+
+        <form
+          onSubmit={handleAuthenticationSubmit}
+          className="flex w-full max-w-[400px] flex-col gap-3"
+        >
+          {authMode === 'REGISTER' ? (
+            <div className="flex w-full gap-2 rounded-full p-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setPersonType('CPF');
+                  handleInputChange('documentNumber', '');
+                }}
+                className={clsx(
+                  'flex flex-1 items-center justify-center gap-1.5 rounded-full py-2.5 text-[11px] font-bold transition-all',
+                  onVideo
+                    ? clsx(
+                        'border border-white/35 backdrop-blur-xl',
+                        personType === 'CPF'
+                          ? 'bg-white/90 text-slate-900 shadow-lg'
+                          : 'bg-white/20 text-white [text-shadow:0_1px_6px_rgba(0,0,0,0.8)]'
+                      )
+                    : clsx(
+                        personType === 'CPF'
+                          ? 'bg-slate-900 text-white shadow-md'
+                          : 'bg-white/80 text-slate-700 ring-1 ring-slate-200'
+                      )
+                )}
+              >
+                <User size={14} /> Pessoa Física
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPersonType('CNPJ');
+                  handleInputChange('documentNumber', '');
+                }}
+                className={clsx(
+                  'flex flex-1 items-center justify-center gap-1.5 rounded-full py-2.5 text-[11px] font-bold transition-all',
+                  onVideo
+                    ? clsx(
+                        'border border-white/35 backdrop-blur-xl',
+                        personType === 'CNPJ'
+                          ? 'bg-white/90 text-slate-900 shadow-lg'
+                          : 'bg-white/20 text-white [text-shadow:0_1px_6px_rgba(0,0,0,0.8)]'
+                      )
+                    : clsx(
+                        personType === 'CNPJ'
+                          ? 'bg-slate-900 text-white shadow-md'
+                          : 'bg-white/80 text-slate-700 ring-1 ring-slate-200'
+                      )
+                )}
+              >
+                <Building2 size={14} /> Pessoa Jurídica
+              </button>
+            </div>
+          ) : null}
+
+          <div className="flex flex-col gap-2.5">
+            {authMode === 'REGISTER' ? (
+              <AuthInputField
+                overVideo={onVideo}
+                icon={UserCircle}
+                required
+                placeholder="Nome Completo"
+                value={formData.fullName}
+                onChange={(v) => handleInputChange('fullName', v)}
+              />
+            ) : null}
+            <AuthInputField
+              overVideo={onVideo}
+              icon={Mail}
+              required
+              type="email"
+              inputMode="email"
+              placeholder={authMode === 'LOGIN' ? 'E-mail ou Documento' : 'Gmail / E-mail'}
+              value={formData.emailAddress}
+              onChange={(v) => handleInputChange('emailAddress', v)}
+            />
+            {authMode === 'REGISTER' ? (
+              <>
+                <AuthInputField
+                  overVideo={onVideo}
+                  icon={Phone}
+                  required
+                  type="tel"
+                  inputMode="tel"
+                  placeholder="Número de Celular"
+                  value={formData.phoneNumber}
+                  onChange={(v) => handleInputChange('phoneNumber', v)}
+                />
+                <AuthInputField
+                  overVideo={onVideo}
+                  icon={MapPin}
+                  required
+                  placeholder="Endereço Completo"
+                  value={formData.physicalAddress}
+                  onChange={(v) => handleInputChange('physicalAddress', v)}
+                />
+                <AuthInputField
+                  overVideo={onVideo}
+                  icon={ShieldCheck}
+                  required
+                  inputMode="numeric"
+                  placeholder={personType === 'CPF' ? 'Digite seu CPF' : 'Digite seu CNPJ (MEI)'}
+                  value={formData.documentNumber}
+                  onChange={(v) => handleInputChange('documentNumber', v)}
+                />
+              </>
+            ) : null}
+            <AuthInputField
+              overVideo={onVideo}
+              icon={Lock}
+              required
+              type="password"
+              placeholder={authMode === 'REGISTER' ? 'Crie uma Senha' : 'Sua Senha'}
+              value={formData.password}
+              onChange={(v) => handleInputChange('password', v)}
+            />
           </div>
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Crie sua Conta</h1>
-          <p className="text-gray-500 text-xs font-medium mt-1">Preencha seus dados para acessar o estoque.</p>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className={clsx(
+              'mt-1 flex h-12 w-full items-center justify-center gap-2 rounded-full text-xs font-black uppercase tracking-wider transition-all active:scale-[0.98] disabled:opacity-50',
+              onVideo
+                ? 'border border-white/50 bg-white/90 text-slate-900 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-xl hover:bg-white'
+                : 'border border-white/50 bg-white/90 text-slate-900 shadow-lg backdrop-blur-xl hover:bg-white'
+            )}
+          >
+            {isLoading ? 'Processando…' : authMode === 'REGISTER' ? 'Criar Conta' : 'Entrar no Sistema'}
+            {authMode === 'REGISTER' ? <ArrowRight size={16} /> : <LogIn size={16} />}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            onClick={() => {
+              setAuthMode(authMode === 'REGISTER' ? 'LOGIN' : 'REGISTER');
+              setErrorMessage(null);
+            }}
+            className={clsx(
+              'text-[11px] font-bold underline-offset-4 transition-colors hover:underline',
+              onVideo
+                ? 'text-white/95 [text-shadow:0_2px_10px_rgba(0,0,0,0.9)]'
+                : 'text-slate-800'
+            )}
+          >
+            {authMode === 'REGISTER' ? 'Já tem uma conta? Faça Login' : 'Não tem conta? Crie uma agora'}
+          </button>
         </div>
 
-        <form onSubmit={handleRegister} className="flex flex-col gap-4">
-          
-          {/* Toggle Tipo */}
-          <div className="flex bg-gray-100 rounded-xl p-1 shadow-inner">
-            <button type="button" onClick={() => { setPersonType('fisica'); setFormData(p => ({...p, document: ''})); }}
-              className={clsx("flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2", personType === 'fisica' ? "bg-white text-[#5874f6] shadow-sm" : "text-gray-500")}>
-              <User size={16} /> Pessoa Física
-            </button>
-            <button type="button" onClick={() => { setPersonType('juridica'); setFormData(p => ({...p, document: ''})); }}
-              className={clsx("flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2", personType === 'juridica' ? "bg-white text-[#5874f6] shadow-sm" : "text-gray-500")}>
-              <Building2 size={16} /> Pessoa Jurídica
-            </button>
-          </div>
-
-          {/* Inputs */}
-          <div className="space-y-3">
-            {/* Nome Completo */}
-            <div className="relative group">
-              <UserCircle size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input required type="text" placeholder="Seu Nome Completo" 
-                value={formData.name} onChange={e => handleChange('name', e.target.value)}
-                className="w-full h-12 pl-11 pr-4 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-800 outline-none focus:border-[#5874f6] focus:bg-white transition-all" />
-            </div>
-
-            {/* Documento (CPF/CNPJ) */}
-            <div className="relative group">
-              <ShieldCheck size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input required type="text" inputMode="numeric" 
-                placeholder={personType === 'fisica' ? 'CPF' : 'CNPJ'}
-                value={formData.document} onChange={e => handleChange('document', e.target.value)}
-                className="w-full h-12 pl-11 pr-4 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-800 outline-none focus:border-[#5874f6] focus:bg-white transition-all" />
-            </div>
-
-            {/* WhatsApp */}
-            <div className="relative group">
-              <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input required type="tel" placeholder="WhatsApp / Celular" 
-                value={formData.whatsapp} onChange={e => handleChange('whatsapp', e.target.value)}
-                className="w-full h-12 pl-11 pr-4 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-800 outline-none focus:border-[#5874f6] focus:bg-white transition-all" />
-            </div>
-
-            {/* Nome da Loja (Só Jurídica) */}
-            {personType === 'juridica' && (
-              <div className="relative group animate-in slide-in-from-top-2">
-                <Store size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input required type="text" placeholder="Nome Fantasia da Loja" 
-                  value={formData.storeName} onChange={e => handleChange('storeName', e.target.value)}
-                  className="w-full h-12 pl-11 pr-4 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-800 outline-none focus:border-[#5874f6] focus:bg-white transition-all" />
-              </div>
-            )}
-          </div>
-
-          <button type="submit" disabled={!formData.name || !formData.document}
-            className="w-full h-14 mt-2 bg-green-500 text-white rounded-2xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-3 shadow-lg shadow-green-500/30 hover:bg-green-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-            Cadastrar e Entrar <ArrowRight size={20} />
-          </button>
-
-        </form>
-      </div>
-      
-      <div className="absolute bottom-4 text-center text-[10px] text-gray-400 font-medium">
-        <p>© 2024 B2B Engine. Dados salvos localmente.</p>
+        <p
+          className={clsx(
+            'mt-auto pt-10 text-center text-[10px] font-medium',
+            onVideo ? 'text-white/75 [text-shadow:0_1px_8px_rgba(0,0,0,0.85)]' : 'text-slate-600'
+          )}
+        >
+          © 2026 Maryland Architecture.
+        </p>
       </div>
     </div>
   );

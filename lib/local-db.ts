@@ -1,5 +1,3 @@
-// lib/local-db.ts
-
 'use client';
 
 export interface UserData {
@@ -7,6 +5,8 @@ export interface UserData {
   type: 'fisica' | 'juridica';
   document: string;
   name: string;
+  email: string;
+  address: string;
   storeName?: string;
   whatsapp: string;
   isVendedor?: boolean;
@@ -17,13 +17,11 @@ export interface UserData {
 const DB_KEY = 'b2b_app_user_db';
 
 export const LocalDB = {
-  // Salvar usuário (Cadastro)
   saveUser: (data: Omit<UserData, 'id' | 'createdAt'>) => {
     if (typeof window === 'undefined') return null;
 
     const newUser: UserData = {
       ...data,
-      // CORREÇÃO: Fallback para funcionar em HTTP (IP de rede)
       id: typeof crypto !== 'undefined' && crypto.randomUUID 
           ? crypto.randomUUID() 
           : `user_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
@@ -34,14 +32,12 @@ export const LocalDB = {
     return newUser;
   },
 
-  // Recuperar usuário (Login Automático)
   getUser: (): UserData | null => {
     if (typeof window === 'undefined') return null;
     const data = localStorage.getItem(DB_KEY);
     return data ? JSON.parse(data) : null;
   },
 
-  // Limpar dados (Sair do App)
   clearUser: () => {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(DB_KEY);

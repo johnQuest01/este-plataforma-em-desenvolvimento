@@ -131,7 +131,11 @@ export type BlockType =
   | 'master-guardian-dashboard' 
   | 'account-screen'            
   | 'walking-model'
-  | 'activity-history'; // ✅ NOVO: Bloco de Histórico de Atividades
+  | 'activity-history'
+  | 'personal-info'
+  | 'registration-form'
+  | 'video-background-manager'
+  | 'form-video-background';
 
 export interface MenuItem {
   id: string;
@@ -313,11 +317,18 @@ export interface BlockData {
   walkingModelBanner?: string; 
   animationDurationSeconds?: number;
 
-  // ✅ NOVO: Propriedades específicas do Histórico de Atividades
   activityButtons?: ActivityButton[];
   searchFormTitle?: string;
   searchFormInputLabel?: string;
   searchFormButtonLabel?: string;
+
+  /** Bloco form-video-background: textos opcionais da UI */
+  videoFormTitle?: string;
+  videoFormDescription?: string;
+  videoFormHelperText?: string;
+  /** URL do vídeo de fundo do login (somente leitura em layouts estáticos, se usado) */
+  loginBackgroundVideoUrl?: string;
+  loginBackgroundVideoActive?: boolean;
 
   [key: string]: string | number | boolean | null | undefined | object | unknown;
 }

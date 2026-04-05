@@ -56,11 +56,15 @@ import { TransactionCardBlock } from './blocks/TransactionCard';
 import { HistoryLinksBlock } from './blocks/HistoryLinksBlock';
 import { ProductionListBlock } from './blocks/ProductionListBlock';
 import { ReadyStockListBlock } from './blocks/ReadyStockListBlock';
-import { ActivityHistoryBlock } from './blocks/ActivityHistoryBlock'; // ✅ Import do Histórico de Atividades
+import { ActivityHistoryBlock } from './blocks/ActivityHistoryBlock';
 
 // --- Novos Blocos de Inteligência e Conta ---
 import { TotalSalesBlock } from './blocks/TotalSalesBlock';
 import { AccountScreenBlock } from './blocks/AccountScreenBlock'; 
+import { PersonalInfoBlock } from './blocks/account/PersonalInfoBlock';
+import { RegistrationFormBlock } from './blocks/RegistrationFormBlock';
+import { VideoBackgroundManagerBlock } from '@/components/builder/blocks/admin/VideoBackgroundManagerBlock';
+import { FormVideoBackgroundBlock } from './blocks/FormVideoBackgroundBlock';
 
 /**
  * Definição Estrita do Componente Lego
@@ -68,12 +72,9 @@ import { AccountScreenBlock } from './blocks/AccountScreenBlock';
 type LegoComponent = React.FC<BlockComponentProps>;
 
 export const COMPONENT_MAP: Record<string, LegoComponent> = {
-  // Infraestrutura e Governança
   'master-guardian-dashboard': MasterGuardianDashboard,
   'health-monitor': HealthMonitorBlock, 
   'standard-button': StandardButtonBlock,
-
-  // Layout Base
   'header': HeaderBlock,
   'footer': FooterBlock,
   'infinite-circular-footer': InfiniteCircularFooter,
@@ -86,8 +87,6 @@ export const COMPONENT_MAP: Record<string, LegoComponent> = {
   'categories': CategoriesBlock,
   'category-section': CategorySectionBlock, 
   'walking-model': WalkingModelBlock, 
-
-  // Ecommerce e Catálogo
   'product-grid': ProductGridBlock,
   'stock-header': StockHeaderBlock,
   'stock-search': StockSearchBlock,
@@ -99,33 +98,27 @@ export const COMPONENT_MAP: Record<string, LegoComponent> = {
   'stock-detailed-product-card': StockDetailedProductCardBlock,
   'stock-popup-card': StockPopupCardBlock,
   'stock-simple-card': StockSimpleCardBlock,
-
-  // Gestão de Pedidos
   'order-header': OrderHeaderBlock,
   'order-product-info': OrderProductInfoBlock,
   'order-variant-selector': OrderVariantSelectorBlock,
   'order-summary-footer': OrderSummaryFooterBlock,
-
-  // Fluxos de Negócio (Inventory/Admin/Account)
   'user-info': UserInfoBlock,
   'inventory-feature': InventoryFeatureBlock,
   'action-buttons': ActionButtonsBlock,
   'grid-buttons': GridButtonsBlock,
   'admin-user-card': AdminUserCardBlock,
   'account-screen': AccountScreenBlock, 
- 
-  // Histórico e Logística
+  'personal-info': PersonalInfoBlock,
+  'registration-form': RegistrationFormBlock,
   'history-search': HistorySearchBlock,
   'client-history-card': ClientHistoryCardBlock,
   'transaction-card': TransactionCardBlock,
   'history-links': HistoryLinksBlock,
   'production-list': ProductionListBlock,
   'ready-stock-list': ReadyStockListBlock,
-  'activity-history': ActivityHistoryBlock, // ✅ Registro do Bloco
-
-  // Dashboard e Analytics
+  'activity-history': ActivityHistoryBlock,
   'total-sales': TotalSalesBlock,
- 
-  // Produção
   'jeans-registration': JeansRegistrationBlock,
+  'video-background-manager': VideoBackgroundManagerBlock,
+  'form-video-background': FormVideoBackgroundBlock,
 };
