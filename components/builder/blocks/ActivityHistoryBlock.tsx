@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { History } from 'lucide-react';
+import React, { memo, useState } from 'react';
+import { ChevronLeft, History } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { BlockComponentProps } from '@/types/builder';
 import { getActivityLogsAction } from '@/app/actions/activity';
 
-export const ActivityHistoryBlock: React.FC<BlockComponentProps> = ({ config, onAction }) => {
+function ActivityHistoryBlockInner({ config, onAction }: BlockComponentProps): React.JSX.Element {
   const { data, style } = config;
   const router = useRouter();
 
@@ -24,7 +23,8 @@ export const ActivityHistoryBlock: React.FC<BlockComponentProps> = ({ config, on
   ];
 
   const [searchQueryInformation, setSearchQueryInformation] = useState<string>('');
-  const [searchDateInformation, setSearchDateInformation] = useState<string>('');
+  const [startDateInformation, setStartDateInformation] = useState<string>('');
+  const [endDateInformation, setEndDateInformation] = useState<string>('');
   const [isSearching, setIsSearching] = useState<boolean>(false);
 
   // Delega a navegação para o Flow Manager (Pai) ou usa o router como fallback
@@ -36,6 +36,14 @@ export const ActivityHistoryBlock: React.FC<BlockComponentProps> = ({ config, on
     }
   };
 
+  const handleScreenBack = () => {
+    if (onAction) {
+      onAction('GO_BACK');
+      return;
+    }
+    router.back();
+  };
+
   const handleSearchSubmission = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSearching(true);
@@ -43,7 +51,8 @@ export const ActivityHistoryBlock: React.FC<BlockComponentProps> = ({ config, on
     try {
       const response = await getActivityLogsAction({
         searchQueryInformation,
-        searchDateInformation,
+        startDateInformation,
+        endDateInformation,
         storeIdentifier: 'current-store-id' 
       });
 
@@ -60,28 +69,36 @@ export const ActivityHistoryBlock: React.FC<BlockComponentProps> = ({ config, on
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.3 }}
-      className="flex flex-col items-center w-full max-w-md mx-auto px-4 py-8 bg-white"
+    <div
+      className="flex flex-col items-center w-full max-w-md mx-auto px-4 pt-2 pb-4 bg-white min-h-[200px]"
       style={{ backgroundColor: style.bgColor, color: style.textColor || '#000000' }}
     >
+      <div className="w-full flex justify-start mb-2">
+        <button
+          type="button"
+          onClick={handleScreenBack}
+          className="flex items-center gap-0.5 p-1 -ml-3 rounded-full hover:bg-gray-100 active:scale-95 transition-colors text-black"
+          aria-label="Voltar"
+        >
+          <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
+          <span className="text-xs font-bold">Voltar</span>
+        </button>
+      </div>
+
       {/* Cabeçalho e Ícone */}
-      <h1 className="text-2xl font-bold text-center mb-6">{blockTitle}</h1>
+      <h1 className="text-xl font-bold text-center mb-2">{blockTitle}</h1>
       
-      <div className="flex justify-center items-center mb-8">
-        <History className="w-14 h-14 text-black" strokeWidth={2} />
+      <div className="flex justify-center items-center mb-4">
+        <History className="w-10 h-10 text-black" strokeWidth={2} />
       </div>
 
       {/* Grid de Botões de Ação */}
-      <div className="grid grid-cols-2 gap-3 w-full mb-10">
+      <div className="grid grid-cols-2 gap-3 w-full mb-6">
         {activityButtons.map((buttonItem) => (
           <button
             key={buttonItem.id}
             onClick={() => handleNavigation(buttonItem.actionRoute)}
-            className="flex items-center justify-center text-center px-2 py-3 border-2 border-black rounded-lg font-semibold text-sm hover:bg-gray-50 transition-colors"
+            className="flex items-center justify-center text-center px-2 py-2 border-2 border-black rounded-lg font-semibold text-sm hover:bg-gray-50 transition-colors"
           >
             {buttonItem.label}
           </button>
@@ -89,11 +106,11 @@ export const ActivityHistoryBlock: React.FC<BlockComponentProps> = ({ config, on
       </div>
 
       {/* Seção de Busca */}
-      <h2 className="text-xl font-bold text-center text-gray-700 mb-6">{blockSubtitle}</h2>
+      <h2 className="text-lg font-bold text-center text-gray-700 mb-2">{blockSubtitle}</h2>
 
       <form onSubmit={handleSearchSubmission} className="w-full flex flex-col items-center">
-        <div className="w-full mb-4">
-          <label htmlFor="searchQueryInput" className="block text-center font-bold text-black mb-2">
+        <div className="w-full mb-3">
+          <label htmlFor="searchQueryInput" className="block text-center font-bold text-black mb-1">
             {inputLabel}
           </label>
           <input
@@ -101,31 +118,43 @@ export const ActivityHistoryBlock: React.FC<BlockComponentProps> = ({ config, on
             type="text"
             value={searchQueryInformation}
             onChange={(e) => setSearchQueryInformation(e.target.value)}
-            className="w-full border-2 border-black rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+            className="w-full border-2 border-black rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
           />
         </div>
 
-        <div className="flex items-center justify-center w-full mb-8">
-          <label htmlFor="searchDateInput" className="font-bold text-black mr-3 text-lg">
-            data
-          </label>
-          <input
-            id="searchDateInput"
-            type="date"
-            value={searchDateInformation}
-            onChange={(e) => setSearchDateInformation(e.target.value)}
-            className="border-b-2 border-black outline-none px-2 py-1 text-center bg-transparent font-semibold text-black w-40"
-          />
+        {/* Campos de Data (Período: De / Até) */}
+        <div className="flex flex-col items-center justify-center w-full mb-5">
+          <span className="font-bold text-black mb-1 text-lg">data</span>
+          <div className="flex items-center justify-center gap-2 w-full">
+            <input
+              id="startDateInput"
+              type="date"
+              value={startDateInformation}
+              onChange={(e) => setStartDateInformation(e.target.value)}
+              className="border-b-2 border-black outline-none px-1 py-1 text-center bg-transparent font-semibold text-black w-32 text-sm"
+            />
+            <span className="font-bold text-black text-sm">até</span>
+            <input
+              id="endDateInput"
+              type="date"
+              value={endDateInformation}
+              onChange={(e) => setEndDateInformation(e.target.value)}
+              className="border-b-2 border-black outline-none px-1 py-1 text-center bg-transparent font-semibold text-black w-32 text-sm"
+            />
+          </div>
         </div>
 
+        {/* Botão Buscar */}
         <button
           type="submit"
           disabled={isSearching}
-          className="bg-[#5874f6] text-white font-bold text-lg px-10 py-3 rounded-full hover:bg-blue-700 transition-colors disabled:opacity-70"
+          className="bg-[#5874f6] text-white font-bold text-lg px-8 py-1.5 rounded-full hover:bg-blue-700 transition-colors disabled:opacity-70"
         >
           {isSearching ? 'Buscando...' : buttonLabel}
         </button>
       </form>
-    </motion.div>
+    </div>
   );
-};
+}
+
+export const ActivityHistoryBlock = memo(ActivityHistoryBlockInner);

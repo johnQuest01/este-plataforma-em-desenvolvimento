@@ -35,17 +35,36 @@ export async function getActivityLogsAction(
       };
     }
 
-    const { searchQueryInformation, searchDateInformation, storeIdentifier } = validationResult.data;
+    const {
+      searchQueryInformation,
+      searchDateInformation,
+      startDateInformation,
+      endDateInformation,
+      storeIdentifier
+    } = validationResult.data;
 
     // Tipagem estrita utilizando o contrato gerado pelo Prisma para a tabela Order
     const queryConditions: Prisma.OrderWhereInput = {
       storeId: storeIdentifier,
     };
 
-    if (searchDateInformation) {
+    if (startDateInformation || endDateInformation) {
+      const createdAtFilter: Prisma.DateTimeFilter = {};
+      if (startDateInformation) {
+        const startOfDay = new Date(startDateInformation);
+        startOfDay.setUTCHours(0, 0, 0, 0);
+        createdAtFilter.gte = startOfDay;
+      }
+      if (endDateInformation) {
+        const endOfDay = new Date(endDateInformation);
+        endOfDay.setUTCHours(23, 59, 59, 999);
+        createdAtFilter.lte = endOfDay;
+      }
+      queryConditions.createdAt = createdAtFilter;
+    } else if (searchDateInformation) {
       const startOfDay = new Date(searchDateInformation);
       startOfDay.setUTCHours(0, 0, 0, 0);
-      
+
       const endOfDay = new Date(searchDateInformation);
       endOfDay.setUTCHours(23, 59, 59, 999);
 

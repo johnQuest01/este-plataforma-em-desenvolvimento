@@ -22,6 +22,8 @@ export const ActivityHistoryBlockDataSchema = z.object({
 export const ActivityHistorySearchActionSchema = z.object({
   searchQueryInformation: z.string().optional(),
   searchDateInformation: z.string().optional(),
+  startDateInformation: z.string().optional(),
+  endDateInformation: z.string().optional(),
   storeIdentifier: z.string().min(1, "O identificador da loja é obrigatório.")
 });
 

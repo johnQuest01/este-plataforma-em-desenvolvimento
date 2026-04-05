@@ -2,10 +2,11 @@
 
 import React, { useState } from 'react';
 import { Search, Menu, MapPin, ChevronLeft } from 'lucide-react';
-import { BlockConfig, MenuItem } from '@/types/builder';
+import { MenuItem } from '@/types/builder';
 import { MenuPopup } from '@/components/builder/ui/MenuPopup';
 import { useRouter } from 'next/navigation';
 import { LocalDB } from '@/lib/local-db';
+import { BlockComponentProps } from '@/types/builder';
 
 // --- CONFIGURAÇÃO DOS LINKS ---
 // Nota: O ID '18' conecta diretamente à rota criada para o Cadastro de Jeans
@@ -124,9 +125,12 @@ export const StoreHeader = ({
   );
 };
 
-export const HeaderBlock = ({ config }: { config: BlockConfig }) => {
-  // Handler seguro para o botão de voltar
+export const HeaderBlock = ({ config, onAction }: BlockComponentProps) => {
   const handleBack = () => {
+    if (onAction) {
+      onAction('GO_BACK');
+      return;
+    }
     if (typeof window !== 'undefined') {
       window.history.back();
     }

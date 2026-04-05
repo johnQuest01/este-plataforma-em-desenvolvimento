@@ -33,7 +33,7 @@ function AccountScreenBlockBase({ config, onAction }: BlockComponentProps): Reac
     {
       id: 'activity-history',
       icon: History,
-      title: 'Historico de Atividadaes',
+      title: 'Historico de Atividades',
       subtitle: 'Pagamentos, Nota Fiscal, Status de pedido',
       action: 'navigate_history'
     }
