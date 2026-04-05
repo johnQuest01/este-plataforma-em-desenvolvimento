@@ -143,7 +143,8 @@ function ActivityHistoryBlockInner({ config, onAction }: BlockComponentProps): R
 
   return (
     <div
-      className="flex flex-col items-center w-full max-w-md mx-auto px-4 pt-2 pb-28 bg-white min-h-0 max-h-[calc(100dvh-9rem)] overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]"
+      // ✅ AJUSTE: Adicionado 'scrollbar-hide' e removido '[scrollbar-gutter:stable]' para ocultar a barra visualmente
+      className="flex flex-col items-center w-full max-w-md mx-auto px-4 pt-2 pb-28 bg-white min-h-0 max-h-[calc(100dvh-9rem)] overflow-y-auto overscroll-y-contain scrollbar-hide"
       style={{ backgroundColor: style.bgColor, color: style.textColor || '#000000' }}
     >
       <div className="w-full flex justify-start mb-2 shrink-0">
