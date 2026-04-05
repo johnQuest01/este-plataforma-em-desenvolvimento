@@ -1,3 +1,4 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -34,7 +35,6 @@ export async function uploadLoginBackgroundVideoAction(
       return { success: false, error: 'Formato inválido. Utilize MP4, WebM ou MOV.' };
     }
 
-    // Agora retorna a URL absoluta do Vercel Blob
     const publicVideoUrl = await uploadVideoToServer(file);
 
     await prisma.$transaction(async (transaction) => {
@@ -50,7 +50,6 @@ export async function uploadLoginBackgroundVideoAction(
     });
 
     revalidatePath('/login');
-    revalidatePath('/');
     
     return { success: true, data: { videoUrl: publicVideoUrl } };
   } catch (error) {
@@ -90,7 +89,6 @@ export async function updateFormVideoAction(
     });
 
     revalidatePath('/login');
-    revalidatePath('/');
 
     return { success: true };
   } catch (error) {
