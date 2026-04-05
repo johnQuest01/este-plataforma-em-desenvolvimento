@@ -3,7 +3,6 @@
  * Stack 2026: Next 16.1.1 | React 19.2.1 | Strict TS
  */
 
-// --- NOVOS TIPOS PARA PRODUÇÃO ---
 export type ProductionStep = 'sewing' | 'sorting' | 'tagging' | 'packaging' | 'ready';
 
 export interface ProductionVariationDetail {
@@ -32,7 +31,6 @@ export interface ProductionItemData {
   returnReason?: string;
 }
 
-// --- NOVOS TIPOS PARA VENDAS TOTAIS (HISTÓRICO) ---
 export interface SaleRecord {
   id: string;
   productName: string;
@@ -42,7 +40,6 @@ export interface SaleRecord {
   sellerName?: string; 
 }
 
-// --- NOVOS TIPOS PARA O POPUP DE DISTRIBUIÇÃO ---
 export interface SaleswomanData {
   id: string;
   name: string;
@@ -56,7 +53,6 @@ export interface StockDistributionLabels {
   remainingLabel?: string;
 }
 
-// --- NOVOS TIPOS PARA O PDV (CAIXA) ---
 export interface CartVariation {
   qty: number;
   size?: string;
@@ -82,7 +78,6 @@ export interface CartItem {
 
 export type PaymentMethod = 'credit' | 'debit' | 'pix' | 'cash';
 
-// --- TIPOS EXISTENTES ---
 export interface StockCategoryItem {
   label: string;
   status: 'low' | 'high' | 'medium' | 'default';
@@ -135,7 +130,8 @@ export type BlockType =
   | 'health-monitor'            
   | 'master-guardian-dashboard' 
   | 'account-screen'            
-  | 'walking-model';            
+  | 'walking-model'
+  | 'activity-history'; // ✅ NOVO: Bloco de Histórico de Atividades
 
 export interface MenuItem {
   id: string;
@@ -229,6 +225,12 @@ export interface StoreFeatures {
   catalogMode?: boolean;
 }
 
+export interface ActivityButton {
+  id: string;
+  label: string;
+  actionRoute: string;
+}
+
 export interface BlockData {
   address?: string;
   menuItems?: MenuItem[];
@@ -307,10 +309,15 @@ export interface BlockData {
   userDocument?: string;
   userWhatsapp?: string;
 
-  // --- CAMPOS ESPECÍFICOS DO WALKING MODEL ---
   walkingModelImages?: string[];
-  walkingModelBanner?: string; // ✅ NOVO: Imagem do Banner
+  walkingModelBanner?: string; 
   animationDurationSeconds?: number;
+
+  // ✅ NOVO: Propriedades específicas do Histórico de Atividades
+  activityButtons?: ActivityButton[];
+  searchFormTitle?: string;
+  searchFormInputLabel?: string;
+  searchFormButtonLabel?: string;
 
   [key: string]: string | number | boolean | null | undefined | object | unknown;
 }

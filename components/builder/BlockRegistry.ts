@@ -14,9 +14,9 @@ import { HeaderBlock } from './blocks/Header';
 import { ProductGridBlock } from './blocks/ProductGrid';
 import { BannerBlock } from './blocks/Banner';
 import { CategoriesBlock } from './blocks/Categories';
-import { CategorySectionBlock } from './blocks/CategorySectionBlock'; // 🧱 CMS DINÂMICO
+import { CategorySectionBlock } from './blocks/CategorySectionBlock'; 
 import { FooterBlock } from './blocks/Footer';
-import { WalkingModelBlock } from './blocks/WalkingModelBlock'; // ✅ NOVO: Import do Walking Model
+import { WalkingModelBlock } from './blocks/WalkingModelBlock'; 
 
 // --- Imports de Blocos Funcionais ---
 import { UserInfoBlock } from './blocks/UserInfo';
@@ -56,14 +56,14 @@ import { TransactionCardBlock } from './blocks/TransactionCard';
 import { HistoryLinksBlock } from './blocks/HistoryLinksBlock';
 import { ProductionListBlock } from './blocks/ProductionListBlock';
 import { ReadyStockListBlock } from './blocks/ReadyStockListBlock';
+import { ActivityHistoryBlock } from './blocks/ActivityHistoryBlock'; // ✅ Import do Histórico de Atividades
 
 // --- Novos Blocos de Inteligência e Conta ---
 import { TotalSalesBlock } from './blocks/TotalSalesBlock';
-import { AccountScreenBlock } from './blocks/AccountScreenBlock'; // ✅ NOVO: Bloco de Minha Conta
+import { AccountScreenBlock } from './blocks/AccountScreenBlock'; 
 
 /**
  * Definição Estrita do Componente Lego
- * Nota: Removido uso de 'as LegoComponent' no mapeamento para seguir Strict TS.
  */
 type LegoComponent = React.FC<BlockComponentProps>;
 
@@ -85,7 +85,7 @@ export const COMPONENT_MAP: Record<string, LegoComponent> = {
   'banner': BannerBlock,
   'categories': CategoriesBlock,
   'category-section': CategorySectionBlock, 
-  'walking-model': WalkingModelBlock, // ✅ NOVO: Registro do Bloco de Modelos em Movimento
+  'walking-model': WalkingModelBlock, 
 
   // Ecommerce e Catálogo
   'product-grid': ProductGridBlock,
@@ -121,6 +121,7 @@ export const COMPONENT_MAP: Record<string, LegoComponent> = {
   'history-links': HistoryLinksBlock,
   'production-list': ProductionListBlock,
   'ready-stock-list': ReadyStockListBlock,
+  'activity-history': ActivityHistoryBlock, // ✅ Registro do Bloco
 
   // Dashboard e Analytics
   'total-sales': TotalSalesBlock,
