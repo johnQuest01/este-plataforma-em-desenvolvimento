@@ -1,7 +1,7 @@
-// path: src/components/layouts/RootLayoutShell.tsx
 'use client';
 
 import React from "react";
+import { usePathname } from 'next/navigation';
 import { GlobalAdmin } from '@/components/admin/GlobalAdmin';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { PWAHead } from '@/components/pwa/PWAHead';
@@ -9,10 +9,10 @@ import { MasterGuardianDashboard } from "@/components/builder/blocks/MasterGuard
 import { GlobalGuardianObserver } from "@/components/builder/blocks/master/RexRuntimePixel";
 import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
-// ✅ NOVA IMPORTAÇÃO: O Widget Flutuante Global
+// NOVA IMPORTAÇÃO: O Widget Flutuante Global
 import { HealthMonitorBlock } from "@/components/builder/blocks/HealthMonitorBlock";
 
-// ✅ FOOTER GLOBAL: Importa componente e configuração
+// FOOTER GLOBAL: Importa componente e configuração
 import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
 import { GLOBAL_FOOTER_ITEMS, GLOBAL_FOOTER_STYLE } from '@/config/footer';
 
@@ -20,9 +20,12 @@ interface RootLayoutShellProps {
   children: React.ReactNode;
 }
 
-function RootLayoutShellBase({ children }: RootLayoutShellProps) {
-  // Lógica para garantir que o Guardian só rode em desenvolvimento
+function RootLayoutShellBase({ children }: RootLayoutShellProps): React.JSX.Element {
   const isDevelopmentEnvironment = process.env.NODE_ENV === 'development';
+  const pathname = usePathname();
+
+  // Lógica de Arquitetura: Ocultar o Footer Global nas telas de Autenticação/Formulário
+  const shouldHideFooter = pathname === '/' || pathname === '/login';
 
   return (
     <>
@@ -35,16 +38,16 @@ function RootLayoutShellBase({ children }: RootLayoutShellProps) {
       </main>
       
       {/* 
-          ✅ FOOTER GLOBAL ÚNICO
-          Aparece em TODAS as telas automaticamente.
-          Botões NUNCA desaparecem - scroll infinito verdadeiro.
-          Z-index otimizado para mobile e web.
+          FOOTER GLOBAL ÚNICO
+          Renderizado condicionalmente. Não aparece nas telas de login/registo.
       */}
-      <div className="fixed bottom-0 left-0 w-full z-50 pointer-events-none">
-        <div className="w-full pointer-events-auto">
-          <ButtonsFooter items={GLOBAL_FOOTER_ITEMS} style={GLOBAL_FOOTER_STYLE} />
+      {!shouldHideFooter && (
+        <div className="fixed bottom-0 left-0 w-full z-50 pointer-events-none">
+          <div className="w-full pointer-events-auto">
+            <ButtonsFooter items={GLOBAL_FOOTER_ITEMS} style={GLOBAL_FOOTER_STYLE} />
+          </div>
         </div>
-      </div>
+      )}
       
       {/* Camada de Utilidades de Admin (Production Ready) */}
       <GlobalAdmin />
@@ -53,7 +56,7 @@ function RootLayoutShellBase({ children }: RootLayoutShellProps) {
       {!isDevelopmentEnvironment && <InstallPrompt />}
 
       {/* 
-          ✅ INJEÇÃO DO MONITOR DE SAÚDE 
+          INJEÇÃO DO MONITOR DE SAÚDE 
           Como ele tem position: fixed no CSS dele, ele flutuará sobre tudo.
       */}
       <HealthMonitorBlock />
@@ -71,7 +74,7 @@ function RootLayoutShellBase({ children }: RootLayoutShellProps) {
   );
 }
 
-// ✅ Exportação com Etiqueta Inteligente e Metadados
+// Exportação com Etiqueta Inteligente e Metadados
 export const RootLayoutShell = withGuardian(
   RootLayoutShellBase,
   "components/layouts/RootLayoutShell.tsx",

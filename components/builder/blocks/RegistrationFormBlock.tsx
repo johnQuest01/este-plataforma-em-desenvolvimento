@@ -32,15 +32,15 @@ function RegistrationFormBlockBase({ config, onAction }: BlockComponentProps): R
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-md mx-auto bg-white p-6 rounded-2xl shadow-sm"
+      className="relative z-10 w-full max-w-[400px] mx-auto p-2 flex flex-col"
     >
-      <div className="mb-6 text-center">
-        <h2 className="text-2xl font-extrabold text-black">Criar Conta</h2>
-        <p className="text-sm text-gray-500 mt-1">Preencha os seus dados para continuar</p>
+      <div className="mb-5 text-center">
+        <h2 className="text-2xl font-black text-white [text-shadow:0_2px_12px_rgba(0,0,0,0.8)]">Criar Conta</h2>
+        <p className="text-xs font-semibold text-white/90 mt-1 [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">Preencha os seus dados para continuar</p>
       </div>
 
       {errorMessage && (
-        <div className="w-full p-3 mb-4 bg-red-50 border border-red-200 text-red-600 text-sm font-semibold rounded-xl text-center">
+        <div className="w-full p-2.5 mb-4 bg-red-500/40 border border-red-500/50 text-white text-xs font-bold rounded-xl text-center backdrop-blur-xl shadow-lg">
           {errorMessage}
         </div>
       )}
@@ -54,5 +54,5 @@ export const RegistrationFormBlock = withGuardian(
   RegistrationFormBlockBase,
   "components/builder/blocks/RegistrationFormBlock.tsx",
   "UI_COMPONENT",
-  { label: "Formulário de Registo", description: "Bloco de registo completo com validação." }
+  { label: "Formulário de Registo", description: "Bloco de registo flutuante e compacto com design Glassmorphism." }
 );

@@ -8,21 +8,31 @@ import { twMerge } from 'tailwind-merge';
 import { AuthInputField } from '@/components/auth/AuthInputField';
 import { withGuardian } from "@/components/guardian/GuardianBeacon";
 import { registerNewUserAction } from '@/app/actions/registration-actions';
+import { getFormVideoAction } from '@/app/actions/video-bg-actions';
 
-// --- Utilitários de Máscara ---
-const masks = {
+const inputMasks = {
   cpf: (value: string) => value.replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4').substring(0, 14),
   cnpj: (value: string) => value.replace(/\D/g, '').replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5').substring(0, 18),
   phone: (value: string) => value.replace(/\D/g, '').replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3').substring(0, 15),
 };
 
+function getLoginVideoMimeType(sourceUrl: string): string {
+  const base = sourceUrl.split('?')[0].toLowerCase();
+  if (base.endsWith('.webm')) return 'video/webm';
+  if (base.endsWith('.mov')) return 'video/quicktime';
+  return 'video/mp4';
+}
+
 type PersonType = 'fisica' | 'juridica' | 'vendedor';
 
 function EntryPageBase(): React.JSX.Element {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [personType, setPersonType] = useState<PersonType>('fisica');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
+  const [videoUrl, setVideoUrl] = useState<string>('');
+  const [isVideoActive, setIsVideoActive] = useState<boolean>(false);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -33,16 +43,29 @@ function EntryPageBase(): React.JSX.Element {
     password: ''
   });
 
+  useEffect(() => {
+    const fetchVideoConfiguration = async () => {
+      const response = await getFormVideoAction();
+      if (response.success && response.data) {
+        setVideoUrl(response.data.videoUrl || '');
+        setIsVideoActive(response.data.isActive ?? true);
+      }
+    };
+    fetchVideoConfiguration();
+  }, []);
+
+  const isVideoVisible = Boolean(isVideoActive && videoUrl.trim() !== '');
+
   const handleInputChange = (field: keyof typeof formData, value: string) => {
     let finalValue = value;
 
     if (field === 'documentNumber') {
       const isCpfGroup = personType === 'fisica' || personType === 'vendedor';
-      finalValue = isCpfGroup ? masks.cpf(value) : masks.cnpj(value);
+      finalValue = isCpfGroup ? inputMasks.cpf(value) : inputMasks.cnpj(value);
     }
 
     if (field === 'phoneNumber') {
-      finalValue = masks.phone(value);
+      finalValue = inputMasks.phone(value);
     }
 
     setFormData((previousState) => ({ 
@@ -73,7 +96,6 @@ function EntryPageBase(): React.JSX.Element {
         return;
       }
 
-      // Redireciona para Jeans ao invés de Dashboard conforme solicitado
       router.push('/product/jeans');
     } catch (error) {
       setErrorMessage('Erro de conexão com o servidor.');
@@ -82,42 +104,57 @@ function EntryPageBase(): React.JSX.Element {
   };
 
   return (
-    <div className="min-h-screen bg-[#f0f2f5] flex items-center justify-center p-4 sm:p-6 relative overflow-hidden">
-      <div className="absolute top-[-10%] right-[-5%] w-64 h-64 bg-[#5874f6]/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-[-10%] left-[-5%] w-64 h-64 bg-[#5874f6]/10 rounded-full blur-3xl pointer-events-none" />
+    <main className="relative min-h-screen w-full overflow-hidden bg-slate-900 flex items-center justify-center p-4">
+      
+      {isVideoVisible ? (
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 z-0 h-full w-full object-cover"
+          aria-hidden
+        >
+          <source src={videoUrl} type={getLoginVideoMimeType(videoUrl)} />
+        </video>
+      ) : (
+        <div className="absolute inset-0 z-0 bg-gradient-to-br from-slate-800 to-slate-900" aria-hidden />
+      )}
 
-      <main className="bg-white w-full max-w-[480px] rounded-3xl shadow-2xl border border-gray-100 p-6 sm:p-8 relative z-10 animate-in fade-in zoom-in duration-300 my-8">
+      <div className="absolute inset-0 z-0 bg-black/30" aria-hidden />
+
+      <div className="relative z-10 w-full max-w-[400px] animate-in fade-in zoom-in duration-500 flex flex-col">
         
-        <div className="flex flex-col items-center mb-6 text-center">
-          <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-3 shadow-sm border border-blue-100">
-            <ShieldCheck size={28} className="text-[#5874f6]" strokeWidth={2} />
+        <div className="flex flex-col items-center mb-5 text-center">
+          <div className="w-12 h-12 bg-black/40 rounded-xl flex items-center justify-center mb-3 shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-white/20 backdrop-blur-2xl">
+            <ShieldCheck size={24} className="text-white drop-shadow-lg" strokeWidth={2} />
           </div>
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Identifique-se</h1>
-          <p className="text-gray-500 text-xs font-medium mt-1">Acesse o painel exclusivo.</p>
+          <h1 className="text-2xl font-black text-white tracking-tight [text-shadow:0_2px_12px_rgba(0,0,0,0.8)]">Identifique-se</h1>
+          <p className="text-white/90 text-xs font-semibold mt-1 [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">Acesse o painel exclusivo.</p>
         </div>
 
         {errorMessage && (
-          <div className="w-full p-3 mb-4 bg-red-50 border border-red-200 text-red-600 text-sm font-bold rounded-xl text-center">
+          <div className="w-full p-2.5 mb-4 bg-red-500/40 border border-red-500/50 text-white text-xs font-bold rounded-xl text-center backdrop-blur-xl shadow-lg">
             {errorMessage}
           </div>
         )}
 
-        <form onSubmit={handleRegisterSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleRegisterSubmit} className="flex flex-col gap-2.5">
           
-          <div className="flex bg-gray-100 rounded-xl p-1 shadow-inner">
+          <div className="flex bg-black/40 rounded-xl p-1 shadow-[0_4px_16px_rgba(0,0,0,0.4)] border border-white/20 backdrop-blur-2xl">
             <button 
               type="button" 
               onClick={() => { setPersonType('fisica'); setFormData((prev) => ({ ...prev, documentNumber: '' })); }}
-              className={clsx("flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2", personType === 'fisica' ? "bg-white text-[#5874f6] shadow-sm" : "text-gray-500 hover:text-gray-700")}
+              className={clsx("flex-1 py-2 rounded-lg text-[11px] font-bold transition-all duration-300 flex items-center justify-center gap-1.5", personType === 'fisica' ? "bg-white text-slate-900 shadow-md" : "text-white/80 hover:text-white")}
             >
-              <User size={16} /> Pessoa Física
+              <User size={14} /> Pessoa Física
             </button>
             <button 
               type="button" 
               onClick={() => { setPersonType('juridica'); setFormData((prev) => ({ ...prev, documentNumber: '' })); }}
-              className={clsx("flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2", personType === 'juridica' ? "bg-white text-[#5874f6] shadow-sm" : "text-gray-500 hover:text-gray-700")}
+              className={clsx("flex-1 py-2 rounded-lg text-[11px] font-bold transition-all duration-300 flex items-center justify-center gap-1.5", personType === 'juridica' ? "bg-white text-slate-900 shadow-md" : "text-white/80 hover:text-white")}
             >
-              <Building2 size={16} /> Pessoa Jurídica
+              <Building2 size={14} /> Pessoa Jurídica
             </button>
           </div>
 
@@ -128,42 +165,38 @@ function EntryPageBase(): React.JSX.Element {
               setFormData((prev) => ({ ...prev, documentNumber: '' })); 
             }}
             className={twMerge(
-              "w-full h-10 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 border-2",
-              personType === 'vendedor' ? "bg-blue-50 text-[#5874f6] border-[#5874f6] shadow-sm" : "bg-white text-gray-500 border-gray-100 hover:bg-gray-50 hover:border-gray-200"
+              "w-full h-10 rounded-xl text-[11px] font-bold transition-all duration-300 flex items-center justify-center gap-1.5 border backdrop-blur-2xl shadow-[0_4px_16px_rgba(0,0,0,0.4)]",
+              personType === 'vendedor' ? "bg-white/30 text-white border-white/50" : "bg-black/40 text-white/80 border-white/20 hover:bg-black/60 hover:text-white"
             )}
           >
-            <BadgeCheck size={16} />
+            <BadgeCheck size={14} />
             Sou Vendedor(a)
           </button>
 
-          <div className="space-y-3">
-            <AuthInputField icon={UserCircle} required placeholder="Seu Nome Completo" value={formData.fullName} onChange={(value) => handleInputChange('fullName', value)} />
-            <AuthInputField icon={Mail} required type="email" inputMode="email" placeholder="Gmail / E-mail" value={formData.emailAddress} onChange={(value) => handleInputChange('emailAddress', value)} />
-            <AuthInputField icon={Phone} required type="tel" placeholder="WhatsApp / Celular" value={formData.phoneNumber} onChange={(value) => handleInputChange('phoneNumber', value)} />
-            <AuthInputField icon={MapPin} required placeholder="Endereço do Estabelecimento / Residência" value={formData.physicalAddress} onChange={(value) => handleInputChange('physicalAddress', value)} />
-            <AuthInputField icon={ShieldCheck} required inputMode="numeric" placeholder={personType === 'juridica' ? 'CNPJ' : 'CPF'} value={formData.documentNumber} onChange={(value) => handleInputChange('documentNumber', value)} />
-            <AuthInputField icon={Lock} required type="password" placeholder="Crie uma Senha" value={formData.password} onChange={(value) => handleInputChange('password', value)} />
+          <div className="space-y-2.5 mt-1">
+            <AuthInputField overVideo={true} icon={UserCircle} required placeholder="Seu Nome Completo" value={formData.fullName} onChange={(value) => handleInputChange('fullName', value)} />
+            <AuthInputField overVideo={true} icon={Mail} required type="email" inputMode="email" placeholder="Gmail / E-mail" value={formData.emailAddress} onChange={(value) => handleInputChange('emailAddress', value)} />
+            <AuthInputField overVideo={true} icon={Phone} required type="tel" placeholder="WhatsApp / Celular" value={formData.phoneNumber} onChange={(value) => handleInputChange('phoneNumber', value)} />
+            <AuthInputField overVideo={true} icon={MapPin} required placeholder="Endereço Completo" value={formData.physicalAddress} onChange={(value) => handleInputChange('physicalAddress', value)} />
+            <AuthInputField overVideo={true} icon={ShieldCheck} required inputMode="numeric" placeholder={personType === 'juridica' ? 'CNPJ' : 'CPF'} value={formData.documentNumber} onChange={(value) => handleInputChange('documentNumber', value)} />
+            <AuthInputField overVideo={true} icon={Lock} required type="password" placeholder="Crie uma Senha" value={formData.password} onChange={(value) => handleInputChange('password', value)} />
           </div>
 
           <button 
             type="submit" 
             disabled={isLoading || !formData.fullName || !formData.documentNumber}
             className={twMerge(
-              "w-full h-14 mt-2 bg-[#5874f6] text-white rounded-2xl font-black text-sm uppercase tracking-wider",
-              "flex items-center justify-center gap-3 shadow-lg hover:bg-[#4a63d6] active:scale-95 transition-all",
-              "disabled:opacity-50 disabled:cursor-not-allowed"
+              "w-full h-12 mt-2 bg-white text-slate-900 rounded-xl font-black text-xs uppercase tracking-wider",
+              "flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(255,255,255,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300",
+              "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             )}
           >
-            {isLoading ? 'A Processar...' : 'Acessar Sistema'} <ArrowRight size={20} />
+            {isLoading ? 'A Processar...' : 'Acessar Sistema'} <ArrowRight size={16} />
           </button>
 
         </form>
-      </main>
-
-      <footer className="absolute bottom-4 text-center text-[10px] text-gray-400 font-medium">
-        <p>© 2026 Maryland Gestão.</p>
-      </footer>
-    </div>
+      </div>
+    </main>
   );
 }
 

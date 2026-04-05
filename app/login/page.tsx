@@ -129,30 +129,30 @@ export default function AuthenticationPage(): React.JSX.Element {
         <div className="absolute inset-0 z-0 bg-gradient-to-br from-slate-800 to-slate-900" aria-hidden />
       )}
 
-      {/* Camada 2: Overlay Escuro para garantir legibilidade */}
-      <div className="absolute inset-0 z-0 bg-black/40 backdrop-blur-[2px]" aria-hidden />
+      {/* Camada 2: Overlay Escuro Suave */}
+      <div className="absolute inset-0 z-0 bg-black/30" aria-hidden />
 
       {/* Camada 3: Conteúdo Flutuante (Sem painel branco) */}
-      <div className="relative z-10 flex min-h-screen w-full flex-col items-center justify-center px-6 py-12">
-        <div className="flex w-full max-w-sm flex-col items-center gap-8">
+      <div className="relative z-10 flex min-h-screen w-full flex-col items-center justify-center px-4 py-12">
+        <div className="flex w-full max-w-[440px] flex-col items-center gap-8">
           
           {/* Cabeçalho */}
           <header className="flex flex-col items-center gap-3 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/20 bg-white/10 shadow-2xl backdrop-blur-md">
-              <ShieldCheck size={32} className="text-white" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-black/40 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
+              <ShieldCheck size={32} className="text-white drop-shadow-lg" />
             </div>
-            <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-lg">
+            <h1 className="text-4xl font-black tracking-tight text-white [text-shadow:0_4px_24px_rgba(0,0,0,0.8)]">
               {authMode === 'REGISTER' ? 'Criar Conta' : 'Bem-vindo'}
             </h1>
-            <p className="text-sm font-medium text-white/80 drop-shadow-md">
+            <p className="text-sm font-semibold text-white/90 [text-shadow:0_2px_10px_rgba(0,0,0,0.8)]">
               {authMode === 'REGISTER' ? 'Preencha os dados para começar' : 'Acesse sua conta para continuar'}
             </p>
           </header>
 
           {/* Mensagem de Erro */}
           {errorMessage ? (
-            <div className="w-full rounded-xl border border-red-500/30 bg-red-500/20 p-3 text-center backdrop-blur-md">
-              <p className="text-xs font-bold text-red-100 drop-shadow-md" role="alert">
+            <div className="w-full rounded-2xl border border-red-500/50 bg-red-500/40 p-3 text-center backdrop-blur-xl shadow-lg">
+              <p className="text-sm font-bold text-white drop-shadow-md" role="alert">
                 {errorMessage}
               </p>
             </div>
@@ -161,7 +161,7 @@ export default function AuthenticationPage(): React.JSX.Element {
           {/* Formulário */}
           <form onSubmit={handleAuthenticationSubmit} className="flex w-full flex-col gap-4">
             {authMode === 'REGISTER' ? (
-              <div className="flex w-full gap-2 rounded-2xl border border-white/20 bg-black/20 p-1 backdrop-blur-md">
+              <div className="flex w-full gap-2 rounded-2xl border border-white/20 bg-black/40 p-1 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
                 <button
                   type="button"
                   onClick={() => {
@@ -172,7 +172,7 @@ export default function AuthenticationPage(): React.JSX.Element {
                     'flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-xs font-bold transition-all duration-300',
                     personType === 'CPF'
                       ? 'bg-white text-slate-900 shadow-lg'
-                      : 'text-white/70 hover:text-white'
+                      : 'text-white/80 hover:text-white'
                   )}
                 >
                   <User size={16} /> Pessoa Física
@@ -187,7 +187,7 @@ export default function AuthenticationPage(): React.JSX.Element {
                     'flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-xs font-bold transition-all duration-300',
                     personType === 'CNPJ'
                       ? 'bg-white text-slate-900 shadow-lg'
-                      : 'text-white/70 hover:text-white'
+                      : 'text-white/80 hover:text-white'
                   )}
                 >
                   <Building2 size={16} /> Pessoa Jurídica
@@ -264,7 +264,7 @@ export default function AuthenticationPage(): React.JSX.Element {
             <button
               type="submit"
               disabled={isLoading}
-              className="mt-2 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-white text-sm font-black uppercase tracking-wider text-slate-900 shadow-[0_8px_30px_rgba(255,255,255,0.2)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+              className="mt-2 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-white text-sm font-black uppercase tracking-wider text-slate-900 shadow-[0_8px_30px_rgba(255,255,255,0.3)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100"
             >
               {isLoading ? 'Processando...' : authMode === 'REGISTER' ? 'Criar Conta Agora' : 'Entrar no Sistema'}
               {authMode === 'REGISTER' ? <ArrowRight size={18} /> : <LogIn size={18} />}
@@ -272,14 +272,14 @@ export default function AuthenticationPage(): React.JSX.Element {
           </form>
 
           {/* Rodapé de Alternância */}
-          <div className="mt-4 text-center">
+          <div className="mt-2 text-center">
             <button
               type="button"
               onClick={() => {
                 setAuthMode(authMode === 'REGISTER' ? 'LOGIN' : 'REGISTER');
                 setErrorMessage(null);
               }}
-              className="text-sm font-semibold text-white/80 underline-offset-4 drop-shadow-md transition-colors hover:text-white hover:underline"
+              className="text-sm font-bold text-white/90 underline-offset-4 [text-shadow:0_2px_10px_rgba(0,0,0,0.8)] transition-colors hover:text-white hover:underline"
             >
               {authMode === 'REGISTER' ? 'Já tem uma conta? Faça Login' : 'Não tem conta? Crie uma agora'}
             </button>

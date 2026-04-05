@@ -1,8 +1,7 @@
-// components/builder/ui/ButtonsFooter.tsx
 'use client';
 
 import React, { useMemo, useRef, useEffect, useState } from 'react';
-import { motion, useMotionValue, useAnimationFrame } from 'framer-motion';
+import { motion, useMotionValue } from 'framer-motion';
 import { 
     ShoppingCart, Heart, Package, BadgeCheck, 
     RefreshCw, Check, HelpCircle, Box 
@@ -11,10 +10,6 @@ import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link'; 
 import { FooterItem, BlockStyle } from '@/types/builder';
-
-// ========================================
-// TYPES & INTERFACES
-// ========================================
 
 interface ButtonsFooterProps {
     items: FooterItem[];
@@ -31,15 +26,7 @@ interface FooterButtonProps {
 
 type IconName = FooterItem['icon'];
 
-// ========================================
-// CONSTANTS
-// ========================================
-
-const GAP_WIDTH = 8; // gap-2 = 8px in Tailwind
-
-// ========================================
-// ICON RENDERING HELPER
-// ========================================
+const GAP_WIDTH = 8;
 
 const renderIcon = (name: IconName, isActiveState: boolean): React.JSX.Element => {
     const size = 24;
@@ -75,14 +62,8 @@ const renderIcon = (name: IconName, isActiveState: boolean): React.JSX.Element =
     }
 };
 
-// ========================================
-// SUB-COMPONENT: FOOTER BUTTON
-// ========================================
-
 const FooterButton = ({ 
     item, 
-    index,
-    containerRef,
     pathname,
     isHighlight
 }: FooterButtonProps): React.JSX.Element => {
@@ -113,11 +94,9 @@ const FooterButton = ({
                 "w-14 h-14",
                 "select-none touch-none",
                 transitionClass,
-                // Botão ativo (rota atual) = destaque colorido
                 isActive 
                     ? "bg-[#5874f6] border-white ring-4 ring-pink-400/60 z-20" 
                     : "bg-white border-transparent z-10",
-                // Highlight especial (ex: /pos)
                 isHighlight && !isActive && "ring-2 ring-[#5874f6]/30 border-[#5874f6]/50",
                 "active:scale-90 active:opacity-80"
             )}
@@ -165,28 +144,17 @@ const FooterButton = ({
     );
 };
 
-// ========================================
-// MAIN COMPONENT: BOUNDED SCROLL
-// ========================================
-
 export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.Element => {
     const pathname = usePathname();
     const containerRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
     
-    // Motion state
     const x = useMotionValue(0);
-    const [contentWidth, setContentWidth] = useState<number>(0);
-    const [containerWidth, setContainerWidth] = useState<number>(0);
     const [dragConstraints, setDragConstraints] = useState({ left: 0, right: 0 });
     
-    // Drag state
     const isDragging = useRef<boolean>(false);
     const dragStartX = useRef<number>(0);
 
-    // ========================================
-    // STEP 1: Filter visible items
-    // ========================================
     const visibleItems = useMemo<FooterItem[]>(() => {
         return items.filter(item => item.isVisible);
     }, [items]);
@@ -195,9 +163,6 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
         return visibleItems.find(item => item.route === '/pos' || item.isHighlight);
     }, [visibleItems]);
 
-    // ========================================
-    // STEP 2: Calculate dimensions and constraints
-    // ========================================
     useEffect(() => {
         const calculateDimensions = (): void => {
             if (!contentRef.current || !containerRef.current || visibleItems.length === 0) return;
@@ -209,28 +174,21 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
             const containerRect = containerRef.current.getBoundingClientRect();
             
             const itemWidth = buttonRect.width + GAP_WIDTH;
-            const totalContentWidth = visibleItems.length * itemWidth - GAP_WIDTH; // Remove último gap
+            const totalContentWidth = visibleItems.length * itemWidth - GAP_WIDTH;
             const viewportWidth = containerRect.width;
 
-            setContentWidth(totalContentWidth);
-            setContainerWidth(viewportWidth);
-
-            // ✅ SEMPRE centralizar os botões como um grupo
             if (totalContentWidth <= viewportWidth) {
-                // Botões cabem na tela - centralizar perfeitamente e TRAVAR
                 const centerOffset = (viewportWidth - totalContentWidth) / 2;
                 setDragConstraints({
                     left: centerOffset,
                     right: centerOffset
                 });
                 
-                // ✅ SÓ muda posição se ainda não foi setada
                 const currentX = x.get();
                 if (currentX === 0 || Math.abs(currentX) < 1) {
                     x.set(centerOffset);
                 }
             } else {
-                // Botões não cabem - scroll com limites
                 const maxScrollLeft = -(totalContentWidth - viewportWidth);
                 const maxScrollRight = 0;
 
@@ -239,7 +197,6 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
                     right: maxScrollRight
                 });
 
-                // ✅ SÓ muda posição se ainda não foi setada
                 const currentX = x.get();
                 if (currentX === 0 || Math.abs(currentX) < 1) {
                     x.set(0);
@@ -247,7 +204,6 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
             }
         };
 
-        // ✅ Calcula apenas no mount e resize
         const timeoutId = setTimeout(calculateDimensions, 100);
         window.addEventListener('resize', calculateDimensions);
 
@@ -255,17 +211,8 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
             window.removeEventListener('resize', calculateDimensions);
             clearTimeout(timeoutId);
         };
-    }, [visibleItems.length]); // ✅ Removido 'x' e 'pathname' das dependências
+    }, [visibleItems.length, x]);
 
-    // ========================================
-    // STEP 3: Auto-center active route (DESABILITADO)
-    // ========================================
-    // Removida auto-centralização ao trocar de rota
-    // Mantém posição centralizada do grupo de botões
-
-    // ========================================
-    // RENDER
-    // ========================================
     return (
         <div 
             ref={containerRef}
@@ -279,7 +226,6 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
                 WebkitBackfaceVisibility: 'hidden'
             }}
         >
-            {/* Background Bar */}
             <div
                 className="absolute bottom-0 left-0 w-full h-[60px] z-0 shadow-[0_-4px_10px_rgba(0,0,0,0.1)]"
                 style={{ 
@@ -289,7 +235,6 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
                 }}
             />
 
-            {/* Bounded Scroll Container */}
             <motion.div
                 ref={contentRef}
                 drag="x"
