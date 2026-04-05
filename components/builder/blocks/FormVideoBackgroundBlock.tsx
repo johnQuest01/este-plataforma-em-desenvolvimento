@@ -17,49 +17,61 @@ function FormVideoBackgroundBlockBase({ config }: BlockComponentProps): React.JS
     (data.videoFormDescription as string) || 'Envie do celular ou URL (MP4 / WebM / MOV).';
   const helperText = (data.videoFormHelperText as string) || '';
 
-  const [videoUrl, setVideoUrl] = useState('');
-  const [isActive, setIsActive] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [videoUrl, setVideoUrl] = useState<string>('');
+  const [isActive, setIsActive] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  
+  const fileInputReference = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    (async () => {
-      const res = await getFormVideoAction();
-      if (res.success && res.data) {
-        setVideoUrl(res.data.videoUrl);
-        setIsActive(res.data.isActive ?? true);
+    const fetchVideoConfiguration = async () => {
+      const response = await getFormVideoAction();
+      if (response.success && response.data) {
+        setVideoUrl(response.data.videoUrl);
+        setIsActive(response.data.isActive ?? true);
       }
-      setLoading(false);
-    })();
+      setIsLoading(false);
+    };
+    
+    fetchVideoConfiguration();
   }, []);
 
-  const save = async () => {
-    setSaving(true);
-    setMsg(null);
-    const res = await updateFormVideoAction({ videoUrl, isActive });
-    setSaving(false);
-    setMsg(res.success ? 'Salvo.' : res.error || 'Erro ao salvar.');
+  const handleSaveConfiguration = async () => {
+    setIsSaving(true);
+    setFeedbackMessage(null);
+    
+    const response = await updateFormVideoAction({ videoUrl, isActive });
+    
+    setIsSaving(false);
+    setFeedbackMessage(response.success ? 'Salvo com sucesso.' : response.error || 'Erro ao salvar.');
   };
 
-  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    setUploading(true);
-    setMsg(null);
-    const fd = new FormData();
-    fd.set('video', file);
-    const res = await uploadLoginBackgroundVideoAction(fd);
-    setUploading(false);
-    if (res.success && res.videoUrl) {
-      setVideoUrl(res.videoUrl);
+  const handleFileSelectionChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    event.target.value = '';
+    
+    if (!selectedFile) return;
+    
+    setIsUploading(true);
+    setFeedbackMessage(null);
+    
+    const formData = new FormData();
+    formData.set('video', selectedFile);
+    
+    const response = await uploadLoginBackgroundVideoAction(formData);
+    
+    setIsUploading(false);
+    
+    // CORREÇÃO AQUI: Acessando response.data.videoUrl seguindo o contrato estrito
+    if (response.success && response.data?.videoUrl) {
+      setVideoUrl(response.data.videoUrl);
       setIsActive(true);
-      setMsg('Vídeo enviado e aplicado.');
+      setFeedbackMessage('Vídeo enviado e aplicado com sucesso.');
     } else {
-      setMsg(res.error || 'Erro no envio.');
+      setFeedbackMessage(response.error || 'Erro no envio do vídeo.');
     }
   };
 
@@ -72,11 +84,11 @@ function FormVideoBackgroundBlockBase({ config }: BlockComponentProps): React.JS
       }}
     >
       <input
-        ref={fileRef}
+        ref={fileInputReference}
         type="file"
         accept="video/mp4,video/webm,video/quicktime,video/*,.mp4,.webm,.mov"
         className="sr-only"
-        onChange={onFile}
+        onChange={handleFileSelectionChange}
       />
 
       <div className="mb-3 flex items-center gap-2">
@@ -87,18 +99,18 @@ function FormVideoBackgroundBlockBase({ config }: BlockComponentProps): React.JS
         </div>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="h-10 animate-pulse rounded-lg bg-gray-100" />
       ) : (
         <div className="flex flex-col gap-2">
           <button
             type="button"
-            disabled={uploading}
-            onClick={() => fileRef.current?.click()}
+            disabled={isUploading}
+            onClick={() => fileInputReference.current?.click()}
             className="flex h-9 items-center justify-center gap-2 rounded-xl border border-dashed border-[#5874f6]/50 bg-blue-50/60 text-[11px] font-bold text-[#5874f6] disabled:opacity-50"
           >
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Smartphone className="h-4 w-4" />}
-            {uploading ? 'Enviando…' : 'Vídeo do celular'}
+            {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Smartphone className="h-4 w-4" />}
+            {isUploading ? 'Enviando vídeo...' : 'Vídeo do celular'}
           </button>
 
           <label className="flex items-center gap-2 text-xs font-bold text-gray-700">
@@ -106,28 +118,34 @@ function FormVideoBackgroundBlockBase({ config }: BlockComponentProps): React.JS
               type="checkbox"
               className="h-3.5 w-3.5 rounded border-gray-300 text-[#5874f6]"
               checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
+              onChange={(event) => setIsActive(event.target.checked)}
             />
             Ativo no login
           </label>
+          
           <input
             type="url"
             value={videoUrl}
-            onChange={(e) => setVideoUrl(e.target.value)}
-            placeholder="https://…/fundo.mp4"
+            onChange={(event) => setVideoUrl(event.target.value)}
+            placeholder="https://exemplo.com/fundo.mp4"
             className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-bold text-gray-900 outline-none focus:border-[#5874f6]"
           />
+          
           {helperText ? <p className="text-[10px] text-gray-500">{helperText}</p> : null}
+          
           <button
             type="button"
-            disabled={saving}
-            onClick={save}
+            disabled={isSaving}
+            onClick={handleSaveConfiguration}
             className="flex h-10 items-center justify-center gap-2 rounded-xl bg-[#5874f6] text-xs font-black text-white hover:bg-blue-700 disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
-            {saving ? 'Salvando…' : 'Salvar'}
+            {isSaving ? 'Salvando...' : 'Salvar'}
           </button>
-          {msg ? <p className="text-center text-[11px] font-bold text-gray-600">{msg}</p> : null}
+          
+          {feedbackMessage ? (
+            <p className="text-center text-[11px] font-bold text-gray-600">{feedbackMessage}</p>
+          ) : null}
         </div>
       )}
     </div>

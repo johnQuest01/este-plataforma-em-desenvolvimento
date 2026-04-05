@@ -10,7 +10,6 @@ interface AuthInputFieldProps {
   onChange: (value: string) => void;
   required?: boolean;
   inputMode?: 'text' | 'numeric' | 'tel' | 'search' | 'email' | 'url';
-  /** Campos mais claros sobre vídeo a mover (login com fundo em vídeo). */
   overVideo?: boolean;
 }
 
@@ -25,14 +24,14 @@ export const AuthInputField = ({
   overVideo = false,
 }: AuthInputFieldProps): React.JSX.Element => {
   return (
-    <div className="group relative">
+    <div className="group relative w-full">
       <Icon
-        size={16}
+        size={18}
         className={twMerge(
-          'absolute left-3.5 top-1/2 z-1 -translate-y-1/2 transition-colors',
+          'absolute left-4 top-1/2 z-10 -translate-y-1/2 transition-colors duration-300',
           overVideo
-            ? 'text-white/80 group-focus-within:text-white'
-            : 'text-slate-600 group-focus-within:text-slate-900'
+            ? 'text-white/70 group-focus-within:text-white'
+            : 'text-slate-500 group-focus-within:text-slate-900'
         )}
       />
       <input
@@ -43,10 +42,10 @@ export const AuthInputField = ({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className={twMerge(
-          'h-11 w-full rounded-2xl pl-10 pr-3 text-sm font-bold outline-none transition-all',
+          'h-14 w-full rounded-2xl pl-12 pr-4 text-sm font-semibold outline-none transition-all duration-300',
           overVideo
-            ? 'border border-white/40 bg-white/25 text-white caret-white placeholder:text-white/65 shadow-[0_4px_24px_rgba(0,0,0,0.25)] backdrop-blur-xl focus:border-white/70 focus:bg-white/35 focus:ring-2 focus:ring-white/30'
-            : 'border border-white/55 bg-white/35 text-slate-900 caret-slate-900 placeholder:text-slate-500/90 shadow-inner shadow-black/5 backdrop-blur-xl focus:border-white/80 focus:bg-white/55 focus:ring-2 focus:ring-white/50'
+            ? 'border border-white/20 bg-black/20 text-white caret-white placeholder:text-white/60 shadow-lg backdrop-blur-md focus:border-white/50 focus:bg-black/40 focus:ring-4 focus:ring-white/10'
+            : 'border border-slate-200 bg-white/50 text-slate-900 caret-slate-900 placeholder:text-slate-400 shadow-sm backdrop-blur-md focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10'
         )}
       />
     </div>

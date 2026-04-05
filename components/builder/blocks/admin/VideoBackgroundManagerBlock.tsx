@@ -19,10 +19,11 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<boolean>(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const fileInputReference = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const fetchVideo = async () => {
+    const fetchVideoConfiguration = async () => {
       const response = await getFormVideoAction();
       if (response.success && response.data) {
         setVideoUrl(response.data.videoUrl);
@@ -30,10 +31,10 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
       }
       setIsLoading(false);
     };
-    fetchVideo();
+    fetchVideoConfiguration();
   }, []);
 
-  const handleSaveVideo = async () => {
+  const handleSaveVideoConfiguration = async () => {
     setIsSaving(true);
     setSuccessMessage(false);
 
@@ -48,32 +49,32 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
     }
   };
 
-  const handlePickFile = () => {
+  const handlePickFileFromDevice = () => {
     setUploadError(null);
-    fileInputRef.current?.click();
+    fileInputReference.current?.click();
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
+  const handleFileSelectionChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    event.target.value = ''; 
+    if (!selectedFile) return;
 
     setIsUploading(true);
     setUploadError(null);
 
     const formData = new FormData();
-    formData.set('video', file);
+    formData.set('video', selectedFile);
 
     const response = await uploadLoginBackgroundVideoAction(formData);
     setIsUploading(false);
 
-    if (response.success && response.videoUrl) {
-      setVideoUrl(response.videoUrl);
+    if (response.success && response.data?.videoUrl) {
+      setVideoUrl(response.data.videoUrl);
       setIsActive(true);
       setSuccessMessage(true);
       setTimeout(() => setSuccessMessage(false), 3000);
     } else {
-      setUploadError(response.error || 'Falha no envio.');
+      setUploadError(response.error || 'Falha desconhecida no envio do vídeo.');
     }
   };
 
@@ -88,11 +89,11 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
       }}
     >
       <input
-        ref={fileInputRef}
+        ref={fileInputReference}
         type="file"
         accept="video/mp4,video/webm,video/quicktime,video/*,.mp4,.webm,.mov"
         className="sr-only"
-        onChange={handleFileChange}
+        onChange={handleFileSelectionChange}
       />
 
       <div className="mb-4 flex items-center gap-3">
@@ -115,7 +116,7 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
             <input
               type="checkbox"
               checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
+              onChange={(event) => setIsActive(event.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-[#5874f6] focus:ring-[#5874f6]"
             />
             Exibir vídeo na tela de login
@@ -124,12 +125,12 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
           <button
             type="button"
             disabled={isUploading}
-            onClick={handlePickFile}
+            onClick={handlePickFileFromDevice}
             className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#5874f6]/40 bg-blue-50/50 text-sm font-bold text-[#5874f6] transition-all hover:bg-blue-50 disabled:opacity-50"
           >
             {isUploading ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin" /> Enviando…
+                <Loader2 className="h-5 w-5 animate-spin" /> Enviando vídeo...
               </>
             ) : (
               <>
@@ -156,9 +157,9 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
             <Link2 className="mt-3 h-4 w-4 shrink-0 text-gray-400" />
             <input
               type="url"
-              placeholder="https://…/video.mp4"
+              placeholder="https://exemplo.com/video.mp4"
               value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
+              onChange={(event) => setVideoUrl(event.target.value)}
               className="h-12 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 text-sm font-bold text-gray-800 outline-none transition-all focus:border-[#5874f6]"
             />
           </div>
@@ -178,15 +179,15 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
 
           <button
             type="button"
-            onClick={handleSaveVideo}
+            onClick={handleSaveVideoConfiguration}
             disabled={isSaving}
             className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#5874f6] font-bold text-white transition-all hover:bg-blue-700 disabled:opacity-50"
           >
             {isSaving ? (
-              'Salvando…'
+              'Salvando configurações...'
             ) : successMessage ? (
               <>
-                <CheckCircle size={18} /> Salvo
+                <CheckCircle size={18} /> Salvo com sucesso
               </>
             ) : (
               <>
@@ -194,9 +195,6 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
               </>
             )}
           </button>
-          <p className="text-center text-[10px] text-gray-400">
-            O envio grava o arquivo e define este vídeo no login. “Salvar URL / estado” atualiza a URL manual e o interruptor liga/desliga.
-          </p>
         </div>
       )}
     </motion.div>

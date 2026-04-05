@@ -63,7 +63,7 @@ import { TotalSalesBlock } from './blocks/TotalSalesBlock';
 import { AccountScreenBlock } from './blocks/AccountScreenBlock'; 
 import { PersonalInfoBlock } from './blocks/account/PersonalInfoBlock';
 import { RegistrationFormBlock } from './blocks/RegistrationFormBlock';
-import { VideoBackgroundManagerBlock } from '@/components/builder/blocks/admin/VideoBackgroundManagerBlock';
+import { VideoBackgroundManagerBlock } from './blocks/admin/VideoBackgroundManagerBlock';
 import { FormVideoBackgroundBlock } from './blocks/FormVideoBackgroundBlock';
 
 /**

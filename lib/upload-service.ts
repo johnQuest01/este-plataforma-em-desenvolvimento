@@ -1,26 +1,51 @@
-// lib/upload-service.ts
+import { mkdir, writeFile } from 'fs/promises';
+import path from 'path';
+import { randomUUID } from 'crypto';
 
 /**
  * Serviço de Upload de Imagens
- * ATUALIZAÇÃO: Agora aceita Base64 real para que a foto apareça na loja.
- * (Futuramente, aqui você conectará com AWS S3 ou R2)
  */
 export async function uploadImageToCloud(base64Data: string, productName: string): Promise<string> {
-  // 1. Simula delay de rede (para parecer um upload real e dar feedback visual)
-  await new Promise(resolve => setTimeout(resolve, 800));
+  await new Promise((resolve) => setTimeout(resolve, 800));
 
-  // 2. LÓGICA DE CORREÇÃO:
-  // Se recebermos um Base64 válido (que começa com 'data:image'), retornamos ele mesmo.
-  // Isso permite salvar a imagem real no "banco de dados" em memória.
   if (base64Data && base64Data.startsWith('data:')) {
     console.log(`☁️ [Upload] Imagem recebida em Base64 (${base64Data.length} chars). Salvando...`);
     return base64Data;
   }
 
-  // 3. Fallback (apenas se não tiver imagem)
-  // Gera uma imagem com a inicial do produto se nada for enviado
   const sanitizedName = productName.replace(/\s+/g, '+').substring(0, 20);
-  const randomColor = Math.floor(Math.random()*16777215).toString(16);
+  const randomColor = Math.floor(Math.random() * 16777215).toString(16);
   
   return `https://placehold.co/600x800/${randomColor}/ffffff/png?text=${sanitizedName}`;
+}
+
+/**
+ * Serviço de Upload de Vídeos Locais
+ */
+const LOGIN_VIDEO_DIRECTORY = path.join(process.cwd(), 'public', 'uploads', 'login-video');
+const ALLOWED_VIDEO_MIME_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
+
+function getExtensionForMimeType(mimeType: string): string {
+  if (mimeType === 'video/webm') return 'webm';
+  if (mimeType === 'video/quicktime') return 'mov';
+  return 'mp4';
+}
+
+export async function uploadVideoToServer(file: File): Promise<string> {
+  await mkdir(LOGIN_VIDEO_DIRECTORY, { recursive: true });
+
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  
+  const nameExtension = file.name.split('.').pop()?.toLowerCase() || '';
+  const finalExtension = file.type && ALLOWED_VIDEO_MIME_TYPES.has(file.type) 
+    ? getExtensionForMimeType(file.type) 
+    : nameExtension || 'mp4';
+    
+  const uniqueFilename = `${randomUUID()}.${finalExtension}`;
+  const absoluteFilepath = path.join(LOGIN_VIDEO_DIRECTORY, uniqueFilename);
+  
+  await writeFile(absoluteFilepath, buffer);
+
+  return `/uploads/login-video/${uniqueFilename}`;
 }
