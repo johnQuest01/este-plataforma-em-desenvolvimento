@@ -69,7 +69,10 @@ const FooterButton = ({
 }: FooterButtonProps): React.JSX.Element => {
     const buttonRef = useRef<HTMLDivElement>(null);
     
-    const isActive = item.route === pathname;
+    // 🛡️ INTERCEPTOR DE ROTA: Se a rota for '/', força para '/dashboard'
+    const targetRoute = item.route === '/' ? '/dashboard' : (item.route || '#');
+    const isActive = targetRoute === pathname;
+    
     const transitionClass = "transition-all duration-100 ease-out";
 
     const buttonContent = (
@@ -108,7 +111,7 @@ const FooterButton = ({
     if (item.route) {
         return (
             <Link
-                href={item.route}
+                href={targetRoute}
                 prefetch={true} 
                 className={cn(
                     "shrink-0 flex items-center justify-center",

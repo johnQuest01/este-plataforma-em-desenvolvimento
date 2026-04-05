@@ -4,12 +4,10 @@ import { prisma } from '@/lib/prisma';
 import { BlockConfig } from '@/types/builder';
 import { INITIAL_BLOCKS } from '@/data/initial-state';
 
-// 🛡️ TYPE GUARD 1: Validação estrita de Objetos
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
-// 🛡️ TYPE GUARD 2: Validação estrita do Array de BlockConfig (Substitui o "as unknown as BlockConfig[]")
 const isBlockConfigArray = (data: unknown): data is BlockConfig[] => {
   if (!Array.isArray(data)) return false;
   return data.every(item => isRecord(item) && typeof item.id === 'string' && typeof item.type === 'string');
@@ -26,7 +24,6 @@ export async function getPageLayoutAction(pageSlug: string): Promise<BlockConfig
       return null;
     }
 
-    // 🛡️ Validação estrita em tempo de execução (Zero-Any)
     if (isBlockConfigArray(uiConfig.layout)) {
       console.log(`✅ [UI Config] Layout carregado para "${pageSlug}": ${uiConfig.layout.length} blocos`);
       return uiConfig.layout;
