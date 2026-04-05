@@ -5,6 +5,45 @@ import { ChevronLeft, History } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { BlockComponentProps } from '@/types/builder';
 import { getActivityLogsAction } from '@/app/actions/activity';
+import { ProductSaleCard, ProductSaleRecord } from './ProductSaleCard';
+
+// 🧱 DADOS DE EXEMPLO (Mock) - Exatamente como na imagem solicitada
+const MOCK_EXAMPLE_SALE: ProductSaleRecord = {
+  id: 'mock-1',
+  productName: '4 Grande de Jeans azul',
+  status: 'Reprovado',
+  sellerName: 'Suzana',
+  paymentMethod: 'Pix',
+  saleValue: 5856.00,
+  productCode: '18564',
+  orderNumber: '15475',
+  saleDate: '24/01/2026',
+  saleTime: '14:65' // Mantido exatamente como na imagem de referência
+};
+
+// 🛡️ ADAPTERS SEGUROS (Anti-Corruption Layer)
+// Estas funções extraem dados de objetos desconhecidos sem usar "any" ou casts genéricos.
+const getStringProperty = (backendObject: object, possibleKeys: string[], fallbackValue: string): string => {
+  const objectEntries = Object.entries(backendObject);
+  for (const key of possibleKeys) {
+    const foundEntry = objectEntries.find(([entryKey]) => entryKey === key);
+    if (foundEntry && typeof foundEntry[1] === 'string') {
+      return foundEntry[1];
+    }
+  }
+  return fallbackValue;
+};
+
+const getNumberProperty = (backendObject: object, possibleKeys: string[], fallbackValue: number): number => {
+  const objectEntries = Object.entries(backendObject);
+  for (const key of possibleKeys) {
+    const foundEntry = objectEntries.find(([entryKey]) => entryKey === key);
+    if (foundEntry && typeof foundEntry[1] === 'number') {
+      return foundEntry[1];
+    }
+  }
+  return fallbackValue;
+};
 
 function ActivityHistoryBlockInner({ config, onAction }: BlockComponentProps): React.JSX.Element {
   const { data, style } = config;
@@ -26,6 +65,12 @@ function ActivityHistoryBlockInner({ config, onAction }: BlockComponentProps): R
   const [startDateInformation, setStartDateInformation] = useState<string>('');
   const [endDateInformation, setEndDateInformation] = useState<string>('');
   const [isSearching, setIsSearching] = useState<boolean>(false);
+  
+  // 🧠 ESTADO INTELIGENTE: 
+  // null = Nenhuma busca feita (Mostra Exemplo)
+  // [] = Busca feita, sem resultados
+  // [...] = Busca feita, com resultados reais
+  const [searchResults, setSearchResults] = useState<ProductSaleRecord[] | null>(null);
 
   // Delega a navegação para o Flow Manager (Pai) ou usa o router como fallback
   const handleNavigation = (route: string) => {
@@ -56,13 +101,41 @@ function ActivityHistoryBlockInner({ config, onAction }: BlockComponentProps): R
         storeIdentifier: 'current-store-id' 
       });
 
-      if (response.success && onAction) {
-        onAction('SEARCH_COMPLETED', response.data);
-      } else if (!response.success) {
+      if (response.success) {
+        // 🔄 ADAPTER: Converte o MappedOrderResult do backend para o ProductSaleRecord do frontend
+        // de forma 100% segura, sem casts e sem erros de TypeScript.
+        const mappedRealData: ProductSaleRecord[] = Array.isArray(response.data) 
+          ? response.data.map((backendItem) => {
+              if (typeof backendItem === 'object' && backendItem !== null) {
+                return {
+                  id: getStringProperty(backendItem, ['id', 'orderId'], String(Math.random())),
+                  productName: getStringProperty(backendItem, ['productName', 'name', 'title'], 'Produto não especificado'),
+                  status: getStringProperty(backendItem, ['status', 'state'], 'Concluído'),
+                  sellerName: getStringProperty(backendItem, ['sellerName', 'seller', 'vendor'], 'Vendedora Padrão'),
+                  paymentMethod: getStringProperty(backendItem, ['paymentMethod', 'payment', 'method'], 'Pix'),
+                  saleValue: getNumberProperty(backendItem, ['saleValue', 'total', 'amount', 'value'], 0),
+                  productCode: getStringProperty(backendItem, ['productCode', 'code', 'sku'], '00000'),
+                  orderNumber: getStringProperty(backendItem, ['orderNumber', 'id', 'orderId'], '00000'),
+                  saleDate: getStringProperty(backendItem, ['saleDate', 'createdAt', 'date'], new Date().toLocaleDateString('pt-BR')),
+                  saleTime: getStringProperty(backendItem, ['saleTime', 'time'], '00:00')
+                };
+              }
+              return MOCK_EXAMPLE_SALE;
+            })
+          : [];
+
+        setSearchResults(mappedRealData);
+
+        if (onAction) {
+          onAction('SEARCH_COMPLETED', response.data);
+        }
+      } else {
         console.error(response.error);
+        setSearchResults([]);
       }
     } catch (error) {
       console.error('Erro na submissão da busca:', error);
+      setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
@@ -70,10 +143,10 @@ function ActivityHistoryBlockInner({ config, onAction }: BlockComponentProps): R
 
   return (
     <div
-      className="flex flex-col items-center w-full max-w-md mx-auto px-4 pt-2 pb-4 bg-white min-h-[200px]"
+      className="flex flex-col items-center w-full max-w-md mx-auto px-4 pt-2 pb-28 bg-white min-h-0 max-h-[calc(100dvh-9rem)] overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]"
       style={{ backgroundColor: style.bgColor, color: style.textColor || '#000000' }}
     >
-      <div className="w-full flex justify-start mb-2">
+      <div className="w-full flex justify-start mb-2 shrink-0">
         <button
           type="button"
           onClick={handleScreenBack}
@@ -86,14 +159,14 @@ function ActivityHistoryBlockInner({ config, onAction }: BlockComponentProps): R
       </div>
 
       {/* Cabeçalho e Ícone */}
-      <h1 className="text-xl font-bold text-center mb-2">{blockTitle}</h1>
+      <h1 className="text-xl font-bold text-center mb-2 shrink-0">{blockTitle}</h1>
       
-      <div className="flex justify-center items-center mb-4">
+      <div className="flex justify-center items-center mb-4 shrink-0">
         <History className="w-10 h-10 text-black" strokeWidth={2} />
       </div>
 
       {/* Grid de Botões de Ação */}
-      <div className="grid grid-cols-2 gap-3 w-full mb-6">
+      <div className="grid grid-cols-2 gap-3 w-full mb-6 shrink-0">
         {activityButtons.map((buttonItem) => (
           <button
             key={buttonItem.id}
@@ -106,9 +179,9 @@ function ActivityHistoryBlockInner({ config, onAction }: BlockComponentProps): R
       </div>
 
       {/* Seção de Busca */}
-      <h2 className="text-lg font-bold text-center text-gray-700 mb-2">{blockSubtitle}</h2>
+      <h2 className="text-lg font-bold text-center text-gray-700 mb-2 shrink-0">{blockSubtitle}</h2>
 
-      <form onSubmit={handleSearchSubmission} className="w-full flex flex-col items-center">
+      <form onSubmit={handleSearchSubmission} className="w-full flex flex-col items-center shrink-0">
         <div className="w-full mb-3">
           <label htmlFor="searchQueryInput" className="block text-center font-bold text-black mb-1">
             {inputLabel}
@@ -153,6 +226,25 @@ function ActivityHistoryBlockInner({ config, onAction }: BlockComponentProps): R
           {isSearching ? 'Buscando...' : buttonLabel}
         </button>
       </form>
+
+      {/* 🧱 ÁREA DE RESULTADOS (Renderização Condicional) */}
+      <div className="w-full mt-8 flex flex-col gap-4">
+        {searchResults === null ? (
+          // 1. Estado Inicial: Mostra o Card de Exemplo
+          <ProductSaleCard data={MOCK_EXAMPLE_SALE} isExample={true} />
+        ) : searchResults.length === 0 ? (
+          // 2. Busca Feita, mas sem resultados
+          <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-xl">
+            <p className="font-bold text-gray-500">Nenhuma venda encontrada para esta busca.</p>
+          </div>
+        ) : (
+          // 3. Busca Feita com Sucesso: Renderiza os dados reais do Backend
+          searchResults.map((saleRecord) => (
+            <ProductSaleCard key={saleRecord.id} data={saleRecord} />
+          ))
+        )}
+      </div>
+
     </div>
   );
 }
