@@ -1,45 +1,54 @@
 'use client';
 
-export interface UserData {
+export interface UserSessionData {
   id: string;
-  type: 'fisica' | 'juridica';
-  document: string;
-  name: string;
-  email: string;
-  address: string;
-  storeName?: string;
-  whatsapp: string;
-  isVendedor?: boolean;
-  nameGender?: 'feminino' | 'masculino';
+  documentType: string;
+  documentNumber: string;
+  fullName: string;
+  emailAddress: string;
+  phoneNumber: string;
+  role: string;
   createdAt: string;
 }
 
-const DB_KEY = 'b2b_app_user_db';
+const DATABASE_STORAGE_KEY = '@pos:user_session';
 
 export const LocalDB = {
-  saveUser: (data: Omit<UserData, 'id' | 'createdAt'>) => {
-    if (typeof window === 'undefined') return null;
-
-    const newUser: UserData = {
-      ...data,
-      id: typeof crypto !== 'undefined' && crypto.randomUUID 
-          ? crypto.randomUUID() 
-          : `user_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-      createdAt: new Date().toISOString(),
-    };
-
-    localStorage.setItem(DB_KEY, JSON.stringify(newUser));
-    return newUser;
-  },
-
-  getUser: (): UserData | null => {
-    if (typeof window === 'undefined') return null;
-    const data = localStorage.getItem(DB_KEY);
-    return data ? JSON.parse(data) : null;
-  },
-
-  clearUser: () => {
+  /**
+   * Guarda o utilizador retornado pelo Backend (Server Action)
+   */
+  setUser: (userData: UserSessionData): void => {
     if (typeof window === 'undefined') return;
-    localStorage.removeItem(DB_KEY);
+    try {
+      localStorage.setItem(DATABASE_STORAGE_KEY, JSON.stringify(userData));
+    } catch (error) {
+      console.error('[LocalDB] Erro crítico ao guardar utilizador no armazenamento local:', error);
+    }
+  },
+
+  /**
+   * Recupera o utilizador para manter a sessão ativa
+   */
+  getUser: (): UserSessionData | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const storedData = localStorage.getItem(DATABASE_STORAGE_KEY);
+      return storedData ? JSON.parse(storedData) : null;
+    } catch (error) {
+      console.error('[LocalDB] Erro crítico ao recuperar utilizador do armazenamento local:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Limpa os dados (Logout)
+   */
+  clearUser: (): void => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.removeItem(DATABASE_STORAGE_KEY);
+    } catch (error) {
+      console.error('[LocalDB] Erro crítico ao limpar utilizador do armazenamento local:', error);
+    }
   }
 };

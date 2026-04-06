@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,18 +7,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// --- MODELOS DE USUÁRIO E LOJA ---
-
 model User {
   id                 String   @id @default(cuid())
   email              String?  @unique
   document           String   @unique
-  documentType       String   @default("CPF") // "CPF" ou "CNPJ"
+  documentType       String   @default("CPF")
   name               String?
   whatsapp           String?
-  address            String?  // Endereço da loja/físico
-  profilePictureUrl  String?  // Foto de perfil (Quadrada)
-  backgroundImageUrl String?  // Foto de fundo (720x448)
+  address            String?  
+  profilePictureUrl  String?  
+  backgroundImageUrl String?  
   role               String   @default("customer")
   stores             Store[]
   createdAt          DateTime @default(now())
@@ -44,8 +40,6 @@ model Store {
   productionItems  ProductionItem[]
   productionOrders ProductionOrder[]
 }
-
-// --- MODELOS DE PRODUTO ATUALIZADOS ---
 
 model Product {
   id              String           @id @default(cuid())
@@ -82,8 +76,6 @@ model ProductVariant {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
-// --- DEMAIS MODELOS ---
-
 model ProductionOrder {
   id          String      @id @default(cuid())
   productName String
@@ -102,7 +94,7 @@ model Variation {
   category          String?
   color             String
   size              String
-  qty               Int
+  quantity          Int             @map("qty") // Corrigido de 'qty' para 'quantity' (Zero Abreviações)
   stockLocations    String[]
   images            String[]
   productionOrderId String
@@ -203,7 +195,6 @@ model AdminAccess {
   createdAt     DateTime @default(now())
 }
 
-// --- NOVO: CONFIGURAÇÃO DE VÍDEO DE FUNDO ---
 model FormVideoConfig {
   id        String   @id @default("global-video-config")
   videoUrl  String   @default("") @db.Text

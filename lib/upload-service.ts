@@ -1,9 +1,6 @@
-// lib/upload-service.ts
-import { mkdir, writeFile } from 'fs/promises';
-import path from 'path';
+import { put } from '@vercel/blob';
 import { randomUUID } from 'crypto';
 
-const LOGIN_VIDEO_DIRECTORY = path.join(process.cwd(), 'public', 'uploads', 'login-video');
 const ALLOWED_VIDEO_MIME_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
 
 function getExtensionForMimeType(mimeType: string): string {
@@ -28,27 +25,26 @@ export async function uploadImageToCloud(base64Data: string, productName: string
 }
 
 /**
- * Serviço de Upload de Vídeos Locais
+ * Serviço de Upload de Vídeos para a Nuvem (Vercel Blob)
+ * Substitui o sistema de ficheiros local (fs) que não funciona em Serverless.
  */
 export async function uploadVideoToServer(file: File): Promise<string> {
   try {
-    await mkdir(LOGIN_VIDEO_DIRECTORY, { recursive: true });
-
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    
     const nameExtension = file.name.split('.').pop()?.toLowerCase() || '';
     const finalExtension = file.type && ALLOWED_VIDEO_MIME_TYPES.has(file.type) 
       ? getExtensionForMimeType(file.type) 
       : nameExtension || 'mp4';
       
-    const uniqueFilename = `${randomUUID()}.${finalExtension}`;
-    const absoluteFilepath = path.join(LOGIN_VIDEO_DIRECTORY, uniqueFilename);
+    const uniqueFilename = `login-video/${randomUUID()}.${finalExtension}`;
     
-    await writeFile(absoluteFilepath, buffer);
-    return `/uploads/login-video/${uniqueFilename}`;
+    const blobResult = await put(uniqueFilename, file, {
+      access: 'public',
+      addRandomSuffix: false,
+    });
+    
+    return blobResult.url;
   } catch (error) {
-    console.error("❌ [UploadService] Erro:", error);
-    throw new Error("Falha ao processar upload do vídeo.");
+    console.error("❌ [UploadService] Erro ao enviar para Vercel Blob:", error);
+    throw new Error("Falha ao processar upload do vídeo para a nuvem.");
   }
 }

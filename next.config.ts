@@ -15,7 +15,7 @@ const withProgressiveWebApp = withProgressiveWebAppInitialization({
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
-  disable: shouldDisablePWA, // ✅ Desabilitado em dev para evitar loops
+  disable: shouldDisablePWA,
   workboxOptions: {
     runtimeCaching: [
       {
@@ -42,6 +42,14 @@ const withProgressiveWebApp = withProgressiveWebAppInitialization({
           expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
         },
       },
+      {
+        urlPattern: /^https:\/\/.*\.public\.blob\.vercel-storage\.com\/.*$/,
+        handler: "CacheFirst",
+        options: {
+          cacheName: "vercel-blob-assets",
+          expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
+        },
+      },
     ],
   },
 });
@@ -52,10 +60,8 @@ const withProgressiveWebApp = withProgressiveWebAppInitialization({
 const nextConfiguration = {
   output: "standalone",
 
-  // CORREÇÃO: Define explicitamente a raiz do projeto para ignorar lockfiles externos
   outputFileTracingRoot: path.join(__dirname),
 
-  // --- IMAGENS (Preservado conforme solicitado) ---
   images: {
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
@@ -65,12 +71,12 @@ const nextConfiguration = {
       { protocol: "https", hostname: "replicate.delivery" },
       { protocol: "https", hostname: "firebasestorage.googleapis.com" },
       { protocol: "https", hostname: "*.googleusercontent.com" },
+      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" }, // Domínio Vercel Blob adicionado
       { protocol: "https", hostname: "**" } 
     ],
     unoptimized: false,
   },
 
-  // --- EXTERNALIZAÇÃO DE PACOTES ---
   serverExternalPackages: [
     "@google-cloud/vertexai", 
     "@prisma/client", 
@@ -79,7 +85,6 @@ const nextConfiguration = {
     "zod"
   ],
 
-  // --- RECURSOS EXPERIMENTAIS ---
   experimental: {
     serverActions: {
       bodySizeLimit: "50mb",
@@ -92,10 +97,6 @@ const nextConfiguration = {
       ],
     },
   },
-
-  // CORREÇÃO: Removidas as chaves 'eslint' e 'typescript' do objeto principal
-  // No Next 16, se houver erro de 'Unrecognized key', as configurações de lint 
-  // devem ser mantidas apenas no .eslintrc.json ou passadas via CLI no build.
 };
 
 export default withProgressiveWebApp(nextConfiguration as NextConfig);
