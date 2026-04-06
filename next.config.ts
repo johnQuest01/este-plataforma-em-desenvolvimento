@@ -8,14 +8,14 @@ import path from "path";
  * Para testar PWA: use produção OU defina variável ENABLE_PWA_DEV=true
  * Segue protocolo @.cursorrules: TypeScript Strict, Zero placeholders
  */
-const shouldDisablePWA = process.env.NODE_ENV === "development" && !process.env.ENABLE_PWA_DEV;
+const shouldDisableProgressiveWebApp = process.env.NODE_ENV === "development" && !process.env.ENABLE_PWA_DEV;
 
 const withProgressiveWebApp = withProgressiveWebAppInitialization({
   dest: "public",
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
-  disable: shouldDisablePWA,
+  disable: shouldDisableProgressiveWebApp,
   workboxOptions: {
     runtimeCaching: [
       {
@@ -57,7 +57,7 @@ const withProgressiveWebApp = withProgressiveWebAppInitialization({
 /**
  * Next.js 16.1.1 Configuration
  */
-const nextConfiguration = {
+const nextConfiguration: NextConfig = {
   output: "standalone",
 
   outputFileTracingRoot: path.join(__dirname),
@@ -71,7 +71,8 @@ const nextConfiguration = {
       { protocol: "https", hostname: "replicate.delivery" },
       { protocol: "https", hostname: "firebasestorage.googleapis.com" },
       { protocol: "https", hostname: "*.googleusercontent.com" },
-      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" }, // Domínio Vercel Blob adicionado
+      { protocol: "https", hostname: "public.blob.vercel-storage.com" }, // Domínio base Vercel Blob
+      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" }, // Subdomínios dinâmicos Vercel Blob
       { protocol: "https", hostname: "**" } 
     ],
     unoptimized: false,
@@ -99,4 +100,4 @@ const nextConfiguration = {
   },
 };
 
-export default withProgressiveWebApp(nextConfiguration as NextConfig);
+export default withProgressiveWebApp(nextConfiguration);

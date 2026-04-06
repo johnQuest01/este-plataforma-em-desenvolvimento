@@ -35,16 +35,19 @@ export async function uploadVideoToServer(file: File): Promise<string> {
       ? getExtensionForMimeType(file.type) 
       : nameExtension || 'mp4';
       
-    const uniqueFilename = `login-video/${randomUUID()}.${finalExtension}`;
+    // Adicionado Date.now() para garantir unicidade absoluta e evitar colisões de cache na CDN
+    const uniqueFilename = `login-video/${Date.now()}-${randomUUID()}.${finalExtension}`;
     
     const blobResult = await put(uniqueFilename, file, {
       access: 'public',
       addRandomSuffix: false,
     });
     
+    // Retorna explicitamente a URL pública gerada pela Vercel
     return blobResult.url;
-  } catch (error) {
-    console.error("❌ [UploadService] Erro ao enviar para Vercel Blob:", error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido de rede';
+    console.error("❌ [UploadService] Erro ao enviar para Vercel Blob:", errorMessage);
     throw new Error("Falha ao processar upload do vídeo para a nuvem.");
   }
 }

@@ -8,6 +8,7 @@ import { registerNewUserAction } from '@/app/actions/registration-actions';
 import { authenticateUserAction } from '@/app/actions/auth-actions';
 import { getFormVideoAction } from '@/app/actions/video-bg-actions';
 import { AuthInputField } from '@/components/auth/AuthInputField';
+import { LocalDB, UserSessionData } from '@/lib/local-db';
 
 const inputMasks = {
   cpf: (value: string) =>
@@ -87,22 +88,42 @@ export default function AuthenticationPage(): React.JSX.Element {
           documentNumber: formData.documentNumber,
           password: formData.password,
         });
-        if (!response.success) {
+        
+        if (!response.success || !response.data) {
           setErrorMessage(response.error || 'Erro ao criar conta.');
           setIsLoading(false);
           return;
         }
+        
+        // No registo, a Action já devolve o contrato UserSessionData completo
+        LocalDB.setUser(response.data);
         router.push('/dashboard');
+        
       } else {
         const response = await authenticateUserAction({
           documentOrEmail: formData.emailAddress || formData.documentNumber,
           password: formData.password,
         });
-        if (!response.success) {
+        
+        if (!response.success || !response.data) {
           setErrorMessage(response.error || 'Erro ao fazer login.');
           setIsLoading(false);
           return;
         }
+        
+        // ✅ CORREÇÃO: Adapter Pattern para converter o retorno do Login no contrato UserSessionData
+        const sessionData: UserSessionData = {
+          id: response.data.userId,
+          fullName: response.data.userName,
+          role: response.data.role,
+          documentType: personType, // Fallback seguro
+          documentNumber: formData.documentNumber || '',
+          emailAddress: formData.emailAddress || '',
+          phoneNumber: '', // Fallback seguro
+          createdAt: new Date().toISOString(),
+        };
+        
+        LocalDB.setUser(sessionData);
         router.push('/dashboard');
       }
     } catch {

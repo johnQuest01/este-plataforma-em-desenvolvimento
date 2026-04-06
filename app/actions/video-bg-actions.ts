@@ -34,6 +34,7 @@ export async function uploadLoginBackgroundVideoAction(
       return { success: false, error: 'Formato de vídeo inválido. Utilize apenas MP4, WebM ou MOV.' };
     }
 
+    // A URL retornada aqui já é a URL pública absoluta do Vercel Blob (https://...)
     const publicVideoUrl = await uploadVideoToServer(file);
 
     await prisma.$transaction(async (transaction) => {
@@ -51,8 +52,9 @@ export async function uploadLoginBackgroundVideoAction(
     revalidatePath('/login');
 
     return { success: true, data: { videoUrl: publicVideoUrl } };
-  } catch (error) {
-    console.error('[uploadLoginBackgroundVideoAction] Erro interno:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    console.error('[uploadLoginBackgroundVideoAction] Erro interno:', errorMessage);
     return { success: false, error: 'Ocorreu um erro interno ao guardar o vídeo no servidor.' };
   }
 }
@@ -90,8 +92,9 @@ export async function updateFormVideoAction(
     revalidatePath('/login');
 
     return { success: true };
-  } catch (error) {
-    console.error('[updateFormVideoAction] Erro interno:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    console.error('[updateFormVideoAction] Erro interno:', errorMessage);
     return { success: false, error: 'Erro interno ao atualizar as configurações do vídeo.' };
   }
 }
@@ -113,8 +116,9 @@ export async function getFormVideoAction(): Promise<{ success: boolean; data?: V
         isActive: videoConfiguration.isActive 
       } 
     };
-  } catch (error) {
-    console.error('[getFormVideoAction] Erro interno:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    console.error('[getFormVideoAction] Erro interno:', errorMessage);
     return { success: false, error: 'Erro interno ao buscar as configurações do vídeo.' };
   }
 }
