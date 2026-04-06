@@ -19,35 +19,36 @@ export async function uploadImageToCloud(base64Data: string, productName: string
     return base64Data;
   }
 
-  const sanitizedName = productName.replace(/\s+/g, '+').substring(0, 20);
-  const randomColor = Math.floor(Math.random() * 16777215).toString(16);
-  return `https://placehold.co/600x800/${randomColor}/ffffff/png?text=${sanitizedName}`;
+  const sanitizedProductName = productName.replace(/\s+/g, '+').substring(0, 20);
+  const randomHexColor = Math.floor(Math.random() * 16777215).toString(16);
+  return `https://placehold.co/600x800/${randomHexColor}/ffffff/png?text=${sanitizedProductName}`;
 }
 
 /**
  * Serviço de Upload de Vídeos para a Nuvem (Vercel Blob)
- * Substitui o sistema de ficheiros local (fs) que não funciona em Serverless.
+ * Totalmente compatível com Serverless. O token é injetado via variável de ambiente.
  */
-export async function uploadVideoToServer(file: File): Promise<string> {
+export async function uploadVideoToServer(videoFile: File): Promise<string> {
   try {
-    const nameExtension = file.name.split('.').pop()?.toLowerCase() || '';
-    const finalExtension = file.type && ALLOWED_VIDEO_MIME_TYPES.has(file.type) 
-      ? getExtensionForMimeType(file.type) 
+    const nameExtension = videoFile.name.split('.').pop()?.toLowerCase() || '';
+    const finalExtension = videoFile.type && ALLOWED_VIDEO_MIME_TYPES.has(videoFile.type) 
+      ? getExtensionForMimeType(videoFile.type) 
       : nameExtension || 'mp4';
       
     // Adicionado Date.now() para garantir unicidade absoluta e evitar colisões de cache na CDN
     const uniqueFilename = `login-video/${Date.now()}-${randomUUID()}.${finalExtension}`;
     
-    const blobResult = await put(uniqueFilename, file, {
+    const blobUploadResult = await put(uniqueFilename, videoFile, {
       access: 'public',
       addRandomSuffix: false,
+      multipart: true, // Essencial para vídeos pesados
     });
     
     // Retorna explicitamente a URL pública gerada pela Vercel
-    return blobResult.url;
+    return blobUploadResult.url;
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido de rede';
     console.error("❌ [UploadService] Erro ao enviar para Vercel Blob:", errorMessage);
-    throw new Error("Falha ao processar upload do vídeo para a nuvem.");
+    throw new Error(`Falha ao processar upload do vídeo para a nuvem: ${errorMessage}`);
   }
 }

@@ -2,12 +2,6 @@ import type { NextConfig } from "next";
 import withProgressiveWebAppInitialization from "@ducanh2912/next-pwa";
 import path from "path";
 
-/**
- * PWA Configuration - Optimized for 2026 Mobile-First POS
- * PWA desabilitado em desenvolvimento para evitar loops de compilação
- * Para testar PWA: use produção OU defina variável ENABLE_PWA_DEV=true
- * Segue protocolo @.cursorrules: TypeScript Strict, Zero placeholders
- */
 const shouldDisableProgressiveWebApp = process.env.NODE_ENV === "development" && !process.env.ENABLE_PWA_DEV;
 
 const withProgressiveWebApp = withProgressiveWebAppInitialization({
@@ -54,14 +48,9 @@ const withProgressiveWebApp = withProgressiveWebAppInitialization({
   },
 });
 
-/**
- * Next.js 16.1.1 Configuration
- */
 const nextConfiguration: NextConfig = {
   output: "standalone",
-
   outputFileTracingRoot: path.join(__dirname),
-
   images: {
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
@@ -71,13 +60,11 @@ const nextConfiguration: NextConfig = {
       { protocol: "https", hostname: "replicate.delivery" },
       { protocol: "https", hostname: "firebasestorage.googleapis.com" },
       { protocol: "https", hostname: "*.googleusercontent.com" },
-      { protocol: "https", hostname: "public.blob.vercel-storage.com" }, // Domínio base Vercel Blob
-      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" }, // Subdomínios dinâmicos Vercel Blob
-      { protocol: "https", hostname: "**" } 
+      { protocol: "https", hostname: "public.blob.vercel-storage.com" },
+      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" }
     ],
     unoptimized: false,
   },
-
   serverExternalPackages: [
     "@google-cloud/vertexai", 
     "@prisma/client", 
@@ -85,7 +72,6 @@ const nextConfiguration: NextConfig = {
     "@prisma/adapter-neon",
     "zod"
   ],
-
   experimental: {
     serverActions: {
       bodySizeLimit: "50mb",
