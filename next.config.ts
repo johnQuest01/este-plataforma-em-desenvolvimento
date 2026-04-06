@@ -65,6 +65,7 @@ const nextConfiguration: NextConfig = {
     ],
     unoptimized: false,
   },
+  // 🛡️ Garante que os adaptadores nativos rodam perfeitamente na Vercel
   serverExternalPackages: [
     "@google-cloud/vertexai", 
     "@prisma/client", 
