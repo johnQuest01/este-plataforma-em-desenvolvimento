@@ -1,28 +1,30 @@
 'use client';
 
 import React from 'react';
-import { UserSessionData } from '@/lib/local-db';
+import { UserData } from '@/lib/local-db';
 import { cn } from '@/lib/utils';
 
 interface AuthorizedSellerBadgeProps {
-  user: UserSessionData;
+  user: UserData;
   className?: string;
 }
 
-export function AuthorizedSellerBadge({ user, className }: AuthorizedSellerBadgeProps): React.JSX.Element | null {
-  // Utiliza o sistema de roles oficial do Prisma em vez do antigo booleano
-  const isVendedor = user.role === 'seller' || user.role === 'admin';
+export function AuthorizedSellerBadge({ user, className }: AuthorizedSellerBadgeProps) {
+  const isVendedor = typeof user.isVendedor === 'boolean' && user.isVendedor === true;
   
   if (!isVendedor) {
     return null;
   }
 
-  // Mapeamento para o novo contrato (fullName)
-  const displayName = user.fullName && user.fullName.trim().length > 0 ? user.fullName.trim() : 'Usuário';
+  const displayName = typeof user.name === 'string' && user.name.trim().length > 0 ? user.name.trim() : 'Usuário';
   const isActive = true;
   
-  // Como nameGender não existe no schema oficial, usamos uma label neutra
-  const sellerLabel = 'Vendedor(a) Autorizado(a)';
+  // Determina o gênero do nome para formatação do texto
+  const nameGender = typeof user.nameGender === 'string' && (user.nameGender === 'feminino' || user.nameGender === 'masculino')
+    ? user.nameGender
+    : 'masculino'; // Fallback padrão
+  
+  const sellerLabel = nameGender === 'feminino' ? 'Vendedora Autorizada' : 'Vendedor Autorizado';
 
   return (
     <div className={cn("relative w-full rounded-3xl shadow-lg overflow-hidden bg-white", className)}>

@@ -18,7 +18,7 @@
 'use client';
 
 import React from 'react';
-import { UserSessionData } from '@/lib/local-db';
+import { UserData } from '@/lib/local-db';
 import { 
   SIZING, 
   SPACING, 
@@ -30,24 +30,26 @@ import {
 } from '@/lib/design-system';
 
 interface AuthorizedSellerBadgeProps {
-  user: UserSessionData;
+  user: UserData;
   className?: string;
 }
 
-export function AuthorizedSellerBadgeWithDesignSystem({ user, className }: AuthorizedSellerBadgeProps): React.JSX.Element | null {
-  // Utiliza o sistema de roles oficial do Prisma em vez do antigo booleano
-  const isVendedor = user.role === 'seller' || user.role === 'admin';
+export function AuthorizedSellerBadgeWithDesignSystem({ user, className }: AuthorizedSellerBadgeProps) {
+  const isVendedor = typeof user.isVendedor === 'boolean' && user.isVendedor === true;
   
   if (!isVendedor) {
     return null;
   }
 
-  // Mapeamento para o novo contrato (fullName)
-  const displayName = user.fullName && user.fullName.trim().length > 0 ? user.fullName.trim() : 'Usuário';
+  const displayName = typeof user.name === 'string' && user.name.trim().length > 0 ? user.name.trim() : 'Usuário';
   const isActive = true;
   
-  // Como nameGender não existe no schema oficial, usamos uma label neutra
-  const sellerLabel = 'Vendedor(a) Autorizado(a)';
+  // Determina o gênero do nome para formatação do texto
+  const nameGender = typeof user.nameGender === 'string' && (user.nameGender === 'feminino' || user.nameGender === 'masculino')
+    ? user.nameGender
+    : 'masculino'; // Fallback padrão
+  
+  const sellerLabel = nameGender === 'feminino' ? 'Vendedora Autorizada' : 'Vendedor Autorizado';
 
   return (
     <div className={cn(
@@ -164,3 +166,46 @@ export function AuthorizedSellerBadgeWithDesignSystem({ user, className }: Autho
     </div>
   );
 }
+
+/**
+ * 📊 COMPARAÇÃO DE CÓDIGO:
+ * 
+ * ============================================
+ * ANTES (hardcoded):
+ * ============================================
+ * className="w-full rounded-3xl shadow-lg bg-white"
+ * 
+ * ============================================
+ * DEPOIS (Design System):
+ * ============================================
+ * className={cn(
+ *   SIZING.container.mobile,
+ *   BORDERS.radius['3xl'],
+ *   SHADOWS.lg,
+ *   COLORS.bg.white
+ * )}
+ * 
+ * ============================================
+ * VANTAGENS:
+ * ============================================
+ * 
+ * 1. ✅ LEGIBILIDADE
+ *    - Antes: "w-full" (o que isso significa?)
+ *    - Depois: SIZING.container.mobile (aha! é um container mobile!)
+ * 
+ * 2. ✅ MANUTENÇÃO
+ *    - Antes: Mudar shadow em 50 componentes = 50 edições
+ *    - Depois: Mudar SHADOWS.lg em 1 arquivo = 50 componentes atualizados
+ * 
+ * 3. ✅ CONSISTÊNCIA
+ *    - Antes: shadow-lg, shadow-xl, shadow-2xl misturados
+ *    - Depois: SHADOWS.component.card (sempre o mesmo para cards)
+ * 
+ * 4. ✅ AUTOCOMPLETE
+ *    - Antes: Memorizar todas as classes Tailwind
+ *    - Depois: SIZING. (IDE mostra todas as opções)
+ * 
+ * 5. ✅ DOCUMENTAÇÃO
+ *    - Antes: README separado
+ *    - Depois: Código = documentação (comentários inline)
+ */

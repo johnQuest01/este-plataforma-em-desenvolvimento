@@ -7,7 +7,7 @@ import { withGuardian } from '@/components/guardian/GuardianBeacon';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { UserRegistrationType } from '@/schemas/registration-schema';
 import { registerNewUserAction } from '@/app/actions/registration-actions';
-import { UserSessionData } from '@/lib/local-db';
+import { UserData } from '@/lib/local-db';
 
 function RegistrationFormBlockBase({ config, onAction }: BlockComponentProps): React.JSX.Element {
   
@@ -18,7 +18,7 @@ function RegistrationFormBlockBase({ config, onAction }: BlockComponentProps): R
    */
   const handleRegistrationSubmit = async (
     formData: UserRegistrationType
-  ): Promise<{ success: boolean; data?: UserSessionData; error?: string }> => {
+  ): Promise<{ success: boolean; data?: UserData; error?: string }> => {
     
     const response = await registerNewUserAction(formData);
 

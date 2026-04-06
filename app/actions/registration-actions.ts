@@ -2,11 +2,10 @@
 
 import { prisma } from '@/lib/prisma';
 import { UserRegistrationSchema, UserRegistrationType } from '@/schemas/registration-schema';
-import { UserSessionData } from '@/lib/local-db';
 
 export async function registerNewUserAction(
   payload: UserRegistrationType
-): Promise<{ success: boolean; data?: UserSessionData; error?: string }> {
+): Promise<{ success: boolean; error?: string }> {
   try {
     const validationResult = UserRegistrationSchema.safeParse(payload);
 
@@ -19,7 +18,7 @@ export async function registerNewUserAction(
 
     const validatedData = validationResult.data;
 
-    const createdUser = await prisma.$transaction(async (transaction) => {
+    await prisma.$transaction(async (transaction) => {
       const existingUser = await transaction.user.findFirst({
         where: {
           OR: [
@@ -42,37 +41,17 @@ export async function registerNewUserAction(
           documentType: validatedData.documentType,
           document: validatedData.documentNumber,
           role: "customer"
-        },
-        select: {
-          id: true,
-          documentType: true,
-          document: true,
-          name: true,
-          email: true,
-          whatsapp: true,
-          role: true,
-          createdAt: true
+          // Em produção real, a senha deve ser hasheada aqui (ex: bcrypt.hash)
         }
       });
     });
 
-    const sessionData: UserSessionData = {
-      id: createdUser.id,
-      documentType: createdUser.documentType,
-      documentNumber: createdUser.document,
-      fullName: createdUser.name || '',
-      emailAddress: createdUser.email || '',
-      phoneNumber: createdUser.whatsapp || '',
-      role: createdUser.role,
-      createdAt: createdUser.createdAt.toISOString()
-    };
-
-    return { success: true, data: sessionData };
+    return { success: true };
   } catch (error) {
-    console.error('[Registration Action Error]:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Erro interno ao registar o utilizador.'
+    console.error(`[Registration Action Error]:`, error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Erro interno ao registar o utilizador.' 
     };
   }
 }

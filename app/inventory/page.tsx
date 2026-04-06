@@ -13,7 +13,7 @@ import { INVENTORY_BLOCKS, STOCK_BLOCKS } from '@/data/inventory-state';
 import { BlockRenderer } from '@/components/builder/BlockRender';
 import { checkForNewImage } from '@/app/actions';
 import { StoreHeader } from '@/components/builder/blocks/Header';
-import { LocalDB, UserSessionData } from '@/lib/local-db';
+import { LocalDB } from '@/lib/local-db';
 import { AuthorizedSellerBadge } from '@/components/builder/blocks/AuthorizedSellerBadge';
 import { MeusClientesExpandible } from '@/components/builder/blocks/MeusClientesExpandible';
 import { SIZING, SPACING, COLORS, BORDERS, SHADOWS, TYPOGRAPHY } from '@/lib/design-system';
@@ -23,81 +23,76 @@ import { StockModal } from '@/components/builder/ui/StockModal';
 import { CatalogModal } from '@/components/builder/ui/CatalogModal';
 import { OrdersModal } from '@/components/builder/ui/OrdersModal';
 
-function InventoryPageBase(): React.JSX.Element | null {
-  const router = useRouter();
-  const [blocks, setBlocks] = useState<BlockConfig[]>(INVENTORY_BLOCKS);
-  const [currentUser, setCurrentUser] = useState<UserSessionData | null>(null);
-  const [isMounted, setIsMounted] = useState<boolean>(false);
+function InventoryPageBase(): React.JSX.Element {
+  const routerNavigation = useRouter();
+  const [inventoryBlocks, setInventoryBlocks] = useState<BlockConfig[]>(INVENTORY_BLOCKS);
+  const [currentUserInformation, setCurrentUserInformation] = useState<ReturnType<typeof LocalDB.getUser>>(null);
 
   // --- ESTADOS DOS MODAIS ---
-  const [isStockModalOpen, setIsStockModalOpen] = useState<boolean>(false);
-  const [isCatalogModalOpen, setIsCatalogModalOpen] = useState<boolean>(false);
-  const [isOrdersModalOpen, setIsOrdersModalOpen] = useState<boolean>(false);
+  const [isStockModalVisible, setIsStockModalVisible] = useState<boolean>(false);
+  const [isCatalogModalVisible, setIsCatalogModalVisible] = useState<boolean>(false);
+  const [isOrdersModalVisible, setIsOrdersModalVisible] = useState<boolean>(false);
   
   // --- ESTADO DO COMPONENTE EXPANSÍVEL ---
-  const [isMeusClientesOpen, setIsMeusClientesOpen] = useState<boolean>(false);
+  const [isMyCustomersExpanded, setIsMyCustomersExpanded] = useState<boolean>(false);
 
   // --- CARREGAR DADOS DO USUÁRIO E ATUALIZAR BLOCOS ---
   useEffect(() => {
-    let isComponentActive = true;
-    
-    // Função assíncrona empurrada para a Macrotask Queue para evitar "cascading renders"
-    const initializeUserData = async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      
-      if (!isComponentActive) return;
+    const loadUserInformationAsync = async () => {
+      // 🛡️ MICROTASK QUEUE: Evita o erro de "cascading renders" do React.
+      // Permite que a primeira renderização termine antes de atualizar o estado síncrono.
+      await Promise.resolve();
 
-      setIsMounted(true);
+      const userInformation = LocalDB.getUser();
+      setCurrentUserInformation(userInformation);
       
-      const user = LocalDB.getUser();
-      setCurrentUser(user);
+      // Atualizar nome do usuário no bloco user-info se não for vendedor
+      const isUserSeller = userInformation && typeof userInformation.isVendedor === 'boolean' && userInformation.isVendedor === true;
       
-      if (user) {
-        const isVendedor = user.role === 'seller' || user.role === 'admin';
-        
-        if (!isVendedor) {
-          const userName = user.fullName && user.fullName.trim().length > 0 ? user.fullName.trim() : 'Usuário';
-          
-          setBlocks(currentBlocks =>
-            currentBlocks.map(block => {
-              if (block.id === 'inv_user_info' && block.data && typeof block.data === 'object') {
-                return {
-                  ...block,
-                  data: { ...block.data, userName }
-                };
-              }
-              return block;
-            })
-          );
-        }
+      if (userInformation && !isUserSeller) {
+        const validUserName = typeof userInformation.name === 'string' && userInformation.name.trim().length > 0 
+          ? userInformation.name.trim() 
+          : 'Usuário';
+
+        setInventoryBlocks((currentBlocksConfiguration) =>
+          currentBlocksConfiguration.map((configurationBlock) => {
+            if (configurationBlock.id === 'inv_user_info' && configurationBlock.data && typeof configurationBlock.data === 'object') {
+              return {
+                ...configurationBlock,
+                data: { ...configurationBlock.data, userName: validUserName }
+              };
+            }
+            return configurationBlock;
+          })
+        );
       }
     };
 
-    initializeUserData();
-
-    return () => {
-      isComponentActive = false;
-    };
+    loadUserInformationAsync();
   }, []);
 
   // --- EFEITO DE MONITORAMENTO ---
   useEffect(() => {
     let isComponentMounted = true;
-    const interval = setInterval(async () => {
+    
+    const pollingInterval = setInterval(async () => {
       if (!isComponentMounted) return;
       try {
-        const serverImage = await checkForNewImage();
-        if (serverImage && isComponentMounted && typeof serverImage === 'string') {
-          setBlocks(currentBlocks =>
-            currentBlocks.map(block => {
-              if (block.type === 'inventory-feature' && block.data && typeof block.data === 'object') {
-                const currentBoxImage = 'boxImage' in block.data && typeof block.data.boxImage === 'string' ? block.data.boxImage : undefined;
-                if (currentBoxImage !== serverImage) {
-                  console.log("📸 Nova imagem detetada!");
-                  return { ...block, data: { ...block.data, boxImage: serverImage } };
+        const serverImageResponse = await checkForNewImage();
+        if (serverImageResponse && isComponentMounted && typeof serverImageResponse === 'string') {
+          setInventoryBlocks((currentBlocksConfiguration) =>
+            currentBlocksConfiguration.map((configurationBlock) => {
+              if (configurationBlock.type === 'inventory-feature' && configurationBlock.data && typeof configurationBlock.data === 'object') {
+                const currentBoxImage = 'boxImage' in configurationBlock.data && typeof configurationBlock.data.boxImage === 'string' 
+                  ? configurationBlock.data.boxImage 
+                  : undefined;
+                  
+                if (currentBoxImage !== serverImageResponse) {
+                  console.log("📸 Nova imagem detectada!");
+                  return { ...configurationBlock, data: { ...configurationBlock.data, boxImage: serverImageResponse } };
                 }
               }
-              return block;
+              return configurationBlock;
             })
           );
         }
@@ -108,69 +103,77 @@ function InventoryPageBase(): React.JSX.Element | null {
 
     return () => {
       isComponentMounted = false;
-      clearInterval(interval);
+      clearInterval(pollingInterval);
     };
   }, []);
 
   // Filtrar blocos: remover footer e user-info se for vendedor
-  const scrollableBlocks = blocks.filter(block => {
-    if (block.type === 'footer') return false;
-    
-    const isVendedor = currentUser?.role === 'seller' || currentUser?.role === 'admin';
-    if (block.id === 'inv_user_info' && isVendedor) {
+  const scrollableBlocksList = inventoryBlocks.filter((blockItem) => {
+    if (blockItem.type === 'footer') return false;
+    if (blockItem.id === 'inv_user_info' && currentUserInformation && typeof currentUserInformation.isVendedor === 'boolean' && currentUserInformation.isVendedor === true) {
       return false;
     }
     return true;
   });
 
+  // Debug temporário para verificar se o bloco está sendo incluído
+  if (process.env.NODE_ENV === 'development') {
+    const actionButtonsBlock = inventoryBlocks.find((blockItem) => blockItem.id === 'inv_actions_bottom');
+    if (actionButtonsBlock) {
+      console.log('[InventoryPage] Bloco action-buttons encontrado:', {
+        id: actionButtonsBlock.id,
+        type: actionButtonsBlock.type,
+        isVisible: actionButtonsBlock.isVisible,
+        buttonsCount: Array.isArray(actionButtonsBlock.data?.buttons) ? actionButtonsBlock.data.buttons.length : 0
+      });
+    } else {
+      console.warn('[InventoryPage] Bloco inv_actions_bottom NÃO encontrado nos blocos!');
+    }
+    console.log('[InventoryPage] Total de blocos scrollable:', scrollableBlocksList.length);
+    console.log('[InventoryPage] Tipos de blocos:', scrollableBlocksList.map((blockItem) => blockItem.type));
+  }
+
   // --- GERENCIADOR DE AÇÕES ---
-  const handleBlockAction = (action: string) => {
-    switch (action) {
+  const handleBlockActionExecution = (actionIdentifier: string) => {
+    switch (actionIdentifier) {
       case 'openStockModal':
         // ✅ LÓGICA HÍBRIDA: Desktop vai para rota dedicada, Mobile abre modal
         if (typeof window !== 'undefined' && window.innerWidth > 1024) {
-          router.push('/inventory/register');
+          routerNavigation.push('/inventory/register');
         } else {
-          setIsStockModalOpen(true);
+          setIsStockModalVisible(true);
         }
         break;
       
       case 'openOrders': 
-        setIsOrdersModalOpen(true); 
+        setIsOrdersModalVisible(true); 
         break;
 
       case 'openCatalog': 
-        setIsCatalogModalOpen(true); 
+        setIsCatalogModalVisible(true); 
         break;
 
       default:
-        console.log(`Ação: ${action}`);
+        console.log(`Ação executada: ${actionIdentifier}`);
     }
   };
 
-  const handleProductRegister = (data: { image?: string }) => {
-    if (data.image && typeof data.image === 'string') {
-      setBlocks(currentBlocks =>
-        currentBlocks.map(block => {
-          if (block.type === 'inventory-feature' && block.data && typeof block.data === 'object') {
+  const handleProductRegistration = (productData: { image?: string }) => {
+    if (productData.image && typeof productData.image === 'string') {
+      setInventoryBlocks((currentBlocksConfiguration) =>
+        currentBlocksConfiguration.map((configurationBlock) => {
+          if (configurationBlock.type === 'inventory-feature' && configurationBlock.data && typeof configurationBlock.data === 'object') {
             return {
-              ...block,
-              data: { ...block.data, boxImage: data.image }
+              ...configurationBlock,
+              data: { ...configurationBlock.data, boxImage: productData.image }
             };
           }
-          return block;
+          return configurationBlock;
         })
       );
     }
-    setIsStockModalOpen(false);
+    setIsStockModalVisible(false);
   };
-
-  // Previne erros de Hydration Mismatch no Next.js
-  if (!isMounted) {
-    return null;
-  }
-
-  const isCurrentUserVendedor = currentUser?.role === 'seller' || currentUser?.role === 'admin';
 
   return (
     <main className="w-full h-dvh-real bg-white lg:bg-gray-100 lg:flex lg:justify-center lg:items-center lg:py-8 overflow-hidden">
@@ -194,12 +197,11 @@ function InventoryPageBase(): React.JSX.Element | null {
         <div className="flex-1 relative overflow-hidden w-full">
           <div className="absolute inset-0 overflow-y-auto scrollbar-hide overscroll-contain pb-28">
             <div className="flex flex-col pt-0 min-h-full">
-              
               {/* Badge de Vendedor Autorizado */}
-              {isCurrentUserVendedor && currentUser && (
+              {currentUserInformation && typeof currentUserInformation.isVendedor === 'boolean' && currentUserInformation.isVendedor === true && (
                 <>
                   <div className="w-full px-4 pt-2 pb-1">
-                    <AuthorizedSellerBadge user={currentUser} />
+                    <AuthorizedSellerBadge user={currentUserInformation} />
                   </div>
                   
                   {/* Botão Meus Clientes - Usando Design System ✨ */}
@@ -209,12 +211,12 @@ function InventoryPageBase(): React.JSX.Element | null {
                     "w-full"
                   )}>
                     <button
-                      onClick={() => setIsMeusClientesOpen(!isMeusClientesOpen)}
+                      onClick={() => setIsMyCustomersExpanded(!isMyCustomersExpanded)}
                       className={cn(
                         "w-full",
                         SIZING.button.lg,        // h-12 min-w-[120px]
                         SPACING.horizontal.md,   // px-4
-                        isMeusClientesOpen ? COLORS.bg.success : COLORS.bg.primary, // bg dinâmico
+                        isMyCustomersExpanded ? COLORS.bg.success : COLORS.bg.primary, // bg dinâmico
                         COLORS.text.white,       // text-white
                         BORDERS.radius.xl,       // rounded-xl
                         SHADOWS.component.button, // shadow-sm hover:shadow-md
@@ -225,7 +227,7 @@ function InventoryPageBase(): React.JSX.Element | null {
                         "flex items-center justify-center gap-2"
                       )}
                     >
-                      {/* Ícone de utilizadores */}
+                      {/* Ícone de usuários */}
                       <svg 
                         width="20" 
                         height="20" 
@@ -241,24 +243,24 @@ function InventoryPageBase(): React.JSX.Element | null {
                         <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                         <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                       </svg>
-                      <span>{isMeusClientesOpen ? 'Fechar Clientes' : 'Meus Clientes'}</span>
+                      <span>{isMyCustomersExpanded ? 'Fechar Clientes' : 'Meus Clientes'}</span>
                     </button>
                   </div>
 
                   {/* Componente Expansível de Clientes */}
                   <MeusClientesExpandible 
-                    isOpen={isMeusClientesOpen}
-                    onClose={() => setIsMeusClientesOpen(false)}
+                    isOpen={isMyCustomersExpanded}
+                    onClose={() => setIsMyCustomersExpanded(false)}
                   />
                 </>
               )}
               
               <AnimatePresence mode='popLayout'>
-                {scrollableBlocks.map((block) => (
+                {scrollableBlocksList.map((blockItem) => (
                   <BlockRenderer
-                    key={block.id}
-                    config={block}
-                    onAction={handleBlockAction}
+                    key={blockItem.id}
+                    config={blockItem}
+                    onAction={handleBlockActionExecution}
                   />
                 ))}
               </AnimatePresence>
@@ -267,26 +269,26 @@ function InventoryPageBase(): React.JSX.Element | null {
         </div>
 
         {/* MODAIS - Renderizados fora da área de scroll para evitar problemas de z-index */}
-        {isStockModalOpen && (
+        {isStockModalVisible && (
           <StockModal
-            isOpen={isStockModalOpen}
-            onClose={() => setIsStockModalOpen(false)}
+            isOpen={isStockModalVisible}
+            onClose={() => setIsStockModalVisible(false)}
             blocks={STOCK_BLOCKS}
-            onProductRegister={handleProductRegister}
+            onProductRegister={handleProductRegistration}
           />
         )}
 
-        {isCatalogModalOpen && (
+        {isCatalogModalVisible && (
           <CatalogModal
-            isOpen={isCatalogModalOpen}
-            onClose={() => setIsCatalogModalOpen(false)}
+            isOpen={isCatalogModalVisible}
+            onClose={() => setIsCatalogModalVisible(false)}
           />
         )}
 
-        {isOrdersModalOpen && (
+        {isOrdersModalVisible && (
           <OrdersModal
-            isOpen={isOrdersModalOpen}
-            onClose={() => setIsOrdersModalOpen(false)}
+            isOpen={isOrdersModalVisible}
+            onClose={() => setIsOrdersModalVisible(false)}
           />
         )}
 
