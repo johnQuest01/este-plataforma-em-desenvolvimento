@@ -195,11 +195,13 @@ model AdminAccess {
   createdAt     DateTime @default(now())
 }
 
-// URL do vídeo: Vercel Blob (https) ou vazio; sincronizado via saveVideoReferenceAction / updateFormVideoAction.
+// Vídeo de fundo: URL (ex.: Cloudinary com f_auto,q_auto) ou vazio; sincronizado via video-bg-actions.
 model FormVideoConfig {
-  id        String   @id @default("global-video-config")
-  videoUrl  String   @default("") @db.Text
-  isActive  Boolean  @default(true)
-  updatedAt DateTime @updatedAt
-  createdAt DateTime @default(now())
+  id                   String   @id @default("global-video-config")
+  videoUrl             String   @default("") @db.Text
+  cloudinaryPublicId   String   @default("")
+  metadata             Json?
+  isActive             Boolean  @default(true)
+  updatedAt            DateTime @updatedAt
+  createdAt            DateTime @default(now())
 }

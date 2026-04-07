@@ -1,13 +1,18 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback, useState, type ChangeEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Video, Save, CheckCircle, Smartphone, Link2, Loader2 } from 'lucide-react';
 import { BlockComponentProps } from '@/types/builder';
 import { withGuardian } from '@/components/guardian/GuardianBeacon';
-import { useVideoManager } from '@/hooks/useVideoManager';
+import { useCloudinaryVideo } from '@/hooks/useCloudinaryVideo';
+import { ClientVideoFileSelectionSchema } from '@/schemas/video-bg-schema';
 
 function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React.JSX.Element {
+  const [clientVideoFileRuleErrorMessage, setClientVideoFileRuleErrorMessage] = useState<
+    string | null
+  >(null);
+
   const {
     videoUrl,
     setVideoUrl,
@@ -25,7 +30,38 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
     requestGalleryFileSelection,
     handleVideoFileInputChange,
     saveVideoConfiguration,
-  } = useVideoManager();
+    previewVideoSourceUrl,
+  } = useCloudinaryVideo();
+
+  const requestGalleryFileSelectionWithClearClientErrors = useCallback(() => {
+    setClientVideoFileRuleErrorMessage(null);
+    requestGalleryFileSelection();
+  }, [requestGalleryFileSelection]);
+
+  const handleVideoFileInputChangeWithClientZodValidation = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const selectedVideoFile = event.target.files?.[0];
+      if (selectedVideoFile) {
+        const validationResult = ClientVideoFileSelectionSchema.safeParse(selectedVideoFile);
+        if (!validationResult.success) {
+          const messageFromIssue = validationResult.error.issues[0]?.message;
+          setClientVideoFileRuleErrorMessage(
+            typeof messageFromIssue === 'string' && messageFromIssue.length > 0
+              ? messageFromIssue
+              : 'Ficheiro de vídeo inválido.'
+          );
+          event.target.value = '';
+          return;
+        }
+      }
+      setClientVideoFileRuleErrorMessage(null);
+      void handleVideoFileInputChange(event);
+    },
+    [handleVideoFileInputChange]
+  );
+
+  const combinedUploadRelatedErrorMessage =
+    clientVideoFileRuleErrorMessage ?? uploadErrorMessage;
 
   return (
     <motion.div
@@ -42,7 +78,7 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
         type="file"
         accept={videoFileInputAcceptAttribute}
         className="sr-only"
-        onChange={handleVideoFileInputChange}
+        onChange={handleVideoFileInputChangeWithClientZodValidation}
       />
 
       <div className="mb-4 flex items-center gap-3">
@@ -52,8 +88,8 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
         <div>
           <h3 className="text-lg font-bold text-gray-900">Vídeo de fundo (login)</h3>
           <p className="text-xs text-gray-500">
-            Formatos suportados: MP4, WebM e MOV. Upload via Vercel Blob (multipart). O painel
-            admin tem de estar desbloqueado.
+            Formatos suportados: MP4, WebM e MOV (máx. 30MB). Upload via Cloudinary (preset no
+            dashboard); o painel admin tem de estar desbloqueado.
           </p>
         </div>
       </div>
@@ -91,7 +127,7 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
           <button
             type="button"
             disabled={isUploadingVideo}
-            onClick={requestGalleryFileSelection}
+            onClick={requestGalleryFileSelectionWithClearClientErrors}
             className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#5874f6]/40 bg-blue-50/50 text-sm font-bold text-[#5874f6] transition-all hover:bg-blue-50 disabled:opacity-50"
           >
             {isUploadingVideo ? (
@@ -133,7 +169,7 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
           </AnimatePresence>
 
           <AnimatePresence>
-            {uploadErrorMessage ? (
+            {combinedUploadRelatedErrorMessage ? (
               <motion.p
                 key="upload-error"
                 initial={{ opacity: 0, scale: 0.98 }}
@@ -143,7 +179,7 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
                 className="rounded-lg bg-red-50 px-3 py-2 text-center text-xs font-bold text-red-700"
                 role="alert"
               >
-                {uploadErrorMessage}
+                {combinedUploadRelatedErrorMessage}
               </motion.p>
             ) : null}
           </AnimatePresence>
@@ -176,7 +212,6 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
             <Link2 className="mt-3 h-4 w-4 shrink-0 text-gray-400" aria-hidden />
             <input
               type="url"
-              placeholder="https://exemplo.com/video.mp4"
               value={videoUrl}
               onChange={(event) => setVideoUrl(event.target.value)}
               className="h-12 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 text-sm font-bold text-gray-800 outline-none transition-all focus:border-[#5874f6]"
@@ -186,12 +221,12 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
           {videoUrl.length > 0 ? (
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-black">
               <video
-                key={videoUrl}
+                key={previewVideoSourceUrl}
                 muted
                 playsInline
                 controls
                 className="max-h-40 w-full object-contain"
-                src={videoUrl}
+                src={previewVideoSourceUrl}
               />
             </div>
           ) : null}
@@ -228,6 +263,6 @@ export const VideoBackgroundManagerBlock = withGuardian(
   'UI_COMPONENT',
   {
     label: 'Gerenciador de Vídeo de Fundo',
-    description: 'UI pura; lógica em useVideoManager (Blob + Neon).',
+    description: 'UI pura; lógica em useCloudinaryVideo (Cloudinary + Neon).',
   }
 );

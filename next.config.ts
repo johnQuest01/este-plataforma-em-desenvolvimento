@@ -84,14 +84,19 @@ const nextConfiguration = {
     serverActions: {
       bodySizeLimit: "50mb",
       allowedOrigins: [
-        "localhost:3000", 
-        "*.cloudworkstations.dev", 
+        "localhost:3000",
+        // Testes no telemóvel na rede local (ajusta o IP se for diferente)
+        "192.168.15.24:3000",
+        "*.cloudworkstations.dev",
         "*.app.github.dev",
-        "*.trycloudflare.com", 
-        "*.vercel.app"
+        "*.trycloudflare.com",
+        "*.vercel.app",
       ],
     },
   },
+
+  /** Permite carregar /_next/* quando abres o dev server pelo IP da LAN (ex.: telemóvel). */
+  allowedDevOrigins: ["192.168.15.24"],
 
   // CORREÇÃO: Removidas as chaves 'eslint' e 'typescript' do objeto principal
   // No Next 16, se houver erro de 'Unrecognized key', as configurações de lint 
