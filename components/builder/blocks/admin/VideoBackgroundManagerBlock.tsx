@@ -1,115 +1,31 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { upload } from '@vercel/blob/client';
+import React from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Video, Save, CheckCircle, Smartphone, Link2, Loader2 } from 'lucide-react';
 import { BlockComponentProps } from '@/types/builder';
 import { withGuardian } from '@/components/guardian/GuardianBeacon';
-import {
-  updateFormVideoAction,
-  getFormVideoAction,
-  saveVideoReferenceAction,
-} from '@/app/actions/video-bg-actions';
-
-function buildBlobPathnameForLoginVideo(selectedFile: File): string {
-  const trimmedName = selectedFile.name.trim();
-  const baseName = trimmedName.length > 0 ? trimmedName : 'video.mp4';
-  const safeCharactersOnly = baseName.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const cappedLength = safeCharactersOnly.slice(0, 100);
-  const nameWithExtension = cappedLength.includes('.') ? cappedLength : `${cappedLength}.mp4`;
-  return `login-background/${nameWithExtension}`;
-}
+import { useVideoManager } from '@/hooks/useVideoManager';
 
 function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React.JSX.Element {
-  const [videoUrl, setVideoUrl] = useState<string>('');
-  const [isActive, setIsActive] = useState<boolean>(true);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
-  const [isUploading, setIsUploading] = useState<boolean>(false);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const [successMessage, setSuccessMessage] = useState<boolean>(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-
-  const fileInputReference = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const fetchVideoConfiguration = async () => {
-      const response = await getFormVideoAction();
-      if (response.success && response.data) {
-        setVideoUrl(response.data.videoUrl);
-        setIsActive(response.data.isActive ?? true);
-      }
-      setIsLoading(false);
-    };
-    fetchVideoConfiguration();
-  }, []);
-
-  const handleSaveVideoConfiguration = async () => {
-    setIsSaving(true);
-    setSuccessMessage(false);
-
-    const response = await updateFormVideoAction({ videoUrl, isActive });
-
-    setIsSaving(false);
-    if (response.success) {
-      setSuccessMessage(true);
-      setTimeout(() => setSuccessMessage(false), 3000);
-    } else {
-      alert(response.error);
-    }
-  };
-
-  const handlePickFileFromDevice = () => {
-    setUploadError(null);
-    fileInputReference.current?.click();
-  };
-
-  const handleFileSelectionChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0];
-    event.target.value = '';
-    if (!selectedFile) return;
-
-    setIsUploading(true);
-    setUploadError(null);
-    setUploadProgress(0);
-
-    try {
-      const blobPathname = buildBlobPathnameForLoginVideo(selectedFile);
-
-      const uploadResult = await upload(blobPathname, selectedFile, {
-        access: 'public',
-        handleUploadUrl: '/api/upload/video',
-        multipart: true,
-        contentType: selectedFile.type.length > 0 ? selectedFile.type : undefined,
-        onUploadProgress: (progressEvent: { loaded: number; total: number; percentage: number }) => {
-          setUploadProgress(progressEvent.percentage);
-        },
-      });
-
-      const persistResponse = await saveVideoReferenceAction(uploadResult.url);
-
-      if (!persistResponse.success) {
-        setUploadError(persistResponse.error ?? 'Falha ao guardar a URL no Neon.');
-        return;
-      }
-
-      setVideoUrl(uploadResult.url);
-      setIsActive(true);
-      setSuccessMessage(true);
-      setTimeout(() => setSuccessMessage(false), 3000);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Falha no envio para o Blob.';
-      setUploadError(
-        message.includes('403')
-          ? 'Desbloqueie o painel admin (cadeado) antes de enviar o vídeo.'
-          : message
-      );
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(null);
-    }
-  };
+  const {
+    videoUrl,
+    setVideoUrl,
+    isVideoActiveOnLogin,
+    setIsVideoActiveOnLogin,
+    isLoadingInitialConfiguration,
+    isSavingConfiguration,
+    isUploadingVideo,
+    uploadProgressPercentage,
+    persistSuccessVisible,
+    uploadErrorMessage,
+    configurationSaveErrorMessage,
+    videoFileInputAcceptAttribute,
+    fileInputReference,
+    requestGalleryFileSelection,
+    handleVideoFileInputChange,
+    saveVideoConfiguration,
+  } = useVideoManager();
 
   return (
     <motion.div
@@ -124,9 +40,9 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
       <input
         ref={fileInputReference}
         type="file"
-        accept="video/mp4,video/webm,video/quicktime,video/*,.mp4,.webm,.mov"
+        accept={videoFileInputAcceptAttribute}
         className="sr-only"
-        onChange={handleFileSelectionChange}
+        onChange={handleVideoFileInputChange}
       />
 
       <div className="mb-4 flex items-center gap-3">
@@ -136,20 +52,37 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
         <div>
           <h3 className="text-lg font-bold text-gray-900">Vídeo de fundo (login)</h3>
           <p className="text-xs text-gray-500">
-            Upload direto (Vercel Blob, multipart). Requer admin desbloqueado e BLOB_READ_WRITE_TOKEN.
+            Formatos suportados: MP4, WebM e MOV. Upload via Vercel Blob (multipart). O painel
+            admin tem de estar desbloqueado.
           </p>
         </div>
       </div>
 
-      {isLoading ? (
+      {isLoadingInitialConfiguration ? (
         <div className="h-12 w-full animate-pulse rounded-xl bg-gray-100" />
       ) : (
         <div className="flex flex-col gap-3">
+          <AnimatePresence mode="wait">
+            {persistSuccessVisible ? (
+              <motion.div
+                key="persist-success"
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+                className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 py-2.5 text-sm font-bold text-emerald-800"
+              >
+                <CheckCircle size={18} strokeWidth={2.5} />
+                Alterações guardadas com sucesso
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+
           <label className="flex cursor-pointer select-none items-center gap-2 text-sm font-bold text-gray-800">
             <input
               type="checkbox"
-              checked={isActive}
-              onChange={(event) => setIsActive(event.target.checked)}
+              checked={isVideoActiveOnLogin}
+              onChange={(event) => setIsVideoActiveOnLogin(event.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-[#5874f6] focus:ring-[#5874f6]"
             />
             Exibir vídeo na tela de login
@@ -157,53 +90,90 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
 
           <button
             type="button"
-            disabled={isUploading}
-            onClick={handlePickFileFromDevice}
+            disabled={isUploadingVideo}
+            onClick={requestGalleryFileSelection}
             className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#5874f6]/40 bg-blue-50/50 text-sm font-bold text-[#5874f6] transition-all hover:bg-blue-50 disabled:opacity-50"
           >
-            {isUploading ? (
+            {isUploadingVideo ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin" /> A enviar vídeo…
+                <Loader2 className="h-5 w-5 animate-spin" />
+                A enviar vídeo…
               </>
             ) : (
               <>
-                <Smartphone className="h-5 w-5" /> Escolher da galeria (celular)
+                <Smartphone className="h-5 w-5" />
+                Escolher da galeria (celular)
               </>
             )}
           </button>
 
-          {uploadProgress !== null ? (
-            <div className="space-y-1">
-              <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
-                <motion.div
-                  className="h-full rounded-full bg-[#5874f6]"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${uploadProgress}%` }}
-                  transition={{ type: 'tween', duration: 0.2 }}
-                />
-              </div>
-              <p className="text-center text-[10px] font-bold text-gray-500">
-                {Math.round(uploadProgress)}% concluído
-              </p>
-            </div>
-          ) : null}
+          <AnimatePresence>
+            {uploadProgressPercentage !== null ? (
+              <motion.div
+                key="upload-progress"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-1 overflow-hidden"
+              >
+                <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                  <motion.div
+                    className="h-full rounded-full bg-[#5874f6]"
+                    initial={{ width: '0%' }}
+                    animate={{ width: `${uploadProgressPercentage}%` }}
+                    transition={{ type: 'tween', duration: 0.15, ease: 'easeOut' }}
+                  />
+                </div>
+                <p className="text-center text-[11px] font-bold tabular-nums text-gray-600">
+                  Envio: {Math.round(uploadProgressPercentage)}% concluído
+                </p>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
 
-          {uploadError ? (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-center text-xs font-bold text-red-700">
-              {uploadError}
-            </p>
-          ) : null}
+          <AnimatePresence>
+            {uploadErrorMessage ? (
+              <motion.p
+                key="upload-error"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.2 }}
+                className="rounded-lg bg-red-50 px-3 py-2 text-center text-xs font-bold text-red-700"
+                role="alert"
+              >
+                {uploadErrorMessage}
+              </motion.p>
+            ) : null}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {configurationSaveErrorMessage ? (
+              <motion.p
+                key="save-error"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.2 }}
+                className="rounded-lg bg-amber-50 px-3 py-2 text-center text-xs font-bold text-amber-900"
+                role="alert"
+              >
+                {configurationSaveErrorMessage}
+              </motion.p>
+            ) : null}
+          </AnimatePresence>
 
           <div className="relative flex items-center gap-2 py-1">
             <div className="h-px flex-1 bg-gray-200" />
             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-              ou URL
+              ou URL manual
             </span>
             <div className="h-px flex-1 bg-gray-200" />
           </div>
 
           <div className="flex items-start gap-2">
-            <Link2 className="mt-3 h-4 w-4 shrink-0 text-gray-400" />
+            <Link2 className="mt-3 h-4 w-4 shrink-0 text-gray-400" aria-hidden />
             <input
               type="url"
               placeholder="https://exemplo.com/video.mp4"
@@ -213,7 +183,7 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
             />
           </div>
 
-          {videoUrl ? (
+          {videoUrl.length > 0 ? (
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-black">
               <video
                 key={videoUrl}
@@ -228,19 +198,21 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
 
           <button
             type="button"
-            onClick={handleSaveVideoConfiguration}
-            disabled={isSaving}
+            onClick={() => {
+              void saveVideoConfiguration();
+            }}
+            disabled={isSavingConfiguration}
             className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#5874f6] font-bold text-white transition-all hover:bg-blue-700 disabled:opacity-50"
           >
-            {isSaving ? (
-              'Salvando configurações…'
-            ) : successMessage ? (
+            {isSavingConfiguration ? (
               <>
-                <CheckCircle size={18} /> Salvo com sucesso
+                <Loader2 className="h-5 w-5 animate-spin" />
+                A guardar configuração…
               </>
             ) : (
               <>
-                <Save size={18} /> Salvar URL / estado
+                <Save size={18} />
+                Guardar URL e estado
               </>
             )}
           </button>
@@ -256,6 +228,6 @@ export const VideoBackgroundManagerBlock = withGuardian(
   'UI_COMPONENT',
   {
     label: 'Gerenciador de Vídeo de Fundo',
-    description: 'Upload Vercel Blob (cliente) e persistência da URL no Neon.',
+    description: 'UI pura; lógica em useVideoManager (Blob + Neon).',
   }
 );
