@@ -89,8 +89,7 @@ const NavigationFooterBase = ({ config, onAction }: BlockComponentProps): React.
         index: number;
     }> = ({ button, index }) => {
         
-        // 🛡️ INTERCEPTOR DE ROTA: Impede retorno ao formulário
-        const targetRoute = button.route === '/' ? '/dashboard' : (button.route || '#');
+        const targetRoute = button.route || '#';
         const isActive = targetRoute === pathname;
         
         const restPosition = useMemo(() => {

@@ -39,6 +39,7 @@ export default function DashboardPage() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [activeReelsItem, setActiveReelsItem] = useState<CategoryItem | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [currentUserFirstName, setCurrentUserFirstName] = useState<string>('Maryland');
   
   const[isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [password, setPassword] = useState('');
@@ -87,8 +88,10 @@ export default function DashboardPage() {
     const checkAuth = () => {
       const user = LocalDB.getUser();
       if (!user) {
-        router.replace('/');
+        router.replace('/login');
       } else {
+        const firstName = user.name?.trim().split(/\s+/)[0] ?? 'Maryland';
+        setCurrentUserFirstName(firstName.length > 0 ? firstName : 'Maryland');
         setIsReady(true);
       }
     };
@@ -546,7 +549,7 @@ export default function DashboardPage() {
                 address: isRecord(layout.header.data) && typeof layout.header.data.address === 'string' 
                   ? layout.header.data.address
                   : '',
-                title: 'Maryland SaaS'
+                title: `${currentUserFirstName} SaaS`
               }}
             />
           )}

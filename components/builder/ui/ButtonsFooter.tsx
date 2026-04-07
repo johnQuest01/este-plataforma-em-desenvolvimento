@@ -69,8 +69,7 @@ const FooterButton = ({
 }: FooterButtonProps): React.JSX.Element => {
     const buttonRef = useRef<HTMLDivElement>(null);
     
-    // 🛡️ INTERCEPTOR DE ROTA: Se a rota for '/', força para '/dashboard'
-    const targetRoute = item.route === '/' ? '/dashboard' : (item.route || '#');
+    const targetRoute = item.route || '#';
     const isActive = targetRoute === pathname;
     
     const transitionClass = "transition-all duration-100 ease-out";

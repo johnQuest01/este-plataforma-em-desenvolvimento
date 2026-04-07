@@ -27,6 +27,7 @@ function InventoryPageBase(): React.JSX.Element {
   const routerNavigation = useRouter();
   const [inventoryBlocks, setInventoryBlocks] = useState<BlockConfig[]>(INVENTORY_BLOCKS);
   const [currentUserInformation, setCurrentUserInformation] = useState<ReturnType<typeof LocalDB.getUser>>(null);
+  const [inventoryHeaderAddress, setInventoryHeaderAddress] = useState<string>('Inventário Maryland');
 
   // --- ESTADOS DOS MODAIS ---
   const [isStockModalVisible, setIsStockModalVisible] = useState<boolean>(false);
@@ -45,6 +46,12 @@ function InventoryPageBase(): React.JSX.Element {
 
       const userInformation = LocalDB.getUser();
       setCurrentUserInformation(userInformation);
+      if (userInformation?.name) {
+        const firstName = userInformation.name.trim().split(/\s+/)[0];
+        if (firstName && firstName.length > 0) {
+          setInventoryHeaderAddress(`Inventário ${firstName}`);
+        }
+      }
       
       // Atualizar nome do usuário no bloco user-info se não for vendedor
       const isUserSeller = userInformation && typeof userInformation.isVendedor === 'boolean' && userInformation.isVendedor === true;
@@ -188,7 +195,7 @@ function InventoryPageBase(): React.JSX.Element {
         <div className="shrink-0 z-60 bg-[#5874f6] relative border-b border-blue-600/20">
           <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-xl pointer-events-none z-50"></div>
           <StoreHeader 
-            data={{ title: '', address: 'Inventário Maryland' }} 
+            data={{ title: '', address: inventoryHeaderAddress }} 
             style={{ bgColor: '#5874f6', textColor: '#ffffff' }} 
           />
         </div>

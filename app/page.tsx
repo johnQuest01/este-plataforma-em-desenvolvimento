@@ -9,6 +9,7 @@ import { AuthInputField } from '@/components/auth/AuthInputField';
 import { withGuardian } from "@/components/guardian/GuardianBeacon";
 import { registerNewUserAction } from '@/app/actions/registration-actions';
 import { getFormVideoAction } from '@/app/actions/video-bg-actions';
+import { LocalDB } from '@/lib/local-db';
 
 const inputMasks = {
   cpf: (value: string) => value.replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4').substring(0, 14),
@@ -95,9 +96,20 @@ function EntryPageBase(): React.JSX.Element {
         setIsLoading(false);
         return;
       }
-
-      router.push('/product/jeans');
-    } catch (error) {
+      if (response.data) {
+        LocalDB.saveUser({
+          type: response.data.documentType === 'CNPJ' ? 'juridica' : 'fisica',
+          document: response.data.documentNumber,
+          name: response.data.fullName,
+          emailAddress: response.data.emailAddress,
+          whatsapp: response.data.phoneNumber,
+          role: response.data.role,
+          isVendedor: response.data.role === 'seller',
+          storeName: `${response.data.fullName.split(' ')[0] || 'Minha'} Store`,
+        });
+      }
+      router.push('/dashboard');
+    } catch {
       setErrorMessage('Erro de conexão com o servidor.');
       setIsLoading(false);
     }
@@ -129,7 +141,7 @@ function EntryPageBase(): React.JSX.Element {
           <div className="w-12 h-12 bg-black/40 rounded-xl flex items-center justify-center mb-3 shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-white/20 backdrop-blur-2xl">
             <ShieldCheck size={24} className="text-white drop-shadow-lg" strokeWidth={2} />
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight [text-shadow:0_2px_12px_rgba(0,0,0,0.8)]">Identifique-se</h1>
+          <h1 className="text-2xl font-black text-white tracking-tight [text-shadow:0_2px_12px_rgba(0,0,0,0.8)]">Maryland identifique-se</h1>
           <p className="text-white/90 text-xs font-semibold mt-1 [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">Acesse o painel exclusivo.</p>
         </div>
 

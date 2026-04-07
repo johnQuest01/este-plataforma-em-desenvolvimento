@@ -2,10 +2,31 @@
 
 import { prisma } from '@/lib/prisma';
 import { UserLoginSchema, UserLoginType } from '@/schemas/auth-schema';
+import { verifyPlainPasswordAgainstHash } from '@/lib/password-hash';
+
+function normalizeDocumentNumber(documentNumber: string): string {
+  return documentNumber.replace(/\D/g, '');
+}
+
+function normalizeEmail(emailAddress: string): string {
+  return emailAddress.trim().toLowerCase();
+}
 
 export async function authenticateUserAction(
   payload: UserLoginType
-): Promise<{ success: boolean; data?: { userId: string; userName: string; role: string }; error?: string }> {
+): Promise<{
+  success: boolean;
+  data?: {
+    userId: string;
+    userName: string;
+    role: string;
+    documentType: 'CPF' | 'CNPJ';
+    documentNumber: string;
+    emailAddress: string;
+    phoneNumber: string;
+  };
+  error?: string;
+}> {
   try {
     const validationResult = UserLoginSchema.safeParse(payload);
 
@@ -17,13 +38,17 @@ export async function authenticateUserAction(
     }
 
     const validatedData = validationResult.data;
+    const normalizedCredential = validatedData.documentOrEmail.trim();
+    const normalizedEmailCredential = normalizeEmail(normalizedCredential);
+    const normalizedDocumentCredential = normalizeDocumentNumber(normalizedCredential);
 
     // Busca o usuário pelo E-mail OU pelo Documento (CPF/CNPJ)
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [
-          { email: validatedData.documentOrEmail },
-          { document: validatedData.documentOrEmail }
+          { email: normalizedEmailCredential },
+          { document: normalizedDocumentCredential },
+          { document: normalizedCredential },
         ]
       }
     });
@@ -32,12 +57,10 @@ export async function authenticateUserAction(
       return { success: false, error: 'Usuário não encontrado. Verifique os seus dados.' };
     }
 
-    // ⚠️ NOTA DE ARQUITETURA: Em produção real (Stack 2026), você DEVE usar bcrypt.compare() aqui.
-    // Como o schema atual não tem o campo passwordHash explícito ainda, estamos simulando a aprovação.
-    // Exemplo futuro: const isPasswordValid = await bcrypt.compare(validatedData.password, existingUser.passwordHash);
-    
-    // Simulando validação de senha para o fluxo atual:
-    const isPasswordValid = validatedData.password.length >= 6; 
+    const isPasswordValid = verifyPlainPasswordAgainstHash(
+      validatedData.password,
+      existingUser.passwordHash
+    );
 
     if (!isPasswordValid) {
       return { success: false, error: 'Senha incorreta.' };
@@ -50,7 +73,11 @@ export async function authenticateUserAction(
       data: {
         userId: existingUser.id,
         userName: existingUser.name || 'Usuário',
-        role: existingUser.role
+        role: existingUser.role,
+        documentType: existingUser.documentType === 'CNPJ' ? 'CNPJ' : 'CPF',
+        documentNumber: existingUser.document,
+        emailAddress: existingUser.email ?? '',
+        phoneNumber: existingUser.whatsapp ?? '',
       }
     };
 

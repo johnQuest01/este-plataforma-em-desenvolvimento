@@ -12,6 +12,7 @@ model User {
   email              String?  @unique
   document           String   @unique
   documentType       String   @default("CPF")
+  passwordHash       String   @default("")
   name               String?
   whatsapp           String?
   address            String?  

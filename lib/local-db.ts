@@ -7,8 +7,10 @@ export interface UserData {
   type: 'fisica' | 'juridica';
   document: string;
   name: string;
+  emailAddress?: string;
   storeName?: string;
   whatsapp: string;
+  role?: string;
   isVendedor?: boolean;
   nameGender?: 'feminino' | 'masculino';
   createdAt: string;

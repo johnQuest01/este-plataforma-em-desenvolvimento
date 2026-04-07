@@ -8,6 +8,7 @@ import { registerNewUserAction } from '@/app/actions/registration-actions';
 import { authenticateUserAction } from '@/app/actions/auth-actions';
 import { getFormVideoAction } from '@/app/actions/video-bg-actions';
 import { AuthInputField } from '@/components/auth/AuthInputField';
+import { LocalDB } from '@/lib/local-db';
 
 const inputMasks = {
   cpf: (value: string) =>
@@ -92,6 +93,18 @@ export default function AuthenticationPage(): React.JSX.Element {
           setIsLoading(false);
           return;
         }
+        if (response.data) {
+          LocalDB.saveUser({
+            type: response.data.documentType === 'CNPJ' ? 'juridica' : 'fisica',
+            document: response.data.documentNumber,
+            name: response.data.fullName,
+            emailAddress: response.data.emailAddress,
+            whatsapp: response.data.phoneNumber,
+            role: response.data.role,
+            isVendedor: response.data.role === 'seller',
+            storeName: `${response.data.fullName.split(' ')[0] || 'Minha'} Store`,
+          });
+        }
         router.push('/dashboard');
       } else {
         const response = await authenticateUserAction({
@@ -102,6 +115,18 @@ export default function AuthenticationPage(): React.JSX.Element {
           setErrorMessage(response.error || 'Erro ao fazer login.');
           setIsLoading(false);
           return;
+        }
+        if (response.data) {
+          LocalDB.saveUser({
+            type: response.data.documentType === 'CNPJ' ? 'juridica' : 'fisica',
+            document: response.data.documentNumber,
+            name: response.data.userName,
+            emailAddress: response.data.emailAddress,
+            whatsapp: response.data.phoneNumber,
+            role: response.data.role,
+            isVendedor: response.data.role === 'seller',
+            storeName: `${response.data.userName.split(' ')[0] || 'Minha'} Store`,
+          });
         }
         router.push('/dashboard');
       }
@@ -211,8 +236,8 @@ export default function AuthenticationPage(): React.JSX.Element {
                 overVideo={true}
                 icon={Mail}
                 required
-                type="email"
-                inputMode="email"
+                type={authMode === 'LOGIN' ? 'text' : 'email'}
+                inputMode={authMode === 'LOGIN' ? 'text' : 'email'}
                 placeholder={authMode === 'LOGIN' ? 'E-mail ou Documento' : 'Seu melhor E-mail'}
                 value={formData.emailAddress}
                 onChange={(value) => handleInputChange('emailAddress', value)}
