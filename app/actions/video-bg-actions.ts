@@ -1,61 +1,51 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { VideoBackgroundSchema, VideoBackgroundType } from '@/schemas/video-bg-schema';
-import { uploadVideoToServer } from '@/lib/upload-service';
+import {
+  VideoBackgroundSchema,
+  VideoBackgroundType,
+  SaveVideoReferencePayloadSchema,
+  FORM_VIDEO_CONFIG_ROW_IDENTIFIER,
+} from '@/schemas/video-bg-schema';
 
-const MAXIMUM_VIDEO_BYTES = 48 * 1024 * 1024;
-const ALLOWED_VIDEO_MIME_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
-
-export async function uploadLoginBackgroundVideoAction(
-  formData: FormData
-): Promise<{ success: boolean; data?: { videoUrl: string }; error?: string }> {
+export async function saveVideoReferenceAction(
+  videoUrl: string
+): Promise<{ success: boolean; data?: null; error?: string }> {
   try {
-    const file = formData.get('video');
+    const validationResult = SaveVideoReferencePayloadSchema.safeParse({ videoUrl });
 
-    if (!file || typeof file === 'string' || !('arrayBuffer' in file)) {
-      return { success: false, error: 'Nenhum ficheiro de vídeo válido foi selecionado.' };
+    if (!validationResult.success) {
+      return {
+        success: false,
+        error: validationResult.error.issues[0]?.message ?? 'Validação da URL falhou.',
+      };
     }
 
-    if (file.size <= 0) {
-      return { success: false, error: 'O ficheiro de vídeo selecionado está vazio.' };
-    }
+    const validatedVideoUrl = validationResult.data.videoUrl;
 
-    if (file.size > MAXIMUM_VIDEO_BYTES) {
-      return { success: false, error: 'O vídeo excede o limite máximo permitido de 48 MB.' };
-    }
-
-    const nameExtension = file.name.split('.').pop()?.toLowerCase() || '';
-    const isMimeTypeValid = file.type && ALLOWED_VIDEO_MIME_TYPES.has(file.type);
-    const isExtensionValid = ['mp4', 'webm', 'mov'].includes(nameExtension);
-
-    if (!isMimeTypeValid && !isExtensionValid) {
-      return { success: false, error: 'Formato de vídeo inválido. Utilize apenas MP4, WebM ou MOV.' };
-    }
-
-    // A URL retornada aqui já é a URL pública absoluta do Vercel Blob (https://...)
-    const publicVideoUrl = await uploadVideoToServer(file);
-
-    await prisma.$transaction(async (transaction) => {
-      return await transaction.formVideoConfig.upsert({
-        where: { id: 'global-video-config' },
-        update: { videoUrl: publicVideoUrl, isActive: true },
+    await prisma.$transaction(async (transactionClient: Prisma.TransactionClient) => {
+      await transactionClient.formVideoConfig.upsert({
+        where: { id: FORM_VIDEO_CONFIG_ROW_IDENTIFIER },
+        update: {
+          videoUrl: validatedVideoUrl,
+          isActive: true,
+        },
         create: {
-          id: 'global-video-config',
-          videoUrl: publicVideoUrl,
+          id: FORM_VIDEO_CONFIG_ROW_IDENTIFIER,
+          videoUrl: validatedVideoUrl,
           isActive: true,
         },
       });
     });
 
     revalidatePath('/login');
-
-    return { success: true, data: { videoUrl: publicVideoUrl } };
-  } catch (error: unknown) {
+    return { success: true };
+  } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-    console.error('[uploadLoginBackgroundVideoAction] Erro interno:', errorMessage);
-    return { success: false, error: 'Ocorreu um erro interno ao guardar o vídeo no servidor.' };
+    console.error('[saveVideoReferenceAction]', errorMessage);
+    return { success: false, error: 'Erro interno ao guardar a referência do vídeo.' };
   }
 }
 
@@ -66,59 +56,70 @@ export async function updateFormVideoAction(
     const validationResult = VideoBackgroundSchema.safeParse(payload);
 
     if (!validationResult.success) {
-      return { 
-        success: false, 
-        error: validationResult.error.issues[0]?.message || 'Erro de validação na URL do vídeo fornecida.'
+      return {
+        success: false,
+        error: validationResult.error.issues[0]?.message ?? 'Erro de validação na configuração do vídeo.',
       };
     }
 
     const validatedData = validationResult.data;
 
-    await prisma.$transaction(async (transaction) => {
-      return await transaction.formVideoConfig.upsert({
-        where: { id: 'global-video-config' },
+    await prisma.$transaction(async (transactionClient: Prisma.TransactionClient) => {
+      await transactionClient.formVideoConfig.upsert({
+        where: { id: FORM_VIDEO_CONFIG_ROW_IDENTIFIER },
         update: {
           videoUrl: validatedData.videoUrl,
-          isActive: validatedData.isActive ?? true
+          isActive: validatedData.isActive ?? true,
         },
         create: {
-          id: 'global-video-config',
+          id: FORM_VIDEO_CONFIG_ROW_IDENTIFIER,
           videoUrl: validatedData.videoUrl,
-          isActive: validatedData.isActive ?? true
-        }
+          isActive: validatedData.isActive ?? true,
+        },
       });
     });
 
     revalidatePath('/login');
-
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-    console.error('[updateFormVideoAction] Erro interno:', errorMessage);
+    console.error('[updateFormVideoAction]', errorMessage);
     return { success: false, error: 'Erro interno ao atualizar as configurações do vídeo.' };
   }
 }
 
-export async function getFormVideoAction(): Promise<{ success: boolean; data?: VideoBackgroundType; error?: string }> {
+export async function getFormVideoAction(): Promise<{
+  success: boolean;
+  data?: VideoBackgroundType;
+  error?: string;
+}> {
   try {
     const videoConfiguration = await prisma.formVideoConfig.findUnique({
-      where: { id: 'global-video-config' }
+      where: { id: FORM_VIDEO_CONFIG_ROW_IDENTIFIER },
     });
 
     if (!videoConfiguration) {
       return { success: true, data: { videoUrl: '', isActive: false } };
     }
 
-    return { 
-      success: true, 
-      data: { 
-        videoUrl: videoConfiguration.videoUrl, 
-        isActive: videoConfiguration.isActive 
-      } 
+    return {
+      success: true,
+      data: {
+        videoUrl: videoConfiguration.videoUrl,
+        isActive: videoConfiguration.isActive,
+      },
     };
-  } catch (error: unknown) {
+  } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-    console.error('[getFormVideoAction] Erro interno:', errorMessage);
-    return { success: false, error: 'Erro interno ao buscar as configurações do vídeo.' };
+    console.error('[getFormVideoAction]', errorMessage);
+    return { success: false, error: 'Erro interno ao ler a configuração do vídeo.' };
   }
+}
+
+export async function getActiveVideoConfigAction(): Promise<{
+  success: boolean;
+  data?: VideoBackgroundType;
+  error?: string;
+}> {
+  return getFormVideoAction();
 }

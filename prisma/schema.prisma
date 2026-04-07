@@ -195,6 +195,7 @@ model AdminAccess {
   createdAt     DateTime @default(now())
 }
 
+// URL do vídeo: Vercel Blob (https) ou vazio; sincronizado via saveVideoReferenceAction / updateFormVideoAction.
 model FormVideoConfig {
   id        String   @id @default("global-video-config")
   videoUrl  String   @default("") @db.Text

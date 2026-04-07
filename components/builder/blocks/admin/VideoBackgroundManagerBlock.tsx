@@ -2,14 +2,24 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { upload } from '@vercel/blob/client';
 import { Video, Save, CheckCircle, Smartphone, Link2, Loader2 } from 'lucide-react';
 import { BlockComponentProps } from '@/types/builder';
 import { withGuardian } from '@/components/guardian/GuardianBeacon';
 import {
   updateFormVideoAction,
   getFormVideoAction,
-  uploadLoginBackgroundVideoAction,
+  saveVideoReferenceAction,
 } from '@/app/actions/video-bg-actions';
+
+function buildBlobPathnameForLoginVideo(selectedFile: File): string {
+  const trimmedName = selectedFile.name.trim();
+  const baseName = trimmedName.length > 0 ? trimmedName : 'video.mp4';
+  const safeCharactersOnly = baseName.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const cappedLength = safeCharactersOnly.slice(0, 100);
+  const nameWithExtension = cappedLength.includes('.') ? cappedLength : `${cappedLength}.mp4`;
+  return `login-background/${nameWithExtension}`;
+}
 
 function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React.JSX.Element {
   const [videoUrl, setVideoUrl] = useState<string>('');
@@ -17,9 +27,10 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [successMessage, setSuccessMessage] = useState<boolean>(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  
+
   const fileInputReference = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -56,25 +67,47 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
 
   const handleFileSelectionChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
-    event.target.value = ''; 
+    event.target.value = '';
     if (!selectedFile) return;
 
     setIsUploading(true);
     setUploadError(null);
+    setUploadProgress(0);
 
-    const formData = new FormData();
-    formData.set('video', selectedFile);
+    try {
+      const blobPathname = buildBlobPathnameForLoginVideo(selectedFile);
 
-    const response = await uploadLoginBackgroundVideoAction(formData);
-    setIsUploading(false);
+      const uploadResult = await upload(blobPathname, selectedFile, {
+        access: 'public',
+        handleUploadUrl: '/api/upload/video',
+        multipart: true,
+        contentType: selectedFile.type.length > 0 ? selectedFile.type : undefined,
+        onUploadProgress: (progressEvent: { loaded: number; total: number; percentage: number }) => {
+          setUploadProgress(progressEvent.percentage);
+        },
+      });
 
-    if (response.success && response.data?.videoUrl) {
-      setVideoUrl(response.data.videoUrl);
+      const persistResponse = await saveVideoReferenceAction(uploadResult.url);
+
+      if (!persistResponse.success) {
+        setUploadError(persistResponse.error ?? 'Falha ao guardar a URL no Neon.');
+        return;
+      }
+
+      setVideoUrl(uploadResult.url);
       setIsActive(true);
       setSuccessMessage(true);
       setTimeout(() => setSuccessMessage(false), 3000);
-    } else {
-      setUploadError(response.error || 'Falha desconhecida no envio do vídeo.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Falha no envio para o Blob.';
+      setUploadError(
+        message.includes('403')
+          ? 'Desbloqueie o painel admin (cadeado) antes de enviar o vídeo.'
+          : message
+      );
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(null);
     }
   };
 
@@ -103,7 +136,7 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
         <div>
           <h3 className="text-lg font-bold text-gray-900">Vídeo de fundo (login)</h3>
           <p className="text-xs text-gray-500">
-            Envie do celular (galeria ou câmera) ou cole uma URL. MP4, WebM ou MOV.
+            Upload direto (Vercel Blob, multipart). Requer admin desbloqueado e BLOB_READ_WRITE_TOKEN.
           </p>
         </div>
       </div>
@@ -130,14 +163,30 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
           >
             {isUploading ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin" /> Enviando vídeo...
+                <Loader2 className="h-5 w-5 animate-spin" /> A enviar vídeo…
               </>
             ) : (
               <>
-                <Smartphone className="h-5 w-5" /> Escolher vídeo no celular / galeria
+                <Smartphone className="h-5 w-5" /> Escolher da galeria (celular)
               </>
             )}
           </button>
+
+          {uploadProgress !== null ? (
+            <div className="space-y-1">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                <motion.div
+                  className="h-full rounded-full bg-[#5874f6]"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${uploadProgress}%` }}
+                  transition={{ type: 'tween', duration: 0.2 }}
+                />
+              </div>
+              <p className="text-center text-[10px] font-bold text-gray-500">
+                {Math.round(uploadProgress)}% concluído
+              </p>
+            </div>
+          ) : null}
 
           {uploadError ? (
             <p className="rounded-lg bg-red-50 px-3 py-2 text-center text-xs font-bold text-red-700">
@@ -184,7 +233,7 @@ function VideoBackgroundManagerBlockBase({ config }: BlockComponentProps): React
             className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#5874f6] font-bold text-white transition-all hover:bg-blue-700 disabled:opacity-50"
           >
             {isSaving ? (
-              'Salvando configurações...'
+              'Salvando configurações…'
             ) : successMessage ? (
               <>
                 <CheckCircle size={18} /> Salvo com sucesso
@@ -207,6 +256,6 @@ export const VideoBackgroundManagerBlock = withGuardian(
   'UI_COMPONENT',
   {
     label: 'Gerenciador de Vídeo de Fundo',
-    description: 'Upload do telemóvel ou URL para o vídeo de login.',
+    description: 'Upload Vercel Blob (cliente) e persistência da URL no Neon.',
   }
 );

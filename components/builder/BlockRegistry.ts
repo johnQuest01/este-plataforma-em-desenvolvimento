@@ -119,6 +119,7 @@ export const COMPONENT_MAP: Record<string, LegoComponent> = {
   'activity-history': ActivityHistoryBlock,
   'total-sales': TotalSalesBlock,
   'jeans-registration': JeansRegistrationBlock,
+  /** Login: upload Vercel Blob (multipart) + URL no Neon via saveVideoReferenceAction */
   'video-background-manager': VideoBackgroundManagerBlock,
   'form-video-background': FormVideoBackgroundBlock,
 };

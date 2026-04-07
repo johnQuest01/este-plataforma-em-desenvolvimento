@@ -37,3 +37,66 @@ Follow this sequence for every delivery:
 ## PROTOCOL CONFIRMATION
 Start every session/response with the EXACT phrase:
 "Confirmed. I am configured as your Senior Architect for the SaaS ecosystem. Operating under a Strict Typing (Zero-Any Policy) and Lego Architecture regime. I await the definition of the next Block or functionality, ensuring production-ready code without placeholders."
+
+## PROTOCOL REQUIRED EXECUTE COMANDO 
+"Preciso de implementar um sistema de upload de vídeo de alta performance para o fundo do formulário de login. O sistema deve utilizar Vercel Blob (via Client-Side Upload para suporte a ficheiros grandes e streaming por pedaços) e Prisma/Neon para persistir apenas a URL. Segue a Lego Architecture e Tipagem Estrita (PROIBIDO any, unknown ou !).
+
+Tarefas Requeridas:
+
+Configuração de Ambiente: Verifica se @vercel/blob está nas dependências. Caso contrário, indica a instalação.
+
+Zod Schema (schemas/video-bg-schema.ts): Cria um schema rigoroso para videoUrl (string URL válida) e isActive (boolean).
+
+Server Action de Persistência (app/actions/video-bg-actions.ts):
+
+Cria uma action saveVideoReferenceAction(videoUrl: string) que utiliza prisma.$transaction para fazer o upsert na tabela FormVideoConfig (ID fixo: 'global-config').
+
+Cria uma action getActiveVideoConfigAction() para recuperar os dados.
+
+Rota de API para Handshake (app/api/upload/video/route.ts):
+
+Implementa o handleUpload do @vercel/blob/client.
+
+Define allowedContentTypes para vídeos (mp4, quicktime, webm).
+
+Configura o onBeforeGenerateToken para garantir que apenas administradores possam gerar o token.
+
+Componente UI Lego (components/builder/blocks/admin/VideoBackgroundManagerBlock.tsx):
+
+Utiliza a função upload de @vercel/blob/client para o upload direto.
+
+Implementa uma barra de progresso real baseada no fluxo de dados.
+
+Design moderno com Tailwind 4 e Framer Motion 12.
+
+Botão otimizado para mobile ("Escolher da Galeria").
+
+Componente de Exibição (components/builder/blocks/FormVideoBackgroundBlock.tsx):
+
+Lê a URL do Neon e renderiza o <video> com playsInline, muted, loop e autoPlay.
+
+Registo: Adiciona os blocos ao BlockRegistry.ts.
+
+Regras de Código:
+
+Código 100% completo, sem placeholders (//...).
+
+Sem abreviações (ex: use videoUrl em vez de url).
+
+Usa tipos nativos do Prisma (ex: Prisma.TransactionClient).
+
+Inicia a resposta com "Confirmado. Arquitetura de Streaming de Upload ativada."
+
+Por que deves usar este prompt?
+Elimina o Gargalo: Ao usar o @vercel/blob/client (dentro da rota de API e no componente), o vídeo não passa pelo "corpo" do teu servidor Next.js. Ele vai direto do telemóvel para o Storage da Vercel. Isto evita o erro interno de "Request Entity Too Large".
+
+Chunked Upload: A biblioteca da Vercel trata automaticamente da divisão do ficheiro em pedaços pequenos, tornando o upload muito mais estável em redes 4G/5G.
+
+Economia no Neon: O Prisma só entra em ação no último segundo, apenas para guardar o texto da URL, mantendo o teu banco de dados Neon rápido e leve.
+
+Segurança: O handshake via API Route garante que ninguém consiga fazer upload para o teu storage sem um token assinado pelo teu servidor.
+
+Passo Adicional: Antes de rodar o prompt no Cursor, certifica-te de que tens a variável de ambiente BLOB_READ_WRITE_TOKEN configurada no teu ficheiro .env e no painel da Vercel.
+o .env esta assim: postgresql://neondb_owner:npg_o02XKLORkucz@ep-dawn-sun-acyt4o2z-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+o .env.local esta assim : vercel_blob_rw_H5X6nhHZ7ebM2Zvz_FN5Vtvpm3Fr17UYls8N1mz82apwfmt
