@@ -13,7 +13,7 @@ import { INVENTORY_BLOCKS, STOCK_BLOCKS } from '@/data/inventory-state';
 import { BlockRenderer } from '@/components/builder/BlockRender';
 import { checkForNewImage } from '@/app/actions';
 import { StoreHeader } from '@/components/builder/blocks/Header';
-import { LocalDB } from '@/lib/local-db';
+import { LocalDB, LOCAL_USER_DB_KEY } from '@/lib/local-db';
 import { AuthorizedSellerBadge } from '@/components/builder/blocks/AuthorizedSellerBadge';
 import { MeusClientesExpandible } from '@/components/builder/blocks/MeusClientesExpandible';
 import { SIZING, SPACING, COLORS, BORDERS, SHADOWS, TYPOGRAPHY } from '@/lib/design-system';
@@ -78,6 +78,32 @@ function InventoryPageBase(): React.JSX.Element {
     loadUserInformationAsync();
   }, []);
 
+  useEffect(() => {
+    const syncFromStorage = () => {
+      const userInformation = LocalDB.getUser();
+      setCurrentUserInformation(userInformation);
+      if (userInformation?.name) {
+        const firstName = userInformation.name.trim().split(/\s+/)[0];
+        if (firstName && firstName.length > 0) {
+          setInventoryHeaderAddress(`Inventário ${firstName}`);
+        }
+      }
+    };
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === null || event.key === LOCAL_USER_DB_KEY) {
+        syncFromStorage();
+      }
+    };
+
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('focus', syncFromStorage);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('focus', syncFromStorage);
+    };
+  }, []);
+
   // --- EFEITO DE MONITORAMENTO ---
   useEffect(() => {
     let isComponentMounted = true;
@@ -95,7 +121,6 @@ function InventoryPageBase(): React.JSX.Element {
                   : undefined;
                   
                 if (currentBoxImage !== serverImageResponse) {
-                  console.log("📸 Nova imagem detectada!");
                   return { ...configurationBlock, data: { ...configurationBlock.data, boxImage: serverImageResponse } };
                 }
               }
@@ -122,23 +147,6 @@ function InventoryPageBase(): React.JSX.Element {
     }
     return true;
   });
-
-  // Debug temporário para verificar se o bloco está sendo incluído
-  if (process.env.NODE_ENV === 'development') {
-    const actionButtonsBlock = inventoryBlocks.find((blockItem) => blockItem.id === 'inv_actions_bottom');
-    if (actionButtonsBlock) {
-      console.log('[InventoryPage] Bloco action-buttons encontrado:', {
-        id: actionButtonsBlock.id,
-        type: actionButtonsBlock.type,
-        isVisible: actionButtonsBlock.isVisible,
-        buttonsCount: Array.isArray(actionButtonsBlock.data?.buttons) ? actionButtonsBlock.data.buttons.length : 0
-      });
-    } else {
-      console.warn('[InventoryPage] Bloco inv_actions_bottom NÃO encontrado nos blocos!');
-    }
-    console.log('[InventoryPage] Total de blocos scrollable:', scrollableBlocksList.length);
-    console.log('[InventoryPage] Tipos de blocos:', scrollableBlocksList.map((blockItem) => blockItem.type));
-  }
 
   // --- GERENCIADOR DE AÇÕES ---
   const handleBlockActionExecution = (actionIdentifier: string) => {

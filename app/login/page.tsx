@@ -8,7 +8,7 @@ import { authenticateUserAction } from '@/app/actions/auth-actions';
 import { getFormVideoAction } from '@/app/actions/video-bg-actions';
 import { AuthInputField } from '@/components/auth/AuthInputField';
 import { RegisterForm } from '@/components/auth/RegisterForm';
-import { LocalDB } from '@/lib/local-db';
+import { LocalDB, inferNameGenderFromFullName } from '@/lib/local-db';
 
 const inputMasks = {
   cpf: (value: string) =>
@@ -42,6 +42,7 @@ export default function AuthenticationPage(): React.JSX.Element {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [isVideoActive, setIsVideoActive] = useState<boolean>(false);
+  const [registerAsSeller, setRegisterAsSeller] = useState<boolean>(false);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -89,6 +90,7 @@ export default function AuthenticationPage(): React.JSX.Element {
   };
 
   const persistSessionAndRedirect = (params: {
+    userId: string;
     documentType: 'CPF' | 'CNPJ';
     documentNumber: string;
     displayName: string;
@@ -96,7 +98,9 @@ export default function AuthenticationPage(): React.JSX.Element {
     phoneNumber: string;
     role: string;
   }) => {
+    const nameGender = inferNameGenderFromFullName(params.displayName);
     LocalDB.saveUser({
+      prismaUserId: params.userId,
       type: params.documentType === 'CNPJ' ? 'juridica' : 'fisica',
       document: params.documentNumber,
       name: params.displayName,
@@ -104,6 +108,7 @@ export default function AuthenticationPage(): React.JSX.Element {
       whatsapp: params.phoneNumber,
       role: params.role,
       isVendedor: params.role === 'seller',
+      nameGender,
       storeName: `${params.displayName.split(' ')[0] || 'Minha'} Store`,
     });
     router.push('/dashboard');
@@ -124,6 +129,7 @@ export default function AuthenticationPage(): React.JSX.Element {
 
       if (authResponse.success && authResponse.data) {
         persistSessionAndRedirect({
+          userId: authResponse.data.userId,
           documentType: authResponse.data.documentType,
           documentNumber: authResponse.data.documentNumber,
           displayName: authResponse.data.userName,
@@ -169,6 +175,7 @@ export default function AuthenticationPage(): React.JSX.Element {
         documentType: personType,
         documentNumber: formData.documentNumber,
         password: formData.password,
+        registerAsSeller,
       });
 
       if (!registerResponse.success) {
@@ -179,6 +186,7 @@ export default function AuthenticationPage(): React.JSX.Element {
 
       if (registerResponse.data) {
         persistSessionAndRedirect({
+          userId: registerResponse.data.userId,
           documentType: registerResponse.data.documentType,
           documentNumber: registerResponse.data.documentNumber,
           displayName: registerResponse.data.fullName,
@@ -321,6 +329,7 @@ export default function AuthenticationPage(): React.JSX.Element {
                   type="button"
                   onClick={() => {
                     setShowSignupFields(false);
+                    setRegisterAsSeller(false);
                     setErrorMessage(null);
                   }}
                   className="flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl border border-white/25 bg-black/35 py-3 text-xs font-bold text-white/95 backdrop-blur-2xl transition-colors hover:bg-black/50 [text-shadow:0_2px_10px_rgba(0,0,0,0.8)]"
@@ -353,6 +362,19 @@ export default function AuthenticationPage(): React.JSX.Element {
                     />
                   </div>
                 </div>
+                <label className="flex shrink-0 cursor-pointer items-start gap-3 rounded-2xl border border-white/20 bg-black/35 px-3 py-2.5 text-left text-xs text-white/95 backdrop-blur-md [text-shadow:0_1px_6px_rgba(0,0,0,0.5)]">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/40 accent-white"
+                    checked={registerAsSeller}
+                    onChange={(event) => setRegisterAsSeller(event.target.checked)}
+                  />
+                  <span>
+                    <span className="font-bold">Sou vendedor(a)</span>
+                    {' '}
+                    — inventário Maryland, lista de clientes e gestão no app.
+                  </span>
+                </label>
                 <button
                   type="submit"
                   disabled={isLoading}

@@ -114,7 +114,7 @@ export async function registerNewUserAction(
           documentType: validatedData.documentType,
           document: normalizedDocumentNumber,
           passwordHash: hashedPassword,
-          role: 'customer',
+          role: validatedData.registerAsSeller ? 'seller' : 'customer',
         },
       });
 

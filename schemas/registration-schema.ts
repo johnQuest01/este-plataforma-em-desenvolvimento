@@ -25,6 +25,7 @@ export const UserRegistrationSchema = z.object({
   documentType: z.enum(['CPF', 'CNPJ']),
   documentNumber: z.string().min(11, 'O documento é inválido.'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres.'),
+  registerAsSeller: z.boolean().optional().default(false),
 });
 
 export type UserRegistrationType = z.infer<typeof UserRegistrationSchema>;

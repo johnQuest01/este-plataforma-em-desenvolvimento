@@ -83,6 +83,7 @@ export const RegisterForm = ({ ...props }: RegisterFormProps): React.JSX.Element
   const [legacyDocumentType, setLegacyDocumentType] = useState<'CPF' | 'CNPJ'>('CPF');
   const [legacyDocumentNumber, setLegacyDocumentNumber] = useState<string>('');
   const [legacyPassword, setLegacyPassword] = useState<string>('');
+  const [legacyRegisterAsSeller, setLegacyRegisterAsSeller] = useState<boolean>(false);
 
   if (isStandaloneProps(props)) {
     const { onSubmitAction, isLoading } = props;
@@ -103,6 +104,7 @@ export const RegisterForm = ({ ...props }: RegisterFormProps): React.JSX.Element
         documentType: legacyDocumentType,
         documentNumber: legacyDocumentNumber,
         password: legacyPassword,
+        registerAsSeller: legacyRegisterAsSeller,
       });
     };
 
@@ -236,6 +238,20 @@ export const RegisterForm = ({ ...props }: RegisterFormProps): React.JSX.Element
           onChange={setLegacyPassword}
           required
         />
+
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-white/20 bg-black/35 px-3 py-2.5 text-left text-xs text-white/95 backdrop-blur-md [text-shadow:0_1px_6px_rgba(0,0,0,0.5)]">
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/40 accent-white"
+            checked={legacyRegisterAsSeller}
+            onChange={(event) => setLegacyRegisterAsSeller(event.target.checked)}
+          />
+          <span>
+            <span className="font-bold">Sou vendedor(a)</span>
+            {' '}
+            — inventário Maryland e clientes no app.
+          </span>
+        </label>
 
         <button
           type="submit"

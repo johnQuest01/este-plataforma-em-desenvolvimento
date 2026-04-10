@@ -16,19 +16,41 @@ export interface UserData {
   createdAt: string;
 }
 
-const DB_KEY = 'b2b_app_user_db';
+export const LOCAL_USER_DB_KEY = 'b2b_app_user_db';
+const DB_KEY = LOCAL_USER_DB_KEY;
+
+/** Heurística simples para rótulos “Vendedor/Vendedora” e “Ativo/Ativa” (PT). */
+export function inferNameGenderFromFullName(fullName: string): 'feminino' | 'masculino' {
+  const raw = fullName.trim().split(/\s+/)[0] ?? '';
+  if (raw.length < 2) return 'masculino';
+  const first = raw
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  const maleEndingA = new Set(['luca', 'joshua']);
+  if (maleEndingA.has(first)) return 'masculino';
+  if (first.endsWith('a')) return 'feminino';
+  return 'masculino';
+}
+
+type SaveUserInput = Omit<UserData, 'id' | 'createdAt'> & { prismaUserId?: string };
 
 export const LocalDB = {
   // Salvar usuário (Cadastro)
-  saveUser: (data: Omit<UserData, 'id' | 'createdAt'>) => {
+  saveUser: (data: SaveUserInput) => {
     if (typeof window === 'undefined') return null;
 
+    const { prismaUserId, ...rest } = data;
+    const id =
+      typeof prismaUserId === 'string' && prismaUserId.trim().length > 0
+        ? prismaUserId.trim()
+        : typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `user_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+
     const newUser: UserData = {
-      ...data,
-      // CORREÇÃO: Fallback para funcionar em HTTP (IP de rede)
-      id: typeof crypto !== 'undefined' && crypto.randomUUID 
-          ? crypto.randomUUID() 
-          : `user_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      ...rest,
+      id,
       createdAt: new Date().toISOString(),
     };
 

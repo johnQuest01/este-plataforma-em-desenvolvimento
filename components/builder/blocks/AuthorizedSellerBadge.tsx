@@ -17,14 +17,17 @@ export function AuthorizedSellerBadge({ user, className }: AuthorizedSellerBadge
   }
 
   const displayName = typeof user.name === 'string' && user.name.trim().length > 0 ? user.name.trim() : 'Usuário';
-  const isActive = true;
-  
-  // Determina o gênero do nome para formatação do texto
-  const nameGender = typeof user.nameGender === 'string' && (user.nameGender === 'feminino' || user.nameGender === 'masculino')
-    ? user.nameGender
-    : 'masculino'; // Fallback padrão
-  
-  const sellerLabel = nameGender === 'feminino' ? 'Vendedora Autorizada' : 'Vendedor Autorizado';
+  const firstName =
+    displayName.split(/\s+/).find((part) => part.length > 0) ?? displayName;
+
+  const nameGender =
+    typeof user.nameGender === 'string' &&
+    (user.nameGender === 'feminino' || user.nameGender === 'masculino')
+      ? user.nameGender
+      : 'masculino';
+
+  const sellerNoun = nameGender === 'feminino' ? 'Vendedora' : 'Vendedor';
+  const statusLabel = nameGender === 'feminino' ? 'Ativa' : 'Ativo';
 
   return (
     <div className={cn("relative w-full rounded-3xl shadow-lg overflow-hidden bg-white", className)}>
@@ -33,52 +36,35 @@ export function AuthorizedSellerBadge({ user, className }: AuthorizedSellerBadge
       
       {/* Container principal */}
       <div className="relative flex flex-col items-center pt-6 pb-3">
-        {/* Avatar circular com placeholder */}
+        {/* Avatar circular — área para foto */}
         <div className="relative z-10 mb-3">
-          <div className="w-24 h-24 rounded-full border-2 border-gray-800 overflow-hidden bg-white flex items-center justify-center">
-            {/* Placeholder de paisagem */}
-            <svg 
-              width="96" 
-              height="96" 
-              viewBox="0 0 96 96" 
-              fill="none" 
+          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-gray-800 bg-white">
+            <svg
+              width="96"
+              height="96"
+              viewBox="0 0 96 96"
+              fill="none"
               xmlns="http://www.w3.org/2000/svg"
-              className="w-full h-full"
+              className="h-full w-full"
+              aria-hidden
             >
-              {/* Céu */}
               <rect width="96" height="60" fill="#87CEEB" />
-              {/* Nuvem */}
               <ellipse cx="30" cy="25" rx="12" ry="8" fill="white" opacity="0.9" />
-              {/* Colina 1 */}
               <path d="M0 60 L30 50 L60 60 L96 55 L96 96 L0 96 Z" fill="#90EE90" />
-              {/* Colina 2 */}
               <path d="M40 60 L60 55 L80 60 L96 58 L96 96 L40 96 Z" fill="#7CCD7C" />
             </svg>
           </div>
         </div>
 
-        {/* Badge "Vendedora Autorizada" */}
-        <div className="relative z-10 w-[85%] max-w-[280px] bg-[#F5A5C2] rounded-2xl px-4 py-2.5 shadow-sm">
-          <div className="flex flex-col items-center gap-2">
-            {/* Título */}
-            <h3 className="text-sm font-bold text-gray-900 text-center">
-              {sellerLabel}
-            </h3>
-            
-            {/* Nome e Status */}
-            <div className="flex items-center justify-center gap-2 w-full">
-              <span className="text-base font-bold text-gray-900 flex-1 text-center">
-                {displayName}
-              </span>
-              
-              {/* Badge de Status */}
-              {isActive && (
-                <span className="px-2.5 py-1 bg-[#50E3C2] text-white text-xs font-bold rounded-lg whitespace-nowrap">
-                  Ativa
-                </span>
-              )}
-            </div>
-          </div>
+        <div className="relative z-10 w-[90%] max-w-[300px] rounded-2xl bg-[#F5A5C2] px-4 py-3 shadow-sm">
+          <p className="text-center text-[15px] font-bold leading-snug text-gray-900">
+            {sellerNoun}{' '}
+            <span className="font-extrabold">{firstName}</span>
+            <span className="font-semibold text-gray-800"> · </span>
+            <span className="inline-block rounded-lg bg-[#50E3C2] px-2 py-0.5 text-xs font-bold text-white">
+              {statusLabel}
+            </span>
+          </p>
         </div>
       </div>
     </div>

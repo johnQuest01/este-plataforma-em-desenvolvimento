@@ -75,7 +75,6 @@ export function MeusClientesExpandible({ isOpen, onClose }: MeusClientesExpandib
 
   const handleAdicionarCliente = () => {
     // TODO: Abrir modal de cadastro de cliente
-    console.log('Adicionar novo cliente');
   };
 
   const handleVerCliente = (clienteId: string) => {
