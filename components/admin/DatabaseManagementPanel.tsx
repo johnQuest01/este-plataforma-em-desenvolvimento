@@ -23,7 +23,8 @@ import {
   Folder,
   Package,
   LayoutDashboard,
-  HardDrive
+  HardDrive,
+  Users,
 } from 'lucide-react';
 import { 
   deleteProductAction, 
@@ -34,18 +35,35 @@ import {
   ProductData
 } from '@/app/actions/product';
 import { LocalDB } from '@/lib/local-db';
+import {
+  listRegisteredUsersAction,
+  deleteRegisteredUserByIdAction,
+  type ListedUserRow,
+} from '@/app/actions/user-admin-actions';
 
 export const DatabaseManagementPanel = () => {
   const [products, setProducts] = useState<ProductData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState<{
-    type: 'product' | 'category' | 'resetLayout' | 'resetDatabase' | 'clearLocalStorage';
+    type: 'product' | 'category' | 'resetLayout' | 'resetDatabase' | 'clearLocalStorage' | 'user';
     data?: string;
   } | null>(null);
+  const [registeredUsers, setRegisteredUsers] = useState<ListedUserRow[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
 
   useEffect(() => {
     loadProducts();
+    void loadUsers();
   }, []);
+
+  const loadUsers = async () => {
+    setUsersLoading(true);
+    const result = await listRegisteredUsersAction();
+    if (result.success && result.data) {
+      setRegisteredUsers(result.data);
+    }
+    setUsersLoading(false);
+  };
 
   const loadProducts = async () => {
     setIsLoading(true);
@@ -113,6 +131,19 @@ export const DatabaseManagementPanel = () => {
     setShowConfirmDialog(null);
   };
 
+  const handleDeleteUser = async (userIdentifier: string) => {
+    const result = await deleteRegisteredUserByIdAction({
+      userIdentifier,
+    });
+    if (result.success) {
+      alert('✅ Utilizador removido da base de dados.');
+      void loadUsers();
+    } else {
+      alert(`❌ ${result.error ?? 'Erro ao apagar.'}`);
+    }
+    setShowConfirmDialog(null);
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto p-6 space-y-6">
       {/* Header */}
@@ -124,6 +155,85 @@ export const DatabaseManagementPanel = () => {
         <p className="text-white/80 text-sm">
           ⚠️ ATENÇÃO: Todas as ações abaixo são irreversíveis. Use com cuidado!
         </p>
+      </div>
+
+      {/* Utilizadores registados (Criar conta) */}
+      <div className="rounded-xl bg-white p-6 shadow-lg">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="flex items-center gap-2 text-xl font-bold">
+            <Users size={24} />
+            Utilizadores (cadastro)
+          </h2>
+          <button
+            type="button"
+            onClick={() => void loadUsers()}
+            disabled={usersLoading}
+            className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+          >
+            <RefreshCw size={14} className={usersLoading ? 'animate-spin' : ''} />
+            Atualizar lista
+          </button>
+        </div>
+        <p className="mb-4 text-xs text-gray-600">
+          E-mail, WhatsApp, documento, morada completa (rua, cidade, CEP, etc.) e dados da conta. Apagar remove também lojas, produtos e pedidos associados a esse utilizador.
+        </p>
+        {usersLoading && registeredUsers.length === 0 ? (
+          <div className="py-8 text-center text-gray-400">A carregar utilizadores…</div>
+        ) : registeredUsers.length === 0 ? (
+          <div className="py-8 text-center text-gray-400">Nenhum utilizador na base de dados.</div>
+        ) : (
+          <div className="max-h-[min(28rem,55vh)] overflow-x-auto overflow-y-auto rounded-lg border border-gray-200">
+            <table className="w-full min-w-[720px] text-left text-xs">
+              <thead className="sticky top-0 bg-gray-100 font-bold text-gray-700">
+                <tr>
+                  <th className="p-2">Nome</th>
+                  <th className="p-2">E-mail</th>
+                  <th className="p-2">WhatsApp</th>
+                  <th className="p-2">Doc.</th>
+                  <th className="p-2">Morada</th>
+                  <th className="p-2">Perfil</th>
+                  <th className="p-2 w-24" />
+                </tr>
+              </thead>
+              <tbody>
+                {registeredUsers.map((u) => {
+                  const streetLine = [u.street, u.addressNumber].filter(Boolean).join(', ');
+                  const locality = [u.district, u.city, u.state].filter(Boolean).join(' · ');
+                  const cep = u.postalCode ? `CEP ${u.postalCode}` : '';
+                  const morada =
+                    [streetLine, u.addressComplement, locality, cep, u.address].filter(Boolean).join(' | ') ||
+                    '—';
+                  return (
+                    <tr key={u.id} className="border-t border-gray-100 align-top hover:bg-gray-50/80">
+                      <td className="p-2 font-semibold text-gray-900">{u.name ?? '—'}</td>
+                      <td className="p-2 text-gray-700">{u.email ?? '—'}</td>
+                      <td className="p-2 text-gray-700">{u.whatsapp ?? '—'}</td>
+                      <td className="p-2 text-gray-700">
+                        {u.documentType} {u.document}
+                      </td>
+                      <td className="max-w-[280px] p-2 text-gray-600 whitespace-normal break-words">{morada}</td>
+                      <td className="p-2 text-gray-700">{u.role}</td>
+                      <td className="p-2">
+                        {u.role === 'admin' ? (
+                          <span className="text-[10px] font-bold text-amber-700">Protegido</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmDialog({ type: 'user', data: u.id })}
+                            className="rounded-lg bg-red-50 p-2 text-red-600 transition-colors hover:bg-red-100"
+                            title="Apagar utilizador"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Ações Globais */}
@@ -273,6 +383,8 @@ export const DatabaseManagementPanel = () => {
                 {showConfirmDialog.type === 'resetLayout' && 'Tem certeza que deseja resetar a tela inicial? Todas as seções dinâmicas serão removidas.'}
                 {showConfirmDialog.type === 'resetDatabase' && '🔥 ATENÇÃO: Esta ação irá deletar TODOS os dados do sistema! Produtos, pedidos, configurações... TUDO! Esta ação é IRREVERSÍVEL!'}
                 {showConfirmDialog.type === 'clearLocalStorage' && 'Tem certeza que deseja limpar o LocalStorage? Você precisará fazer login novamente.'}
+                {showConfirmDialog.type === 'user' &&
+                  'Apagar este utilizador remove a conta, as lojas dele, produtos, pedidos e registos de produção associados. Esta ação não pode ser desfeita.'}
               </p>
 
               <div className="flex gap-3">
@@ -294,6 +406,8 @@ export const DatabaseManagementPanel = () => {
                       handleResetDatabase();
                     } else if (showConfirmDialog.type === 'clearLocalStorage') {
                       handleClearLocalStorage();
+                    } else if (showConfirmDialog.type === 'user' && showConfirmDialog.data) {
+                      void handleDeleteUser(showConfirmDialog.data);
                     }
                   }}
                   className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition-colors"

@@ -15,7 +15,16 @@ model User {
   passwordHash       String   @default("")
   name               String?
   whatsapp           String?
-  address            String?  
+  /// Endereço completo (texto único, compatível com telas antigas)
+  address            String?
+  /// Rua / avenida / logradouro
+  street             String?
+  addressNumber      String?
+  addressComplement  String?
+  district           String?
+  city               String?
+  state              String?
+  postalCode         String?
   profilePictureUrl  String?  
   backgroundImageUrl String?  
   role               String   @default("customer")

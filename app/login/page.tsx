@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Building2, ArrowRight, ShieldCheck, Phone, UserCircle, Mail, MapPin, Lock, LogIn } from 'lucide-react';
-import { clsx } from 'clsx';
+import { ShieldCheck, Mail, Lock, LogIn } from 'lucide-react';
 import { registerNewUserAction } from '@/app/actions/registration-actions';
 import { authenticateUserAction } from '@/app/actions/auth-actions';
 import { getFormVideoAction } from '@/app/actions/video-bg-actions';
 import { AuthInputField } from '@/components/auth/AuthInputField';
+import { RegisterForm } from '@/components/auth/RegisterForm';
 import { LocalDB } from '@/lib/local-db';
 
 const inputMasks = {
@@ -17,6 +17,11 @@ const inputMasks = {
     value.replace(/\D/g, '').replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5').substring(0, 18),
   phone: (value: string) =>
     value.replace(/\D/g, '').replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3').substring(0, 15),
+  cep: (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 8);
+    if (digits.length <= 5) return digits;
+    return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  },
 };
 
 function getLoginVideoMimeType(sourceUrl: string): string {
@@ -27,13 +32,12 @@ function getLoginVideoMimeType(sourceUrl: string): string {
 }
 
 type PersonDocumentType = 'CPF' | 'CNPJ';
-type AuthenticationMode = 'LOGIN' | 'REGISTER';
 
 export default function AuthenticationPage(): React.JSX.Element {
   const router = useRouter();
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [authMode, setAuthMode] = useState<AuthenticationMode>('REGISTER');
+  const [showSignupFields, setShowSignupFields] = useState<boolean>(false);
   const [personType, setPersonType] = useState<PersonDocumentType>('CPF');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string>('');
@@ -43,7 +47,13 @@ export default function AuthenticationPage(): React.JSX.Element {
     fullName: '',
     emailAddress: '',
     phoneNumber: '',
-    physicalAddress: '',
+    street: '',
+    addressNumber: '',
+    addressComplement: '',
+    district: '',
+    city: '',
+    state: '',
+    postalCode: '',
     documentNumber: '',
     password: '',
   });
@@ -69,7 +79,34 @@ export default function AuthenticationPage(): React.JSX.Element {
     if (field === 'phoneNumber') {
       finalValue = inputMasks.phone(value);
     }
+    if (field === 'postalCode') {
+      finalValue = inputMasks.cep(value);
+    }
+    if (field === 'state') {
+      finalValue = value.replace(/\d/g, '').toUpperCase().slice(0, 2);
+    }
     setFormData((previousState) => ({ ...previousState, [field]: finalValue }));
+  };
+
+  const persistSessionAndRedirect = (params: {
+    documentType: 'CPF' | 'CNPJ';
+    documentNumber: string;
+    displayName: string;
+    emailAddress: string;
+    phoneNumber: string;
+    role: string;
+  }) => {
+    LocalDB.saveUser({
+      type: params.documentType === 'CNPJ' ? 'juridica' : 'fisica',
+      document: params.documentNumber,
+      name: params.displayName,
+      emailAddress: params.emailAddress,
+      whatsapp: params.phoneNumber,
+      role: params.role,
+      isVendedor: params.role === 'seller',
+      storeName: `${params.displayName.split(' ')[0] || 'Minha'} Store`,
+    });
+    router.push('/dashboard');
   };
 
   const handleAuthenticationSubmit = async (event: React.FormEvent) => {
@@ -77,59 +114,83 @@ export default function AuthenticationPage(): React.JSX.Element {
     setIsLoading(true);
     setErrorMessage(null);
 
+    const emailTrimmed = formData.emailAddress.trim();
+
     try {
-      if (authMode === 'REGISTER') {
-        const response = await registerNewUserAction({
-          fullName: formData.fullName,
-          emailAddress: formData.emailAddress,
-          phoneNumber: formData.phoneNumber,
-          physicalAddress: formData.physicalAddress,
-          documentType: personType,
-          documentNumber: formData.documentNumber,
-          password: formData.password,
+      const authResponse = await authenticateUserAction({
+        documentOrEmail: emailTrimmed,
+        password: formData.password,
+      });
+
+      if (authResponse.success && authResponse.data) {
+        persistSessionAndRedirect({
+          documentType: authResponse.data.documentType,
+          documentNumber: authResponse.data.documentNumber,
+          displayName: authResponse.data.userName,
+          emailAddress: authResponse.data.emailAddress,
+          phoneNumber: authResponse.data.phoneNumber,
+          role: authResponse.data.role,
         });
-        if (!response.success) {
-          setErrorMessage(response.error || 'Erro ao criar conta.');
-          setIsLoading(false);
-          return;
-        }
-        if (response.data) {
-          LocalDB.saveUser({
-            type: response.data.documentType === 'CNPJ' ? 'juridica' : 'fisica',
-            document: response.data.documentNumber,
-            name: response.data.fullName,
-            emailAddress: response.data.emailAddress,
-            whatsapp: response.data.phoneNumber,
-            role: response.data.role,
-            isVendedor: response.data.role === 'seller',
-            storeName: `${response.data.fullName.split(' ')[0] || 'Minha'} Store`,
-          });
-        }
-        router.push('/dashboard');
-      } else {
-        const response = await authenticateUserAction({
-          documentOrEmail: formData.emailAddress || formData.documentNumber,
-          password: formData.password,
-        });
-        if (!response.success) {
-          setErrorMessage(response.error || 'Erro ao fazer login.');
-          setIsLoading(false);
-          return;
-        }
-        if (response.data) {
-          LocalDB.saveUser({
-            type: response.data.documentType === 'CNPJ' ? 'juridica' : 'fisica',
-            document: response.data.documentNumber,
-            name: response.data.userName,
-            emailAddress: response.data.emailAddress,
-            whatsapp: response.data.phoneNumber,
-            role: response.data.role,
-            isVendedor: response.data.role === 'seller',
-            storeName: `${response.data.userName.split(' ')[0] || 'Minha'} Store`,
-          });
-        }
-        router.push('/dashboard');
+        return;
       }
+
+      const authError = (authResponse.error ?? '').toLowerCase();
+      if (authError.includes('senha incorreta')) {
+        setErrorMessage(authResponse.error ?? 'Senha incorreta.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!authError.includes('não encontrado')) {
+        setErrorMessage(authResponse.error || 'Erro ao fazer login.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!showSignupFields) {
+        setErrorMessage(
+          'Não encontramos uma conta com este e-mail. Toque em "Se cadastrar" e preencha os dados para criar sua conta.'
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      const registerResponse = await registerNewUserAction({
+        fullName: formData.fullName,
+        emailAddress: formData.emailAddress,
+        phoneNumber: formData.phoneNumber,
+        street: formData.street,
+        addressNumber: formData.addressNumber,
+        addressComplement: formData.addressComplement,
+        district: formData.district,
+        city: formData.city,
+        state: formData.state,
+        postalCode: formData.postalCode,
+        documentType: personType,
+        documentNumber: formData.documentNumber,
+        password: formData.password,
+      });
+
+      if (!registerResponse.success) {
+        setErrorMessage(registerResponse.error || 'Erro ao criar conta.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (registerResponse.data) {
+        persistSessionAndRedirect({
+          documentType: registerResponse.data.documentType,
+          documentNumber: registerResponse.data.documentNumber,
+          displayName: registerResponse.data.fullName,
+          emailAddress: registerResponse.data.emailAddress,
+          phoneNumber: registerResponse.data.phoneNumber,
+          role: registerResponse.data.role,
+        });
+        return;
+      }
+
+      setErrorMessage('Conta criada, mas não foi possível concluir o acesso. Tente entrar novamente.');
+      setIsLoading(false);
     } catch {
       setErrorMessage('Erro de conexão com o servidor.');
       setIsLoading(false);
@@ -137,7 +198,7 @@ export default function AuthenticationPage(): React.JSX.Element {
   };
 
   return (
-    <main className="relative min-h-screen w-full overflow-hidden bg-slate-900">
+    <main className="relative min-h-[100dvh] w-full overflow-x-hidden bg-slate-900">
       {/* Camada 1: Vídeo de Fundo em Fullscreen */}
       {isVideoVisible ? (
         <video
@@ -158,157 +219,151 @@ export default function AuthenticationPage(): React.JSX.Element {
       <div className="absolute inset-0 z-0 bg-black/30" aria-hidden />
 
       {/* Camada 3: Conteúdo Flutuante (Sem painel branco) */}
-      <div className="relative z-10 flex min-h-screen w-full flex-col items-center justify-center px-4 py-12">
-        <div className="flex w-full max-w-[440px] flex-col items-center gap-8">
+      <div
+        className={
+          showSignupFields
+            ? 'relative z-10 flex h-[100dvh] max-h-[100dvh] w-full flex-col items-center overflow-hidden px-4 py-3 sm:py-5'
+            : 'relative z-10 flex min-h-[100dvh] w-full flex-col items-center justify-center px-4 py-12'
+        }
+      >
+        <div
+          className={
+            showSignupFields
+              ? 'flex min-h-0 w-full max-w-[440px] flex-1 flex-col items-center gap-3 overflow-hidden'
+              : 'flex w-full max-w-[440px] flex-col items-center gap-8'
+          }
+        >
           
           {/* Cabeçalho */}
-          <header className="flex flex-col items-center gap-3 text-center">
+          <header className={`flex flex-col items-center gap-3 text-center ${showSignupFields ? 'shrink-0' : ''}`}>
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-black/40 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
               <ShieldCheck size={32} className="text-white drop-shadow-lg" />
             </div>
             <h1 className="text-4xl font-black tracking-tight text-white [text-shadow:0_4px_24px_rgba(0,0,0,0.8)]">
-              {authMode === 'REGISTER' ? 'Criar Conta' : 'Bem-vindo'}
+              {showSignupFields ? 'Criar conta' : 'Entrar'}
             </h1>
             <p className="text-sm font-semibold text-white/90 [text-shadow:0_2px_10px_rgba(0,0,0,0.8)]">
-              {authMode === 'REGISTER' ? 'Preencha os dados para começar' : 'Acesse sua conta para continuar'}
+              {showSignupFields
+                ? 'Preencha seus dados. Para voltar ao acesso rápido, use o botão abaixo.'
+                : 'Acesse com e-mail e senha. Para criar conta, toque em "Se cadastrar".'}
             </p>
           </header>
 
           {/* Mensagem de Erro */}
           {errorMessage ? (
-            <div className="w-full rounded-2xl border border-red-500/50 bg-red-500/40 p-3 text-center backdrop-blur-xl shadow-lg">
+            <div className="w-full shrink-0 rounded-2xl border border-red-500/50 bg-red-500/40 p-3 text-center backdrop-blur-xl shadow-lg">
               <p className="text-sm font-bold text-white drop-shadow-md" role="alert">
                 {errorMessage}
               </p>
             </div>
           ) : null}
 
-          {/* Formulário */}
-          <form onSubmit={handleAuthenticationSubmit} className="flex w-full flex-col gap-4">
-            {authMode === 'REGISTER' ? (
-              <div className="flex w-full gap-2 rounded-2xl border border-white/20 bg-black/40 p-1 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+          {/* Formulário: login e cadastro são telas separadas (mutuamente exclusivas), ambas sobre o vídeo */}
+          <form
+            onSubmit={handleAuthenticationSubmit}
+            className={
+              showSignupFields
+                ? 'flex min-h-0 w-full flex-1 flex-col gap-3 overflow-hidden'
+                : 'flex w-full flex-col gap-4'
+            }
+          >
+            {!showSignupFields ? (
+              <>
+                <p className="text-center text-[11px] font-bold uppercase tracking-[0.2em] text-white/75 [text-shadow:0_1px_8px_rgba(0,0,0,0.6)]">
+                  Login e senha
+                </p>
+                <div className="flex flex-col gap-3">
+                  <AuthInputField
+                    overVideo={true}
+                    icon={Mail}
+                    required
+                    type="email"
+                    inputMode="email"
+                    placeholder="E-mail"
+                    value={formData.emailAddress}
+                    onChange={(value) => handleInputChange('emailAddress', value)}
+                  />
+                  <AuthInputField
+                    overVideo={true}
+                    icon={Lock}
+                    required
+                    type="password"
+                    placeholder="Sua senha"
+                    value={formData.password}
+                    onChange={(value) => handleInputChange('password', value)}
+                  />
+                </div>
                 <button
                   type="button"
                   onClick={() => {
-                    setPersonType('CPF');
-                    handleInputChange('documentNumber', '');
+                    setShowSignupFields(true);
+                    setErrorMessage(null);
                   }}
-                  className={clsx(
-                    'flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-xs font-bold transition-all duration-300',
-                    personType === 'CPF'
-                      ? 'bg-white text-slate-900 shadow-lg'
-                      : 'text-white/80 hover:text-white'
-                  )}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/25 bg-black/35 py-3 text-xs font-bold text-white/95 backdrop-blur-2xl transition-colors hover:bg-black/50 [text-shadow:0_2px_10px_rgba(0,0,0,0.8)]"
                 >
-                  <User size={16} /> Pessoa Física
+                  Se cadastrar
                 </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="mt-1 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-white text-sm font-black uppercase tracking-wider text-slate-900 shadow-[0_8px_30px_rgba(255,255,255,0.3)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100"
+                >
+                  {isLoading ? 'Processando...' : 'Entrar'}
+                  <LogIn size={18} />
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="shrink-0 text-center text-[11px] font-bold uppercase tracking-[0.2em] text-white/75 [text-shadow:0_1px_8px_rgba(0,0,0,0.6)]">
+                  Novo cadastro
+                </p>
                 <button
                   type="button"
                   onClick={() => {
-                    setPersonType('CNPJ');
-                    handleInputChange('documentNumber', '');
+                    setShowSignupFields(false);
+                    setErrorMessage(null);
                   }}
-                  className={clsx(
-                    'flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-xs font-bold transition-all duration-300',
-                    personType === 'CNPJ'
-                      ? 'bg-white text-slate-900 shadow-lg'
-                      : 'text-white/80 hover:text-white'
-                  )}
+                  className="flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl border border-white/25 bg-black/35 py-3 text-xs font-bold text-white/95 backdrop-blur-2xl transition-colors hover:bg-black/50 [text-shadow:0_2px_10px_rgba(0,0,0,0.8)]"
                 >
-                  <Building2 size={16} /> Pessoa Jurídica
+                  <LogIn size={16} aria-hidden />
+                  Entrar com login e senha
                 </button>
-              </div>
-            ) : null}
-
-            <div className="flex flex-col gap-3">
-              {authMode === 'REGISTER' ? (
-                <AuthInputField
-                  overVideo={true}
-                  icon={UserCircle}
-                  required
-                  placeholder="Nome Completo"
-                  value={formData.fullName}
-                  onChange={(value) => handleInputChange('fullName', value)}
-                />
-              ) : null}
-              
-              <AuthInputField
-                overVideo={true}
-                icon={Mail}
-                required
-                type={authMode === 'LOGIN' ? 'text' : 'email'}
-                inputMode={authMode === 'LOGIN' ? 'text' : 'email'}
-                placeholder={authMode === 'LOGIN' ? 'E-mail ou Documento' : 'Seu melhor E-mail'}
-                value={formData.emailAddress}
-                onChange={(value) => handleInputChange('emailAddress', value)}
-              />
-              
-              {authMode === 'REGISTER' ? (
-                <>
-                  <AuthInputField
-                    overVideo={true}
-                    icon={Phone}
-                    required
-                    type="tel"
-                    inputMode="tel"
-                    placeholder="Número de Celular"
-                    value={formData.phoneNumber}
-                    onChange={(value) => handleInputChange('phoneNumber', value)}
-                  />
-                  <AuthInputField
-                    overVideo={true}
-                    icon={MapPin}
-                    required
-                    placeholder="Endereço Completo"
-                    value={formData.physicalAddress}
-                    onChange={(value) => handleInputChange('physicalAddress', value)}
-                  />
-                  <AuthInputField
-                    overVideo={true}
-                    icon={ShieldCheck}
-                    required
-                    inputMode="numeric"
-                    placeholder={personType === 'CPF' ? 'Digite seu CPF' : 'Digite seu CNPJ'}
-                    value={formData.documentNumber}
-                    onChange={(value) => handleInputChange('documentNumber', value)}
-                  />
-                </>
-              ) : null}
-              
-              <AuthInputField
-                overVideo={true}
-                icon={Lock}
-                required
-                type="password"
-                placeholder={authMode === 'REGISTER' ? 'Crie uma Senha Forte' : 'Sua Senha'}
-                value={formData.password}
-                onChange={(value) => handleInputChange('password', value)}
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="mt-2 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-white text-sm font-black uppercase tracking-wider text-slate-900 shadow-[0_8px_30px_rgba(255,255,255,0.3)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100"
-            >
-              {isLoading ? 'Processando...' : authMode === 'REGISTER' ? 'Criar Conta Agora' : 'Entrar no Sistema'}
-              {authMode === 'REGISTER' ? <ArrowRight size={18} /> : <LogIn size={18} />}
-            </button>
+                <div
+                  role="region"
+                  aria-label="Campos do cadastro"
+                  className="scrollbar-hide min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain rounded-2xl border border-white/15 bg-black/25 px-2 py-2 shadow-inner backdrop-blur-md [-webkit-overflow-scrolling:touch]"
+                >
+                  <div className="flex flex-col gap-3 pb-2">
+                    <RegisterForm
+                      personType={personType}
+                      fullName={formData.fullName}
+                      emailAddress={formData.emailAddress}
+                      password={formData.password}
+                      phoneNumber={formData.phoneNumber}
+                      street={formData.street}
+                      addressNumber={formData.addressNumber}
+                      addressComplement={formData.addressComplement}
+                      district={formData.district}
+                      city={formData.city}
+                      state={formData.state}
+                      postalCode={formData.postalCode}
+                      documentNumber={formData.documentNumber}
+                      onPersonTypeChange={setPersonType}
+                      onInputChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex h-14 w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-white text-sm font-black uppercase tracking-wider text-slate-900 shadow-[0_8px_30px_rgba(255,255,255,0.3)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100"
+                >
+                  {isLoading ? 'Processando...' : 'Cadastrar e entrar'}
+                  <LogIn size={18} />
+                </button>
+              </>
+            )}
           </form>
-
-          {/* Rodapé de Alternância */}
-          <div className="mt-2 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setAuthMode(authMode === 'REGISTER' ? 'LOGIN' : 'REGISTER');
-                setErrorMessage(null);
-              }}
-              className="text-sm font-bold text-white/90 underline-offset-4 [text-shadow:0_2px_10px_rgba(0,0,0,0.8)] transition-colors hover:text-white hover:underline"
-            >
-              {authMode === 'REGISTER' ? 'Já tem uma conta? Faça Login' : 'Não tem conta? Crie uma agora'}
-            </button>
-          </div>
         </div>
       </div>
     </main>
