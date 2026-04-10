@@ -50,7 +50,7 @@ const ProductSaleCardBase = ({ data, isExample = false }: ProductSaleCardProps):
         <h3 className="font-bold text-gray-700 text-sm leading-tight max-w-[65%]">
           {data.productName}
         </h3>
-        <span className="font-bold text-gray-900 text-sm">
+        <span className="text-sm font-bold text-gray-700">
           {data.status}
         </span>
       </div>
@@ -68,7 +68,7 @@ const ProductSaleCardBase = ({ data, isExample = false }: ProductSaleCardProps):
 
         {/* Pagamento e Valor */}
         <div className="flex items-center justify-end gap-1.5">
-          <span className="font-bold text-gray-900 text-xs">{data.paymentMethod}</span>
+          <span className="text-xs font-bold text-gray-700">{data.paymentMethod}</span>
           <span className="bg-[#ff3b30] text-white px-2 py-0.5 rounded text-xs font-bold">
             {formattedValue}
           </span>
@@ -77,25 +77,25 @@ const ProductSaleCardBase = ({ data, isExample = false }: ProductSaleCardProps):
         {/* Código */}
         <div className="flex items-center gap-1">
           <span className="font-semibold text-gray-500 text-xs">Código:</span>
-          <span className="font-bold text-gray-900 text-xs">{data.productCode}</span>
+          <span className="text-xs font-bold text-gray-700">{data.productCode}</span>
         </div>
 
         {/* Data */}
         <div className="flex items-center justify-end gap-1">
           <span className="font-semibold text-gray-500 text-xs">Data:</span>
-          <span className="font-bold text-gray-900 text-xs">{data.saleDate}</span>
+          <span className="text-xs font-bold text-gray-700">{data.saleDate}</span>
         </div>
 
         {/* Número do Pedido */}
         <div className="flex items-center gap-1">
           <span className="font-semibold text-gray-500 text-xs">Pedido:</span>
-          <span className="font-bold text-gray-900 text-xs">{data.orderNumber}</span>
+          <span className="text-xs font-bold text-gray-700">{data.orderNumber}</span>
         </div>
 
         {/* Hora */}
         <div className="flex items-center justify-end gap-1">
           <span className="font-semibold text-gray-500 text-xs">Hora:</span>
-          <span className="font-bold text-gray-900 text-xs">{data.saleTime}</span>
+          <span className="text-xs font-bold text-gray-700">{data.saleTime}</span>
         </div>
 
       </div>

@@ -50,7 +50,7 @@ function AccountScreenBlockBase({ config, onAction }: BlockComponentProps): Reac
     >
       {/* Título "Minha Conta" centralizado com margem ajustada */}
       <div className="w-full flex justify-center mb-8">
-        <h2 className="text-2xl font-extrabold text-black tracking-tight">Minha Conta</h2>
+        <h2 className="text-2xl font-extrabold tracking-tight text-gray-800">Minha Conta</h2>
       </div>
 
       {/* Lista de Cartões de Navegação */}
@@ -65,13 +65,13 @@ function AccountScreenBlockBase({ config, onAction }: BlockComponentProps): Reac
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
               onClick={() => onAction?.(option.action, { blockId: config.id })}
-              className="w-full flex items-center text-left p-4 bg-white border-2 border-black rounded-xl hover:bg-gray-50 active:scale-[0.98] transition-all shadow-sm"
+              className="flex w-full items-center rounded-xl border border-gray-400 bg-white p-4 text-left shadow-sm transition-all hover:bg-gray-50 active:scale-[0.98]"
             >
-              <div className="flex-shrink-0 mr-4">
-                <IconComponent className="w-8 h-8 text-black" strokeWidth={2} />
+              <div className="mr-4 shrink-0">
+                <IconComponent className="h-8 w-8 text-gray-700" strokeWidth={2} />
               </div>
               <div className="flex flex-col">
-                <span className="text-lg font-bold text-black leading-tight mb-1">
+                <span className="mb-1 text-lg font-bold leading-tight text-gray-800">
                   {option.title}
                 </span>
                 <span className="text-sm font-semibold text-gray-600 leading-snug">

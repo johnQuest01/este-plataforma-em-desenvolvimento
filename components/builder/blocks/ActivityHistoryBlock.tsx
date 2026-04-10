@@ -145,13 +145,16 @@ function ActivityHistoryBlockInner({ config, onAction }: BlockComponentProps): R
     <div
       // ✅ AJUSTE: Adicionado 'scrollbar-hide' e removido '[scrollbar-gutter:stable]' para ocultar a barra visualmente
       className="flex flex-col items-center w-full max-w-md mx-auto px-4 pt-2 pb-28 bg-white min-h-0 max-h-[calc(100dvh-9rem)] overflow-y-auto overscroll-y-contain scrollbar-hide"
-      style={{ backgroundColor: style.bgColor, color: style.textColor || '#000000' }}
+      style={{
+        backgroundColor: style.bgColor,
+        color: style.textColor ?? '#374151',
+      }}
     >
       <div className="w-full flex justify-start mb-2 shrink-0">
         <button
           type="button"
           onClick={handleScreenBack}
-          className="flex items-center gap-0.5 p-1 -ml-3 rounded-full hover:bg-gray-100 active:scale-95 transition-colors text-black"
+          className="flex items-center gap-0.5 p-1 -ml-3 rounded-full text-gray-700 transition-colors hover:bg-gray-100 active:scale-95"
           aria-label="Voltar"
         >
           <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
@@ -160,10 +163,10 @@ function ActivityHistoryBlockInner({ config, onAction }: BlockComponentProps): R
       </div>
 
       {/* Cabeçalho e Ícone */}
-      <h1 className="text-xl font-bold text-center mb-2 shrink-0">{blockTitle}</h1>
+      <h1 className="mb-2 shrink-0 text-center text-xl font-bold text-gray-800">{blockTitle}</h1>
       
       <div className="flex justify-center items-center mb-4 shrink-0">
-        <History className="w-10 h-10 text-black" strokeWidth={2} />
+        <History className="h-10 w-10 text-gray-600" strokeWidth={2} />
       </div>
 
       {/* Grid de Botões de Ação */}
@@ -172,7 +175,7 @@ function ActivityHistoryBlockInner({ config, onAction }: BlockComponentProps): R
           <button
             key={buttonItem.id}
             onClick={() => handleNavigation(buttonItem.actionRoute)}
-            className="flex items-center justify-center text-center px-2 py-2 border-2 border-black rounded-lg font-semibold text-sm hover:bg-gray-50 transition-colors"
+            className="flex items-center justify-center rounded-lg border border-gray-400 px-2 py-2 text-center text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
           >
             {buttonItem.label}
           </button>
@@ -180,11 +183,14 @@ function ActivityHistoryBlockInner({ config, onAction }: BlockComponentProps): R
       </div>
 
       {/* Seção de Busca */}
-      <h2 className="text-lg font-bold text-center text-gray-700 mb-2 shrink-0">{blockSubtitle}</h2>
+      <h2 className="mb-2 shrink-0 text-center text-lg font-bold text-gray-600">{blockSubtitle}</h2>
 
       <form onSubmit={handleSearchSubmission} className="w-full flex flex-col items-center shrink-0">
         <div className="w-full mb-3">
-          <label htmlFor="searchQueryInput" className="block text-center font-bold text-black mb-1">
+          <label
+            htmlFor="searchQueryInput"
+            className="mb-1 block text-center text-sm font-bold text-gray-700"
+          >
             {inputLabel}
           </label>
           <input
@@ -192,28 +198,28 @@ function ActivityHistoryBlockInner({ config, onAction }: BlockComponentProps): R
             type="text"
             value={searchQueryInformation}
             onChange={(e) => setSearchQueryInformation(e.target.value)}
-            className="w-full border-2 border-black rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+            className="w-full rounded-lg border border-gray-400 px-4 py-2 text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-[#5874f6] focus:ring-2 focus:ring-[#5874f6]/30"
           />
         </div>
 
         {/* Campos de Data (Período: De / Até) */}
         <div className="flex flex-col items-center justify-center w-full mb-5">
-          <span className="font-bold text-black mb-1 text-lg">data</span>
-          <div className="flex items-center justify-center gap-2 w-full">
+          <span className="mb-1 text-lg font-bold text-gray-700">data</span>
+          <div className="flex w-full items-center justify-center gap-2">
             <input
               id="startDateInput"
               type="date"
               value={startDateInformation}
               onChange={(e) => setStartDateInformation(e.target.value)}
-              className="border-b-2 border-black outline-none px-1 py-1 text-center bg-transparent font-semibold text-black w-32 text-sm"
+              className="w-32 border-b border-gray-400 bg-transparent px-1 py-1 text-center text-sm font-semibold text-gray-800 outline-none focus:border-[#5874f6]"
             />
-            <span className="font-bold text-black text-sm">até</span>
+            <span className="text-sm font-bold text-gray-600">até</span>
             <input
               id="endDateInput"
               type="date"
               value={endDateInformation}
               onChange={(e) => setEndDateInformation(e.target.value)}
-              className="border-b-2 border-black outline-none px-1 py-1 text-center bg-transparent font-semibold text-black w-32 text-sm"
+              className="w-32 border-b border-gray-400 bg-transparent px-1 py-1 text-center text-sm font-semibold text-gray-800 outline-none focus:border-[#5874f6]"
             />
           </div>
         </div>
