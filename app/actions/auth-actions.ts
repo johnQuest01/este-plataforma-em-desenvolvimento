@@ -3,13 +3,24 @@
 import { prisma } from '@/lib/prisma';
 import { UserLoginSchema, UserLoginType } from '@/schemas/auth-schema';
 import { verifyPlainPasswordAgainstHash } from '@/lib/password-hash';
-
-function normalizeDocumentNumber(documentNumber: string): string {
-  return documentNumber.replace(/\D/g, '');
-}
+import { onlyDigits, formatCpf, formatCnpj } from '@/schemas/registration-schema';
 
 function normalizeEmail(emailAddress: string): string {
   return emailAddress.trim().toLowerCase();
+}
+
+/**
+ * Gera todas as variantes de busca de um documento (dígitos puros, CPF formatado, CNPJ formatado).
+ * Permite encontrar o usuário seja qual for o formato salvo no banco ou digitado no login.
+ */
+function buildDocumentSearchVariants(raw: string): string[] {
+  const digits = onlyDigits(raw);
+  const variants = new Set<string>();
+  variants.add(raw.trim());           // como o utilizador digitou
+  variants.add(digits);               // só dígitos
+  if (digits.length === 11) variants.add(formatCpf(digits));   // CPF formatado
+  if (digits.length === 14) variants.add(formatCnpj(digits));  // CNPJ formatado
+  return Array.from(variants).filter((v) => v.length > 0);
 }
 
 export async function authenticateUserAction(
@@ -41,17 +52,16 @@ export async function authenticateUserAction(
     const validatedData = validationResult.data;
     const normalizedCredential = validatedData.documentOrEmail.trim();
     const normalizedEmailCredential = normalizeEmail(normalizedCredential);
-    const normalizedDocumentCredential = normalizeDocumentNumber(normalizedCredential);
 
-    // Busca o usuário pelo E-mail OU pelo Documento (CPF/CNPJ)
+    // Busca pelo e-mail OU por qualquer variante do documento (dígitos puros, CPF/CNPJ formatado)
+    const documentVariants = buildDocumentSearchVariants(normalizedCredential);
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [
           { email: normalizedEmailCredential },
-          { document: normalizedDocumentCredential },
-          { document: normalizedCredential },
-        ]
-      }
+          ...documentVariants.map((v) => ({ document: v })),
+        ],
+      },
     });
 
     if (!existingUser) {

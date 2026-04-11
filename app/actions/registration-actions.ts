@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma';
 import {
   UserRegistrationSchema,
   buildFullAddressLine,
+  formatDocumentForStorage,
+  onlyDigits,
   type UserRegistrationPayloadInput,
 } from '@/schemas/registration-schema';
 import { hashPlainPassword } from '@/lib/password-hash';
@@ -38,10 +40,6 @@ function buildStoreSlug(fullName: string, userIdentifier: string): string {
   return `${slugBody}-${storeSlugTail}`;
 }
 
-function normalizeDocumentNumber(documentNumber: string): string {
-  return documentNumber.replace(/\D/g, '');
-}
-
 function normalizeEmailAddress(emailAddress: string): string {
   return emailAddress.trim().toLowerCase();
 }
@@ -73,19 +71,40 @@ export async function registerNewUserAction(
 
     const validatedData = validationResult.data;
     const hashedPassword = hashPlainPassword(validatedData.password);
-    const normalizedDocumentNumber = normalizeDocumentNumber(
-      validatedData.documentNumber
+
+    // Dígitos puros — usados para a verificação de duplicidade
+    const rawDocumentDigits = onlyDigits(validatedData.documentNumber);
+
+    // Documento formatado com pontuação — o que fica visível no Neon SQL
+    // Ex.: '12345678901' + CPF → '123.456.789-01'
+    // Ex.: '12345678000195' + CNPJ → '12.345.678/0001-95'
+    const formattedDocument = formatDocumentForStorage(
+      rawDocumentDigits,
+      validatedData.documentType
     );
+
     const normalizedEmailAddress = normalizeEmailAddress(
       validatedData.emailAddress
     );
 
+    // Telefone formatado para salvar legível no banco
+    // Ex.: '11987654321' → '(11) 98765-4321'
+    const rawPhone = onlyDigits(validatedData.phoneNumber);
+    const formattedPhone =
+      rawPhone.length === 11
+        ? `(${rawPhone.slice(0, 2)}) ${rawPhone.slice(2, 7)}-${rawPhone.slice(7, 11)}`
+        : rawPhone.length === 10
+        ? `(${rawPhone.slice(0, 2)}) ${rawPhone.slice(2, 6)}-${rawPhone.slice(6, 10)}`
+        : validatedData.phoneNumber;
+
     const createdUserRecord = await prisma.$transaction(async (transaction) => {
+      // Verificação de duplicidade: aceita tanto o formato com pontuação quanto apenas dígitos
       const existingUser = await transaction.user.findFirst({
         where: {
           OR: [
             { email: normalizedEmailAddress },
-            { document: normalizedDocumentNumber },
+            { document: formattedDocument },
+            { document: rawDocumentDigits },
           ],
         },
       });
@@ -102,7 +121,8 @@ export async function registerNewUserAction(
         data: {
           name: validatedData.fullName,
           email: normalizedEmailAddress,
-          whatsapp: validatedData.phoneNumber,
+          // Telefone com máscara → ex.: "(11) 98765-4321"
+          whatsapp: formattedPhone,
           address: fullAddressLine,
           street: validatedData.street.trim(),
           addressNumber: validatedData.addressNumber?.trim() ?? null,
@@ -112,7 +132,8 @@ export async function registerNewUserAction(
           state: validatedData.state,
           postalCode: validatedData.postalCode,
           documentType: validatedData.documentType,
-          document: normalizedDocumentNumber,
+          // CPF ex.: "123.456.789-01" | CNPJ ex.: "12.345.678/0001-95"
+          document: formattedDocument,
           passwordHash: hashedPassword,
           role: validatedData.registerAsSeller ? 'seller' : 'customer',
         },

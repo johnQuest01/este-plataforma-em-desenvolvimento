@@ -1,7 +1,37 @@
 import { z } from 'zod';
 
-function onlyDigits(value: string): string {
+export function onlyDigits(value: string): string {
   return value.replace(/\D/g, '');
+}
+
+/**
+ * Formata dígitos puros de CPF → `123.456.789-01`
+ * Retorna os dígitos sem formatação se o tamanho estiver errado.
+ */
+export function formatCpf(digits: string): string {
+  const d = onlyDigits(digits);
+  if (d.length !== 11) return d;
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9, 11)}`;
+}
+
+/**
+ * Formata dígitos puros de CNPJ → `12.345.678/0001-95`
+ * Retorna os dígitos sem formatação se o tamanho estiver errado.
+ */
+export function formatCnpj(digits: string): string {
+  const d = onlyDigits(digits);
+  if (d.length !== 14) return d;
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12, 14)}`;
+}
+
+/**
+ * Formata CPF ou CNPJ com pontuação legível para guardar no banco.
+ * Exemplo: `'12345678901'` + `'CPF'` → `'123.456.789-01'`
+ */
+export function formatDocumentForStorage(digits: string, type: 'CPF' | 'CNPJ'): string {
+  const d = onlyDigits(digits);
+  if (type === 'CPF') return formatCpf(d);
+  return formatCnpj(d);
 }
 
 function isValidCpf(cpf: string): boolean {
