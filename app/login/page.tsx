@@ -97,6 +97,7 @@ export default function AuthenticationPage(): React.JSX.Element {
     emailAddress: string;
     phoneNumber: string;
     role: string;
+    profilePictureUrl?: string | null;
   }) => {
     const nameGender = inferNameGenderFromFullName(params.displayName);
     LocalDB.saveUser({
@@ -110,6 +111,7 @@ export default function AuthenticationPage(): React.JSX.Element {
       isVendedor: params.role === 'seller',
       nameGender,
       storeName: `${params.displayName.split(' ')[0] || 'Minha'} Store`,
+      profilePictureUrl: params.profilePictureUrl ?? undefined,
     });
     router.push('/dashboard');
   };
@@ -136,6 +138,7 @@ export default function AuthenticationPage(): React.JSX.Element {
           emailAddress: authResponse.data.emailAddress,
           phoneNumber: authResponse.data.phoneNumber,
           role: authResponse.data.role,
+          profilePictureUrl: authResponse.data.profilePictureUrl,
         });
         return;
       }

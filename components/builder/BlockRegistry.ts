@@ -86,7 +86,8 @@ export const COMPONENT_MAP: Record<string, LegoComponent> = {
   'banner': BannerBlock,
   'categories': CategoriesBlock,
   'category-section': CategorySectionBlock, 
-  'walking-model': WalkingModelBlock, 
+  /** Vitrine animada; o inventário de vendedor (card rosa, “Meus Clientes”) monta-se em `app/inventory/page.tsx`, não depende deste tipo. */
+  'walking-model': WalkingModelBlock,
   'product-grid': ProductGridBlock,
   'stock-header': StockHeaderBlock,
   'stock-search': StockSearchBlock,

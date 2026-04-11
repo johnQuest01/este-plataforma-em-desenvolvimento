@@ -13,7 +13,16 @@ export interface UserData {
   role?: string;
   isVendedor?: boolean;
   nameGender?: 'feminino' | 'masculino';
+  /** URL da foto de perfil (Neon/Prisma `User.profilePictureUrl`) */
+  profilePictureUrl?: string | null;
   createdAt: string;
+}
+
+/** Vendedor no banco: `role === 'seller'`; sessão local também pode usar `isVendedor`. */
+export function isSellerUser(user: UserData | null | undefined): boolean {
+  if (!user) return false;
+  if (user.role === 'seller') return true;
+  return typeof user.isVendedor === 'boolean' && user.isVendedor === true;
 }
 
 export const LOCAL_USER_DB_KEY = 'b2b_app_user_db';
@@ -69,5 +78,18 @@ export const LocalDB = {
   clearUser: () => {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(DB_KEY);
-  }
+  },
+
+  /** Mescla campos na sessão local (ex.: após sync com Prisma). */
+  updateUser: (partial: Partial<UserData>): UserData | null => {
+    if (typeof window === 'undefined') return null;
+    const current = LocalDB.getUser();
+    if (!current) return null;
+    const next: UserData = { ...current, ...partial };
+    if (partial.role !== undefined) {
+      next.isVendedor = partial.role === 'seller';
+    }
+    localStorage.setItem(DB_KEY, JSON.stringify(next));
+    return next;
+  },
 };

@@ -4,68 +4,51 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserPlus, Search, X } from 'lucide-react';
 import { SIZING, SPACING, COLORS, BORDERS, SHADOWS, TYPOGRAPHY, cn } from '@/lib/design-system';
+import {
+  getSellerClientsFromOrdersAction,
+  type SellerClientRow,
+} from '@/app/actions/session-sync-actions';
 
 /**
- * 🎯 COMPONENTE: MEUS CLIENTES (EXPANSÍVEL)
- * 
- * Lista expansível de clientes para Vendedores(as) Autorizados(as).
- * Aparece na tela de inventário, empurrando o conteúdo para baixo.
- * 
- * 📦 USANDO DESIGN SYSTEM:
- * - Todos os tamanhos vêm de SIZING
- * - Todos os espaçamentos vêm de SPACING
- * - Todas as cores vêm de COLORS
- * - Todas as bordas vêm de BORDERS
- * - Todas as sombras vêm de SHADOWS
- * - Toda tipografia vêm de TYPOGRAPHY
+ * Lista expansível de clientes para vendedores: contatos derivados de `Order`
+ * nas lojas onde o utilizador é `Store.ownerId`.
  */
-
-interface Cliente {
-  id: string;
-  nome: string;
-  telefone: string;
-  email?: string;
-  dataCadastro: string;
-}
 
 interface MeusClientesExpandibleProps {
   isOpen: boolean;
   onClose: () => void;
+  /** ID Prisma do utilizador (mesmo valor guardado em `LocalDB` / sessão). */
+  sellerUserId: string | null;
 }
 
-export function MeusClientesExpandible({ isOpen, onClose }: MeusClientesExpandibleProps) {
+export function MeusClientesExpandible({ isOpen, onClose, sellerUserId }: MeusClientesExpandibleProps) {
   const [searchTerm, setSearchTerm] = React.useState<string>('');
+  const [clientes, setClientes] = React.useState<SellerClientRow[]>([]);
+  const [loading, setLoading] = React.useState<boolean>(false);
+  const [loadError, setLoadError] = React.useState<string | null>(null);
 
-  // TODO: Carregar clientes do banco de dados
-  // Por enquanto, dados mockados para demonstração
-  const clientes: Cliente[] = [
-    {
-      id: '1',
-      nome: 'Maria Silva',
-      telefone: '(11) 98765-4321',
-      email: 'maria@email.com',
-      dataCadastro: '2024-01-15'
-    },
-    {
-      id: '2',
-      nome: 'João Santos',
-      telefone: '(11) 91234-5678',
-      dataCadastro: '2024-01-20'
-    },
-    {
-      id: '3',
-      nome: 'Ana Costa',
-      telefone: '(11) 99876-5432',
-      email: 'ana@email.com',
-      dataCadastro: '2024-01-22'
-    },
-    {
-      id: '4',
-      nome: 'Pedro Oliveira',
-      telefone: '(11) 97654-3210',
-      dataCadastro: '2024-01-25'
-    },
-  ];
+  React.useEffect(() => {
+    if (!isOpen || !sellerUserId) return;
+
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(null);
+
+    void getSellerClientsFromOrdersAction(sellerUserId).then((response) => {
+      if (cancelled) return;
+      setLoading(false);
+      if (!response.success) {
+        setLoadError(response.error ?? 'Não foi possível carregar os clientes.');
+        setClientes([]);
+        return;
+      }
+      setClientes(response.clients);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, sellerUserId]);
 
   // Filtrar clientes por termo de busca
   const clientesFiltrados = clientes.filter(cliente =>
@@ -186,7 +169,15 @@ export function MeusClientesExpandible({ isOpen, onClose }: MeusClientesExpandib
               "flex flex-col",
               SPACING.gap.xs             // gap-1
             )}>
-              {clientesFiltrados.length === 0 ? (
+              {loading ? (
+                <div className={cn('flex justify-center py-8', TYPOGRAPHY.caption.xs, COLORS.text.muted)}>
+                  A carregar contactos…
+                </div>
+              ) : loadError ? (
+                <p className={cn(TYPOGRAPHY.caption.xs, COLORS.text.muted, 'text-center py-4')}>
+                  {loadError}
+                </p>
+              ) : clientesFiltrados.length === 0 ? (
                 // Estado vazio
                 <div className={cn(
                   "flex flex-col items-center justify-center py-8",
@@ -208,7 +199,7 @@ export function MeusClientesExpandible({ isOpen, onClose }: MeusClientesExpandib
                     TYPOGRAPHY.caption.xs,   // text-xs text-gray-500
                     "text-center"
                   )}>
-                    {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
+                    {searchTerm ? 'Nenhum cliente encontrado' : 'Ainda não há pedidos com dados de cliente'}
                   </p>
                 </div>
               ) : (

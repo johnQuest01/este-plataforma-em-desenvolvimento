@@ -13,7 +13,8 @@ import { INVENTORY_BLOCKS, STOCK_BLOCKS } from '@/data/inventory-state';
 import { BlockRenderer } from '@/components/builder/BlockRender';
 import { checkForNewImage } from '@/app/actions';
 import { StoreHeader } from '@/components/builder/blocks/Header';
-import { LocalDB, LOCAL_USER_DB_KEY } from '@/lib/local-db';
+import { LocalDB, LOCAL_USER_DB_KEY, isSellerUser, inferNameGenderFromFullName } from '@/lib/local-db';
+import { syncUserProfileForClientAction } from '@/app/actions/session-sync-actions';
 import { AuthorizedSellerBadge } from '@/components/builder/blocks/AuthorizedSellerBadge';
 import { MeusClientesExpandible } from '@/components/builder/blocks/MeusClientesExpandible';
 import { SIZING, SPACING, COLORS, BORDERS, SHADOWS, TYPOGRAPHY } from '@/lib/design-system';
@@ -53,9 +54,9 @@ function InventoryPageBase(): React.JSX.Element {
         }
       }
       
-      // Atualizar nome do usuário no bloco user-info se não for vendedor
-      const isUserSeller = userInformation && typeof userInformation.isVendedor === 'boolean' && userInformation.isVendedor === true;
-      
+      // Atualizar nome do usuário no bloco user-info se for comprador (não vendedor)
+      const isUserSeller = isSellerUser(userInformation);
+
       if (userInformation && !isUserSeller) {
         const validUserName = typeof userInformation.name === 'string' && userInformation.name.trim().length > 0 
           ? userInformation.name.trim() 
@@ -76,6 +77,45 @@ function InventoryPageBase(): React.JSX.Element {
     };
 
     loadUserInformationAsync();
+  }, []);
+
+  // Sincroniza role/nome/foto com o Neon para sessões antigas (só `role: seller` sem `isVendedor`, etc.)
+  useEffect(() => {
+    let cancelled = false;
+
+    const syncProfile = async () => {
+      const local = LocalDB.getUser();
+      if (!local?.id) return;
+
+      const res = await syncUserProfileForClientAction(local.id);
+      if (cancelled || !res.success || !res.data) return;
+
+      const d = res.data;
+      const merged = LocalDB.updateUser({
+        name: d.userName,
+        role: d.role,
+        isVendedor: d.role === 'seller',
+        emailAddress: d.emailAddress,
+        whatsapp: d.phoneNumber,
+        document: d.documentNumber,
+        type: d.documentType === 'CNPJ' ? 'juridica' : 'fisica',
+        profilePictureUrl: d.profilePictureUrl,
+        nameGender: inferNameGenderFromFullName(d.userName),
+      });
+
+      if (!cancelled && merged) {
+        setCurrentUserInformation(merged);
+        if (merged.name) {
+          const firstName = merged.name.trim().split(/\s+/)[0];
+          if (firstName) setInventoryHeaderAddress(`Inventário ${firstName}`);
+        }
+      }
+    };
+
+    void syncProfile();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -142,7 +182,7 @@ function InventoryPageBase(): React.JSX.Element {
   // Filtrar blocos: remover footer e user-info se for vendedor
   const scrollableBlocksList = inventoryBlocks.filter((blockItem) => {
     if (blockItem.type === 'footer') return false;
-    if (blockItem.id === 'inv_user_info' && currentUserInformation && typeof currentUserInformation.isVendedor === 'boolean' && currentUserInformation.isVendedor === true) {
+    if (blockItem.id === 'inv_user_info' && isSellerUser(currentUserInformation)) {
       return false;
     }
     return true;
@@ -213,7 +253,7 @@ function InventoryPageBase(): React.JSX.Element {
           <div className="absolute inset-0 overflow-y-auto scrollbar-hide overscroll-contain pb-28">
             <div className="flex flex-col pt-0 min-h-full">
               {/* Badge de Vendedor Autorizado */}
-              {currentUserInformation && typeof currentUserInformation.isVendedor === 'boolean' && currentUserInformation.isVendedor === true && (
+              {isSellerUser(currentUserInformation) && currentUserInformation && (
                 <>
                   <div className="w-full px-4 pt-2 pb-1">
                     <AuthorizedSellerBadge user={currentUserInformation} />
@@ -226,6 +266,7 @@ function InventoryPageBase(): React.JSX.Element {
                     "w-full"
                   )}>
                     <button
+                      type="button"
                       onClick={() => setIsMyCustomersExpanded(!isMyCustomersExpanded)}
                       className={cn(
                         "w-full",
@@ -266,6 +307,7 @@ function InventoryPageBase(): React.JSX.Element {
                   <MeusClientesExpandible 
                     isOpen={isMyCustomersExpanded}
                     onClose={() => setIsMyCustomersExpanded(false)}
+                    sellerUserId={currentUserInformation.id}
                   />
                 </>
               )}

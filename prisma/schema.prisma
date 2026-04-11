@@ -7,6 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Utilizador da plataforma: comprador (`role = customer`) ou vendedor (`role = seller`).
+/// PF/PJ distinguem-se por `documentType` (CPF/CNPJ) e `document` (único).
 model User {
   id                 String   @id @default(cuid())
   email              String?  @unique
@@ -27,6 +29,7 @@ model User {
   postalCode         String?
   profilePictureUrl  String?  
   backgroundImageUrl String?  
+  /// `customer` = comprador (inventário “compras”); `seller` = vendedor autorizado (inventário vendedor).
   role               String   @default("customer")
   stores             Store[]
   createdAt          DateTime @default(now())
