@@ -119,14 +119,20 @@ export async function registerNewUserAction(
       });
 
       const firstNameToken = validatedData.fullName.split(' ')[0];
-      const storeDisplayName =
+      const defaultStoreName =
         firstNameToken !== undefined && firstNameToken.length > 0
-          ? firstNameToken
-          : 'Minha';
+          ? `${firstNameToken} Store`
+          : 'Minha Store';
+
+      // Nome da loja: campo explícito se preenchido; caso contrário, deriva do primeiro nome.
+      const resolvedStoreName =
+        typeof validatedData.storeName === 'string' && validatedData.storeName.trim().length > 0
+          ? validatedData.storeName.trim()
+          : defaultStoreName;
 
       await transaction.store.create({
         data: {
-          name: `${storeDisplayName} Store`,
+          name: resolvedStoreName,
           slug: buildStoreSlug(validatedData.fullName, newUser.id),
           nicheType: 'clothing',
           ownerId: newUser.id,

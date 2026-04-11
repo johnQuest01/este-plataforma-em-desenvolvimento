@@ -10,19 +10,6 @@ import { AuthInputField } from '@/components/auth/AuthInputField';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { LocalDB, inferNameGenderFromFullName } from '@/lib/local-db';
 
-const inputMasks = {
-  cpf: (value: string) =>
-    value.replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4').substring(0, 14),
-  cnpj: (value: string) =>
-    value.replace(/\D/g, '').replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5').substring(0, 18),
-  phone: (value: string) =>
-    value.replace(/\D/g, '').replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3').substring(0, 15),
-  cep: (value: string) => {
-    const digits = value.replace(/\D/g, '').slice(0, 8);
-    if (digits.length <= 5) return digits;
-    return `${digits.slice(0, 5)}-${digits.slice(5)}`;
-  },
-};
 
 function getLoginVideoMimeType(sourceUrl: string): string {
   const base = sourceUrl.split('?')[0].toLowerCase();
@@ -57,6 +44,7 @@ export default function AuthenticationPage(): React.JSX.Element {
     postalCode: '',
     documentNumber: '',
     password: '',
+    storeName: '',
   });
 
   useEffect(() => {
@@ -73,20 +61,7 @@ export default function AuthenticationPage(): React.JSX.Element {
   const isVideoVisible = Boolean(isVideoActive && videoUrl.trim() !== '');
 
   const handleInputChange = (field: keyof typeof formData, value: string) => {
-    let finalValue = value;
-    if (field === 'documentNumber') {
-      finalValue = personType === 'CPF' ? inputMasks.cpf(value) : inputMasks.cnpj(value);
-    }
-    if (field === 'phoneNumber') {
-      finalValue = inputMasks.phone(value);
-    }
-    if (field === 'postalCode') {
-      finalValue = inputMasks.cep(value);
-    }
-    if (field === 'state') {
-      finalValue = value.replace(/\d/g, '').toUpperCase().slice(0, 2);
-    }
-    setFormData((previousState) => ({ ...previousState, [field]: finalValue }));
+    setFormData((previousState) => ({ ...previousState, [field]: value }));
   };
 
   const persistSessionAndRedirect = (params: {
@@ -179,6 +154,7 @@ export default function AuthenticationPage(): React.JSX.Element {
         documentNumber: formData.documentNumber,
         password: formData.password,
         registerAsSeller,
+        storeName: formData.storeName,
       });
 
       if (!registerResponse.success) {
@@ -209,7 +185,7 @@ export default function AuthenticationPage(): React.JSX.Element {
   };
 
   return (
-    <main className="relative min-h-[100dvh] w-full overflow-x-hidden bg-slate-900">
+    <main className="relative min-h-dvh w-full overflow-x-hidden bg-slate-900">
       {/* Camada 1: Vídeo de Fundo em Fullscreen */}
       {isVideoVisible ? (
         <video
@@ -223,7 +199,7 @@ export default function AuthenticationPage(): React.JSX.Element {
           <source src={videoUrl} type={getLoginVideoMimeType(videoUrl)} />
         </video>
       ) : (
-        <div className="absolute inset-0 z-0 bg-gradient-to-br from-slate-800 to-slate-900" aria-hidden />
+        <div className="absolute inset-0 z-0 bg-linear-to-br from-slate-800 to-slate-900" aria-hidden />
       )}
 
       {/* Camada 2: Overlay Escuro Suave */}
@@ -233,8 +209,8 @@ export default function AuthenticationPage(): React.JSX.Element {
       <div
         className={
           showSignupFields
-            ? 'relative z-10 flex h-[100dvh] max-h-[100dvh] w-full flex-col items-center overflow-hidden px-4 py-3 sm:py-5'
-            : 'relative z-10 flex min-h-[100dvh] w-full flex-col items-center justify-center px-4 py-12'
+            ? 'relative z-10 flex h-dvh max-h-dvh w-full flex-col items-center overflow-hidden px-4 py-3 sm:py-5'
+            : 'relative z-10 flex min-h-dvh w-full flex-col items-center justify-center px-4 py-12'
         }
       >
         <div
@@ -360,24 +336,14 @@ export default function AuthenticationPage(): React.JSX.Element {
                       state={formData.state}
                       postalCode={formData.postalCode}
                       documentNumber={formData.documentNumber}
+                      storeName={formData.storeName}
+                      registerAsSeller={registerAsSeller}
                       onPersonTypeChange={setPersonType}
                       onInputChange={handleInputChange}
+                      onSellerToggle={setRegisterAsSeller}
                     />
                   </div>
                 </div>
-                <label className="flex shrink-0 cursor-pointer items-start gap-3 rounded-2xl border border-white/20 bg-black/35 px-3 py-2.5 text-left text-xs text-white/95 backdrop-blur-md [text-shadow:0_1px_6px_rgba(0,0,0,0.5)]">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/40 accent-white"
-                    checked={registerAsSeller}
-                    onChange={(event) => setRegisterAsSeller(event.target.checked)}
-                  />
-                  <span>
-                    <span className="font-bold">Sou vendedor(a)</span>
-                    {' '}
-                    — inventário Maryland, lista de clientes e gestão no app.
-                  </span>
-                </label>
                 <button
                   type="submit"
                   disabled={isLoading}
