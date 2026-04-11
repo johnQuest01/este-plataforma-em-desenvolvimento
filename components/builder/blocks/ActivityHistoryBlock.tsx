@@ -55,10 +55,12 @@ function ActivityHistoryBlockInner({ config, onAction }: BlockComponentProps): R
   const buttonLabel = data.searchFormButtonLabel || 'Buscar';
   
   const activityButtons = data.activityButtons || [
-    { id: 'btn_status', label: 'Status de Pedido', actionRoute: '/status' },
-    { id: 'btn_box', label: 'Meu Box Maryland', actionRoute: '/box' },
-    { id: 'btn_favorites', label: 'Meus Favoritos', actionRoute: '/favorites' },
-    { id: 'btn_bag', label: 'Sacola', actionRoute: '/cart' }
+    { id: 'btn_status',    label: 'Status de Pedido',   actionRoute: '/status' },
+    { id: 'btn_box',       label: 'Meu Box Maryland',   actionRoute: '/box' },
+    { id: 'btn_favorites', label: 'Meus Favoritos',     actionRoute: '/favorites' },
+    { id: 'btn_bag',       label: 'Sacola',             actionRoute: '/cart' },
+    { id: 'btn_sales',     label: 'Histórico de Vendas', actionRoute: '/history' },
+    { id: 'btn_cashier',   label: 'Caixa Virtual',      actionRoute: '/pos' },
   ];
 
   const [searchQueryInformation, setSearchQueryInformation] = useState<string>('');
