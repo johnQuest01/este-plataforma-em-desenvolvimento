@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const SellerDashboardSearchSchema = z.object({
   userId: z.string().optional(),
+  searchQuery: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
 });

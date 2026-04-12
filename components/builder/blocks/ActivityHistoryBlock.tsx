@@ -59,7 +59,7 @@ function ActivityHistoryBlockInner({ config, onAction }: BlockComponentProps): R
     { id: 'btn_box',       label: 'Meu Box Maryland',   actionRoute: '/box' },
     { id: 'btn_favorites', label: 'Meus Favoritos',     actionRoute: '/favorites' },
     { id: 'btn_bag',       label: 'Sacola',             actionRoute: '/cart' },
-    { id: 'btn_sales',     label: 'Histórico de Vendas', actionRoute: '/history' },
+    { id: 'btn_sales',     label: 'Histórico de Vendas', actionRoute: '/seller-dashboard' },
     { id: 'btn_cashier',   label: 'Caixa Virtual',      actionRoute: '/pos' },
   ];
 

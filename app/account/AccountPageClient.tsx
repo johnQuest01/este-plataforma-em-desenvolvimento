@@ -11,7 +11,7 @@ export interface AccountPageClientProps {
   initialOpenHistory?: boolean;
 }
 
-// Compradores e vendedoras compartilham algumas views; 'salary-methods' é exclusiva de vendedoras.
+// Compradores e vendedoras compartilham algumas views; 'salary-methods' e 'seller-dashboard' são exclusivas de vendedoras.
 type AccountView =
   | 'account'
   | 'history'
@@ -19,7 +19,8 @@ type AccountView =
   | 'security'
   | 'payments'
   | 'salary-methods'
-  | 'catalog';
+  | 'catalog'
+  | 'seller-dashboard';
 
 const VIEW_TITLES: Record<AccountView, string> = {
   'account': 'Minha Conta',
@@ -29,6 +30,7 @@ const VIEW_TITLES: Record<AccountView, string> = {
   'payments': 'Formas de Pagamento',
   'salary-methods': 'Formas de Receber',
   'catalog': 'Meus Favoritos',
+  'seller-dashboard': 'Histórico de Vendas',
 };
 
 export function AccountPageClient({
@@ -94,6 +96,15 @@ export function AccountPageClient({
       // Exclusiva de vendedoras: formas de receber salário
       if (action === 'NAVIGATE_SALARY_METHODS') {
         navigateTo('salary-methods');
+        return;
+      }
+
+      // Exclusiva de vendedoras: histórico de vendas / dashboard
+      if (
+        action === 'NAVIGATE_SELLER_DASHBOARD' ||
+        (action === 'NAVIGATE' && payload === '/seller-dashboard')
+      ) {
+        navigateTo('seller-dashboard');
         return;
       }
 
@@ -253,6 +264,18 @@ export function AccountPageClient({
     []
   );
 
+  // Dashboard de vendas — exclusivo vendedoras
+  const sellerDashboardBlockConfiguration: BlockConfig = useMemo(
+    () => ({
+      id: 'seller-dashboard-block',
+      type: 'seller-dashboard',
+      isVisible: true,
+      data: {},
+      style: { bgColor: '#ffffff' },
+    }),
+    []
+  );
+
   const isVisible = (view: AccountView) => currentActiveView === view;
 
   return (
@@ -303,6 +326,13 @@ export function AccountPageClient({
       {mountedViews.has('history') && (
         <div className={isVisible('history') ? 'block w-full' : 'hidden'} aria-hidden={!isVisible('history')}>
           <BlockRenderer config={activityHistoryBlockConfiguration} onAction={handleFlowAction} />
+        </div>
+      )}
+
+      {/* Dashboard de Vendas — exclusivo vendedoras */}
+      {mountedViews.has('seller-dashboard') && (
+        <div className={isVisible('seller-dashboard') ? 'block w-full' : 'hidden'} aria-hidden={!isVisible('seller-dashboard')}>
+          <BlockRenderer config={sellerDashboardBlockConfiguration} onAction={handleFlowAction} />
         </div>
       )}
     </main>
