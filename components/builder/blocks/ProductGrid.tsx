@@ -20,36 +20,37 @@ interface ProductGridBlockProps {
 export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps): React.JSX.Element => {
   const router = useRouter();
   const { isSellerMode, sellerSlug, sellerProducts } = useSellerContext();
-  const [products, setProducts] = useState<(ProductData | SellerEcosystemProductDTO)[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  const fetchProducts = useCallback(async () => {
+  // Em modo vendedor, usa os produtos do contexto DIRETAMENTE (sem estado intermediário).
+  // Isso elimina o "flash" de produtos Maryland que acontecia durante o useEffect de sync.
+  const [mdProducts, setMdProducts] = useState<ProductData[]>([]);
+  const [isLoading, setIsLoading] = useState(!isSellerMode);
+
+  const fetchMdProducts = useCallback(async () => {
     try {
-      if (isSellerMode) {
-        // Contexto de vendedora: usa produtos do SellerContext (já carregados pelo DashboardPage)
-        setProducts(sellerProducts);
-      } else {
-        const dbProducts = await getProductsAction();
-        setProducts(dbProducts);
-      }
+      const dbProducts = await getProductsAction();
+      setMdProducts(dbProducts);
     } catch (error) {
       console.error("Erro ao buscar produtos:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [isSellerMode, sellerProducts]);
+  }, []);
 
   useEffect(() => {
-    fetchProducts();
+    // Em modo vendedor não precisamos buscar os produtos do catálogo Maryland
+    if (isSellerMode) {
+      setIsLoading(false);
+      return;
+    }
 
-    // Sem polling em modo vendedor — dados vêm do contexto
-    if (isSellerMode) return;
+    fetchMdProducts();
 
-    const handleUpdate = () => fetchProducts();
+    const handleUpdate = () => fetchMdProducts();
     if (typeof window !== 'undefined') {
       window.addEventListener(PRODUCT_UPDATE_EVENT, handleUpdate);
     }
-    const interval = setInterval(fetchProducts, 10000);
+    const interval = setInterval(fetchMdProducts, 10000);
 
     return () => {
       if (typeof window !== 'undefined') {
@@ -57,13 +58,13 @@ export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps): R
       }
       clearInterval(interval);
     };
-  }, [fetchProducts, isSellerMode]);
+  }, [fetchMdProducts, isSellerMode]);
 
-  // Em modo vendedor: mostra exatamente o que a vendedora tem (sem fallback)
+  // Em modo vendedor: usa DIRETAMENTE o contexto (sem hop de estado)
   // Em modo normal: usa os produtos do DB, com fallback nos dados estáticos do config
   const displayProducts = isSellerMode
-    ? products
-    : (products.length > 0 ? products : (config.data.products as unknown as ProductData[] || []));
+    ? sellerProducts
+    : (mdProducts.length > 0 ? mdProducts : (config.data.products as unknown as ProductData[] || []));
   const title = (isSellerMode ? '🛍️ Produtos da Loja' : config.data.title) as string;
 
   const handleProductClick = (product: ProductData | SellerEcosystemProductDTO) => {

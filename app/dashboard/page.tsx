@@ -95,6 +95,10 @@ export default function DashboardPage() {
   },[]);
 
   useEffect(() => {
+    // Cancellation flag: if the effect re-runs (strict mode or deps change),
+    // the previous async chain is aborted before it can set state.
+    let cancelled = false;
+
     const checkAuth = async () => {
       try {
         // ── Detecta slug do vendedor (URL tem prioridade; fallback no localStorage) ─
@@ -115,16 +119,16 @@ export default function DashboardPage() {
         if (!user) {
           if (activeSellerSlug) {
             // ── VISITANTE (sem login) via link da vendedora ──
+            if (cancelled) return;
             setPreviewSellerSlug(activeSellerSlug);
             setIsPreviewMode(true);
             setSellerMode(true);
             setCurrentUserFirstName('Visitante');
             try {
               const sp = await getSellerEcosystemProductsAction(activeSellerSlug);
-              setSellerProducts(sp);
+              if (!cancelled) setSellerProducts(sp);
             } catch {
-              // Slug inválido ou vendedora removida: mostra dashboard vazio (sem travar)
-              setSellerProducts([]);
+              if (!cancelled) setSellerProducts([]);
             }
           } else {
             router.replace('/');
@@ -132,57 +136,61 @@ export default function DashboardPage() {
           }
         } else {
           const firstName = user.name?.trim().split(/\s+/)[0] ?? 'Maryland';
-          setCurrentUserFirstName(firstName.length > 0 ? firstName : 'Maryland');
+          if (!cancelled) setCurrentUserFirstName(firstName.length > 0 ? firstName : 'Maryland');
 
           if (isSellerUser(user) && !isAdminUser(user)) {
             // ── VENDEDOR logado: exibe apenas o próprio estoque ──
             try {
               const slugResult = await getOrCreateSellerSlugAction(user.id);
+              if (cancelled) return;
               if (slugResult.success) {
                 const sellerSlug = slugResult.data.sellerSlug;
                 setPreviewSellerSlug(sellerSlug);
                 setSellerMode(true);
                 localStorage.setItem('md_seller_ref', sellerSlug);
                 const sp = await getSellerEcosystemProductsAction(sellerSlug);
-                setSellerProducts(sp);
+                if (!cancelled) setSellerProducts(sp);
               }
             } catch {
               // Falha ao buscar slug/estoque: vendedor vê tela normal sem travar
             }
           } else if (!isAdminUser(user) && activeSellerSlug) {
             // ── CLIENTE logado que entrou via link da vendedora ──
-            // isPreviewMode = false (logado, pode navegar); sellerMode = true (vê estoque da vendedora)
+            if (cancelled) return;
             setPreviewSellerSlug(activeSellerSlug);
             setSellerMode(true);
             try {
               const sp = await getSellerEcosystemProductsAction(activeSellerSlug);
-              setSellerProducts(sp);
+              if (!cancelled) setSellerProducts(sp);
             } catch {
-              // Falha ao buscar estoque: limpa contexto e exibe catálogo completo
-              setSellerMode(false);
-              setPreviewSellerSlug('');
-              if (typeof window !== 'undefined') localStorage.removeItem('md_seller_ref');
+              if (!cancelled) {
+                setSellerMode(false);
+                setPreviewSellerSlug('');
+                if (typeof window !== 'undefined') localStorage.removeItem('md_seller_ref');
+              }
             }
           }
           // Admin: vê todos os produtos (sellerMode permanece false)
         }
       } catch (err) {
-        // Erro inesperado: não trava o dashboard, loga no console
         console.error('[Dashboard] checkAuth error:', err);
       } finally {
-        // SEMPRE libera o dashboard — nunca fica preso em loading
-        setIsReady(true);
+        // Só libera o dashboard se este é ainda o efeito "ativo" (não cancelado)
+        if (!cancelled) setIsReady(true);
       }
     };
     checkAuth();
     
     const loadButtonPosition = async () => {
       const status = await getAdminAccessStatusAction();
-      if (status.success && status.buttonPosition) {
+      if (!cancelled && status.success && status.buttonPosition) {
         setButtonPosition(status.buttonPosition);
       }
     };
     loadButtonPosition();
+
+    // Cleanup: cancela qualquer operação assíncrona pendente desta execução do effect
+    return () => { cancelled = true; };
   }, [router]);
 
   useEffect(() => {

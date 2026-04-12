@@ -31,38 +31,25 @@ import { useSellerContext } from '@/lib/seller-context';
 interface CategorySectionBlockBaseProps extends BlockComponentProps {}
 
 const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBaseProps): React.JSX.Element | null => {
-  const [products, setProducts] = useState<ProductData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const { isSellerMode, sellerSlug, sellerProducts } = useSellerContext();
+  const [mdProducts, setMdProducts] = useState<ProductData[]>([]);
+  const [isLoading, setIsLoading] = useState(!isSellerMode);
 
   const title = config.data.title ?? config.data.categoryName ?? 'Produtos';
   const filterTag = config.data.filterTag as string | undefined;
 
   useEffect(() => {
+    // Em modo vendedor, os produtos vêm do contexto — sem fetch extra
+    if (isSellerMode) {
+      setIsLoading(false);
+      return;
+    }
+
     const loadProducts = async () => {
       try {
         setIsLoading(true);
+        const allProducts = await getProductsAction();
 
-        let allProducts: ProductData[];
-
-        if (isSellerMode) {
-          // Modo vendedora: usa apenas os produtos do estoque da vendedora
-          allProducts = sellerProducts.map((p) => ({
-            id:       p.id,
-            name:     p.name,
-            price:    p.price,
-            stock:    p.stock,
-            imageUrl: p.imageUrl ?? '',
-            category: p.category ?? '',
-            tag:      p.tag ?? '',
-            variants: [],
-            isVisible: true,
-          } as unknown as ProductData));
-        } else {
-          allProducts = await getProductsAction();
-        }
-
-        // Filtro por categoria (comportamento original preservado)
         let filtered = allProducts;
         if (filterTag) {
           filtered = allProducts.filter(product => {
@@ -77,7 +64,7 @@ const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBase
           });
         }
 
-        setProducts(filtered.slice(0, 8));
+        setMdProducts(filtered.slice(0, 8));
       } catch (error) {
         console.error('[CategorySectionBlock] Erro ao carregar produtos:', error);
       } finally {
@@ -86,7 +73,35 @@ const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBase
     };
 
     loadProducts();
-  }, [filterTag, isSellerMode, sellerProducts]);
+  }, [filterTag, isSellerMode]);
+
+  // Em modo vendedor: filtra DIRETAMENTE do contexto (sem state intermediário)
+  const displayProducts: ProductData[] = isSellerMode
+    ? sellerProducts
+        .map((p) => ({
+          id:       p.id,
+          name:     p.name,
+          price:    p.price,
+          stock:    p.stock,
+          imageUrl: p.imageUrl ?? '',
+          category: p.category ?? '',
+          tag:      p.tag ?? '',
+          variants: [],
+          isVisible: true,
+        } as unknown as ProductData))
+        .filter(product => {
+          if (!filterTag) return true;
+          if (!product.category) return false;
+          const normalizedCategory = product.category
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '');
+          return normalizedCategory === filterTag;
+        })
+        .slice(0, 8)
+    : mdProducts;
 
   const handleProductClick = (product: ProductData) => {
     if (onAction) {
@@ -110,7 +125,7 @@ const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBase
   const textColor = config.style.textColor ?? '#000000';
 
   // 🧱 Não renderiza se não houver produtos após carregar
-  if (!isLoading && products.length === 0) {
+  if (!isLoading && displayProducts.length === 0) {
     return null;
   }
 
@@ -173,7 +188,7 @@ const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBase
             {/* Spacer Esquerdo: Mantém o alinhamento perfeito de 32px */}
             <div className="w-5 shrink-0" />
 
-            {products.map((product, idx) => {
+            {displayProducts.map((product, idx) => {
               const cardWidth = '144px';
 
               return (
