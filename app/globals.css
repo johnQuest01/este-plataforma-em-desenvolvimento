@@ -147,6 +147,28 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  /* ── Previne seleção acidental de texto/elementos no app (sensação nativa) ── */
+  body, #__next, main {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    /* Bloqueia menu de contexto longo pressionamento no mobile */
+    -webkit-touch-callout: none;
+  }
+
+  /* Campos de formulário DEVEM permitir seleção e edição */
+  input,
+  textarea,
+  select,
+  [contenteditable="true"] {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
 }
 
 @layer utilities {
