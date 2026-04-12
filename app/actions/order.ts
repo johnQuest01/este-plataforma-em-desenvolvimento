@@ -53,6 +53,8 @@ const CreateOrderSchema = z.object({
   customerId: z.string().optional(),
   /// ID do vendedor que indicou este cliente (via link de loja)
   referredBySellerId: z.string().optional(),
+  /// Slug da vendedora (alternativo ao referredBySellerId — a action resolve o ID)
+  sellerSlug: z.string().optional(),
 });
 
 // --- STRICT TYPES (Contrato de Dados) ---
@@ -103,6 +105,22 @@ export async function createOrderAction(input: CreateOrderInput) {
     return { success: false, error: result.error.flatten() };
   }
   const data = result.data;
+
+  // Resolve sellerSlug → referredBySellerId (se o ID ainda não foi fornecido)
+  let resolvedReferredBySellerId = data.referredBySellerId;
+  if (!resolvedReferredBySellerId && data.sellerSlug) {
+    try {
+      interface SellerRow { id: string }
+      const rows = await (prisma as unknown as { $queryRawUnsafe: (q: string, ...args: unknown[]) => Promise<SellerRow[]> })
+        .$queryRawUnsafe(
+          `SELECT id FROM "User" WHERE "sellerSlug" = $1 AND role = 'seller' LIMIT 1`,
+          data.sellerSlug
+        );
+      if (rows.length > 0) resolvedReferredBySellerId = rows[0].id;
+    } catch {
+      // Slug inválido ou vendedora removida: ignora, pedido segue sem referência
+    }
+  }
 
   try {
     // 2. Resolução da Loja (Lógica de Fallback Robusta)
@@ -169,8 +187,8 @@ export async function createOrderAction(input: CreateOrderInput) {
           customerPhone: data.customerDoc,
           // Vínculo com o cliente logado (rastreia histórico de compras do cliente)
           ...(data.customerId ? { customerId: data.customerId } : {}),
-          // Vínculo com o vendedor que indicou (rastreia vendas por indicação)
-          ...(data.referredBySellerId ? { referredBySellerId: data.referredBySellerId } : {}),
+          // Vínculo com o vendedor que indicou (rastreia comissão e histórico de vendas)
+          ...(resolvedReferredBySellerId ? { referredBySellerId: resolvedReferredBySellerId } : {}),
           items: {
             create: data.items?.map(item => ({
               productId: item.productId,

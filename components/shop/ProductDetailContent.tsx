@@ -8,10 +8,11 @@ import {
 } from 'lucide-react';
 import { ProductData } from '@/app/actions/product.schema';
 import { cn } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { StoreHeader } from '@/components/builder/blocks/Header';
 import { OrderProvider, useOrder } from '@/components/builder/context/OrderContext';
-import { createOrderAction } from '@/app/actions/order'; 
+import { createOrderAction } from '@/app/actions/order';
+import { LocalDB } from '@/lib/local-db';
 
 // ✅ GUARDIAN: Importação do HOC
 import { withGuardian } from "@/components/guardian/GuardianBeacon";
@@ -22,6 +23,7 @@ interface ProductDetailContentProps {
 
 const ProductDetailInner = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   
   const { 
     product, 
@@ -79,7 +81,19 @@ const ProductDetailInner = () => {
 
   const handleBuy = async () => {
     if (!product) return;
-    
+
+    // ── 1. Verificar autenticação ANTES de qualquer coisa ──────────────────
+    // Visitantes que chegaram via link da vendedora devem se cadastrar primeiro.
+    const user = LocalDB.getUser();
+    if (!user) {
+      const sellerSlug =
+        searchParams.get('seller') ||
+        (typeof window !== 'undefined' ? localStorage.getItem('md_seller_ref') ?? '' : '');
+      router.push(sellerSlug ? `/?seller=${sellerSlug}` : '/');
+      return;
+    }
+
+    // ── 2. Validações de variantes ─────────────────────────────────────────
     const newErrors = {
       color: options.colors.length > 0 && !selections['color'],
       model: options.types.length > 0 && !selections['model'],
@@ -90,13 +104,10 @@ const ProductDetailInner = () => {
 
     if (Object.values(newErrors).some(Boolean)) {
       if (navigator.vibrate) navigator.vibrate(50);
-      
       const missingFields: string[] = [];
-      
       if (newErrors.color) missingFields.push("Cor");
       if (newErrors.model) missingFields.push("Tipo");
       if (newErrors.size) missingFields.push("Tamanho");
-      
       alert(`⚠️ Por favor, selecione: ${missingFields.join(", ")}.`);
       return;
     }
@@ -105,16 +116,24 @@ const ProductDetailInner = () => {
       alert("⚠️ A combinação selecionada não está disponível no estoque.");
       return;
     }
-    
+
+    // ── 3. Criar pedido com contexto do cliente e da vendedora ─────────────
+    // Se o cliente veio via link da vendedora, grava a referência para comissão.
+    const sellerSlug =
+      searchParams.get('seller') ||
+      (typeof window !== 'undefined' ? localStorage.getItem('md_seller_ref') ?? '' : '');
+
     await createOrderAction({
       title: product.name,
-      total: totalValue, 
+      total: totalValue,
       itemsCount: buyQuantity,
-      items: [{ productId: product.id, quantity: buyQuantity }] 
+      items: [{ productId: product.id, quantity: buyQuantity }],
+      customerId: user.id,
+      sellerSlug: sellerSlug || undefined,
     });
 
     alert(`✅ Pedido Realizado com Sucesso!\n\nVocê pode acompanhar o status em "Meus Pedidos".`);
-    router.push('/inventory'); 
+    router.push('/inventory');
   };
 
   if (!product) return null;
