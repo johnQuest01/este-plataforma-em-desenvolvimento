@@ -27,15 +27,22 @@ model User {
   postalCode         String?
   profilePictureUrl  String?
   backgroundImageUrl String?
-  /// `customer` = comprador; `seller` = vendedor autorizado.
+  /// `customer` = comprador; `seller` = vendedor autorizado; `admin` = admin Maryland 0000.
   role               String          @default("customer")
-  
-  // NOVOS CAMPOS ADICIONADOS
+
+  /// Slug único da loja da vendedora (ex: "bruna-maryland-x7k") — gerado automaticamente
+  sellerSlug         String?         @unique
+  /// Vendedor que indicou este cliente (via link /loja/[slug])
+  referredBySellerId String?
+  referredBySeller   User?           @relation("SellerReferrals", fields: [referredBySellerId], references: [id], onDelete: SetNull)
+  referredClients    User[]          @relation("SellerReferrals")
+
   isTwoFactorEnabled Boolean         @default(false)
   paymentMethods     PaymentMethod[]
   favoriteProducts   Product[]       @relation("UserFavorites")
 
   stores             Store[]
+  sellerInventory    SellerInventoryItem[]
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 }
@@ -103,6 +110,8 @@ model Product {
   updatedAt       DateTime         @updatedAt
   orderItems      OrderItem[]
   productionItems ProductionItem[]
+  /// Estoques pessoais dos vendedores que pegaram este produto
+  sellerInventory SellerInventoryItem[]
   
   @@index([reference])
   @@index([category])
@@ -245,4 +254,44 @@ model FormVideoConfig {
   isActive           Boolean  @default(true)
   updatedAt          DateTime @updatedAt
   createdAt          DateTime @default(now())
+}
+
+/// Catálogo global Maryland — gerenciado apenas pelo Admin 0000.
+/// Vendedores consultam este catálogo e adicionam itens ao seu estoque pessoal.
+model MarylandCatalogProduct {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  price        Decimal  @db.Decimal(10, 2)
+  reference    String?
+  category     String?
+  imageUrl     String?
+  totalStock   Int      @default(0)
+  isAvailable  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([category])
+  @@index([isAvailable])
+}
+
+/// Estoque pessoal de cada vendedor autorizado.
+/// Cada linha representa (vendedor, produto, variação) → quantidade reservada.
+/// variantId = "" significa "produto sem variação específica".
+model SellerInventoryItem {
+  id          String   @id @default(cuid())
+  quantity    Int      @default(0)
+  sellerId    String
+  seller      User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// ID da variação específica escolhida (string vazia = sem variação)
+  variantId   String   @default("")
+  /// Label legível: "Azul | M | Aberto"
+  variantName String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([sellerId, productId, variantId])
+  @@index([sellerId])
 }

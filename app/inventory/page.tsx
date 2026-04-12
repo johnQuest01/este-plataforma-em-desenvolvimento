@@ -13,7 +13,7 @@ import { INVENTORY_BLOCKS, STOCK_BLOCKS } from '@/data/inventory-state';
 import { BlockRenderer } from '@/components/builder/BlockRender';
 import { checkForNewImage } from '@/app/actions';
 import { StoreHeader } from '@/components/builder/blocks/Header';
-import { LocalDB, LOCAL_USER_DB_KEY, isSellerUser, inferNameGenderFromFullName } from '@/lib/local-db';
+import { LocalDB, LOCAL_USER_DB_KEY, isSellerUser, isAdminUser, inferNameGenderFromFullName } from '@/lib/local-db';
 import { syncUserProfileForClientAction } from '@/app/actions/session-sync-actions';
 import { AuthorizedSellerBadge } from '@/components/builder/blocks/AuthorizedSellerBadge';
 import { MeusClientesExpandible } from '@/components/builder/blocks/MeusClientesExpandible';
@@ -23,6 +23,10 @@ import { SIZING, SPACING, COLORS, BORDERS, SHADOWS, TYPOGRAPHY } from '@/lib/des
 import { StockModal } from '@/components/builder/ui/StockModal';
 import { CatalogModal } from '@/components/builder/ui/CatalogModal';
 import { OrdersModal } from '@/components/builder/ui/OrdersModal';
+import { StockModalContainer } from '@/components/builder/ui/stock-modal/StockModalContainer';
+import { MarylandCatalogBlock } from '@/components/builder/blocks/MarylandCatalogBlock';
+import { SellerOwnStockBlock } from '@/components/builder/blocks/SellerOwnStockBlock';
+import { ShareStoreButton } from '@/components/seller-store/ShareStoreButton';
 
 function InventoryPageBase(): React.JSX.Element {
   const routerNavigation = useRouter();
@@ -34,6 +38,10 @@ function InventoryPageBase(): React.JSX.Element {
   const [isStockModalVisible, setIsStockModalVisible] = useState<boolean>(false);
   const [isCatalogModalVisible, setIsCatalogModalVisible] = useState<boolean>(false);
   const [isOrdersModalVisible, setIsOrdersModalVisible] = useState<boolean>(false);
+  // Catálogo global Maryland — abre para vendedores escolherem itens
+  const [isMarylandCatalogVisible, setIsMarylandCatalogVisible] = useState<boolean>(false);
+  // Estoque pessoal da vendedora — lista o que ela já pegou do catálogo
+  const [isSellerStockVisible, setIsSellerStockVisible] = useState<boolean>(false);
   
   // --- ESTADO DO COMPONENTE EXPANSÍVEL ---
   const [isMyCustomersExpanded, setIsMyCustomersExpanded] = useState<boolean>(false);
@@ -179,25 +187,52 @@ function InventoryPageBase(): React.JSX.Element {
     };
   }, []);
 
-  // Filtrar blocos: remover footer e user-info se for vendedor
-  const scrollableBlocksList = inventoryBlocks.filter((blockItem) => {
-    if (blockItem.type === 'footer') return false;
-    if (blockItem.id === 'inv_user_info' && isSellerUser(currentUserInformation)) {
-      return false;
-    }
-    return true;
-  });
+  const isSeller = isSellerUser(currentUserInformation);
+  const isAdmin  = isAdminUser(currentUserInformation);
+
+  // Filtrar blocos conforme papel do usuário
+  const scrollableBlocksList = inventoryBlocks
+    .filter((blockItem) => {
+      if (blockItem.type === 'footer') return false;
+      // Oculta bloco user-info para vendedores (eles têm o badge próprio)
+      if (blockItem.id === 'inv_user_info' && isSeller) return false;
+      return true;
+    })
+    .map((blockItem) => {
+      // Para vendedores: remove o botão "Estoque" (ABASTECER) do grid-buttons
+      // Para admin: mantém "Estoque" intacto (abre o StockModal de cadastro)
+      if (blockItem.type === 'grid-buttons' && isSeller && !isAdmin) {
+        const buttons = Array.isArray(blockItem.data.buttons)
+          ? (blockItem.data.buttons as Array<{ id: string; label: string; action?: string }>)
+              .filter((btn) => btn.id !== 'btn_stock')
+          : blockItem.data.buttons;
+        return { ...blockItem, data: { ...blockItem.data, buttons } };
+      }
+      return blockItem;
+    });
 
   // --- GERENCIADOR DE AÇÕES ---
   const handleBlockActionExecution = (actionIdentifier: string) => {
     switch (actionIdentifier) {
-      case 'openStockModal':
-        // ✅ LÓGICA HÍBRIDA: Desktop vai para rota dedicada, Mobile abre modal
-        if (typeof window !== 'undefined' && window.innerWidth > 1024) {
-          routerNavigation.push('/inventory/register');
-        } else {
-          setIsStockModalVisible(true);
+      case 'openStockModal': {
+        // Lê direto do LocalDB (síncrono) para não depender do estado React
+        const currentUser = LocalDB.getUser();
+        if (isAdminUser(currentUser)) {
+          if (typeof window !== 'undefined' && window.innerWidth > 1024) {
+            routerNavigation.push('/inventory/register');
+          } else {
+            setIsStockModalVisible(true);
+          }
         }
+        break;
+      }
+
+      case 'openMarylandCatalog':
+        setIsMarylandCatalogVisible(true);
+        break;
+
+      case 'openSellerStock':
+        setIsSellerStockVisible(true);
         break;
       
       case 'openOrders': 
@@ -206,6 +241,11 @@ function InventoryPageBase(): React.JSX.Element {
 
       case 'openCatalog': 
         setIsCatalogModalVisible(true); 
+        break;
+
+      case 'GO_BACK':
+        setIsMarylandCatalogVisible(false);
+        setIsSellerStockVisible(false);
         break;
 
       default:
@@ -309,6 +349,41 @@ function InventoryPageBase(): React.JSX.Element {
                     onClose={() => setIsMyCustomersExpanded(false)}
                     sellerUserId={currentUserInformation.id}
                   />
+
+                  {/* Compartilhar loja */}
+                  <div className="w-full px-4 pb-2">
+                    <ShareStoreButton />
+                  </div>
+
+                  {/* Botões de estoque para a vendedora */}
+                  <div className="w-full px-4 pb-2 flex gap-2">
+                    {/* Meu Estoque — vê o que já tem no estoque pessoal */}
+                    <button
+                      type="button"
+                      onClick={() => handleBlockActionExecution('openSellerStock')}
+                      className="flex-1 h-12 px-3 bg-[#5874f6] text-white rounded-xl shadow-sm font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[#4a63e0] active:scale-[0.98] transition-all"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <path d="M16 10a4 4 0 0 1-8 0"/>
+                      </svg>
+                      <span>Meu Estoque</span>
+                    </button>
+
+                    {/* Estoque Maryland — catálogo global para pegar produtos */}
+                    <button
+                      type="button"
+                      onClick={() => handleBlockActionExecution('openMarylandCatalog')}
+                      className="flex-1 h-12 px-3 bg-[#F5A5C2] text-white rounded-xl shadow-sm font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[#e891b0] active:scale-[0.98] transition-all"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+                      </svg>
+                      <span>Estoque Maryland</span>
+                    </button>
+                  </div>
                 </>
               )}
               
@@ -348,6 +423,32 @@ function InventoryPageBase(): React.JSX.Element {
             onClose={() => setIsOrdersModalVisible(false)}
           />
         )}
+
+        {/* Modal catálogo Maryland — vendedor escolhe produtos para seu estoque */}
+        <StockModalContainer
+          isOpen={isMarylandCatalogVisible}
+          onClose={() => setIsMarylandCatalogVisible(false)}
+        >
+          <MarylandCatalogBlock
+            config={{ id: 'maryland-catalog', type: 'maryland-catalog', isVisible: true, data: {}, style: { bgColor: '#ffffff' } }}
+            onAction={(action) => {
+              if (action === 'GO_BACK') setIsMarylandCatalogVisible(false);
+            }}
+          />
+        </StockModalContainer>
+
+        {/* Modal estoque pessoal — vendedor vê o que já tem no seu estoque */}
+        <StockModalContainer
+          isOpen={isSellerStockVisible}
+          onClose={() => setIsSellerStockVisible(false)}
+        >
+          <SellerOwnStockBlock
+            config={{ id: 'seller-stock', type: 'seller-own-stock' as never, isVisible: true, data: {}, style: {} }}
+            onAction={(action) => {
+              if (action === 'GO_BACK') setIsSellerStockVisible(false);
+            }}
+          />
+        </StockModalContainer>
 
       </div>
     </main>

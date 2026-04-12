@@ -27,6 +27,12 @@ export function isSellerUser(user: UserData | null | undefined): boolean {
   return typeof user.isVendedor === 'boolean' && user.isVendedor === true;
 }
 
+/** Admin 0000: único usuário que pode cadastrar produtos no catálogo global Maryland. */
+export function isAdminUser(user: UserData | null | undefined): boolean {
+  if (!user) return false;
+  return user.role === 'admin';
+}
+
 export const LOCAL_USER_DB_KEY = 'b2b_app_user_db';
 const DB_KEY = LOCAL_USER_DB_KEY;
 

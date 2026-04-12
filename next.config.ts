@@ -84,13 +84,25 @@ const nextConfiguration = {
     serverActions: {
       bodySizeLimit: "50mb",
       allowedOrigins: [
+        // Local
         "localhost:3000",
-        // Testes no telemóvel na rede local (ajusta o IP se for diferente)
+        "localhost:*",
+        // Testes no celular na rede local
         "192.168.15.24:3000",
+        "192.168.15.*:3000",
+        // Vercel deployments (preview + production)
+        "*.vercel.app",
+        // Cloudflare Tunnel / GitHub Codespaces / Ngrok / etc.
         "*.cloudworkstations.dev",
         "*.app.github.dev",
         "*.trycloudflare.com",
-        "*.vercel.app",
+        "*.ngrok-free.app",
+        "*.ngrok.io",
+        // Domínio custom — defina NEXT_PUBLIC_APP_URL com seu domínio
+        // ex: "maryland.com.br", "www.maryland.com.br"
+        ...(process.env.NEXT_PUBLIC_APP_URL
+          ? [new URL(process.env.NEXT_PUBLIC_APP_URL).host]
+          : []),
       ],
     },
   },

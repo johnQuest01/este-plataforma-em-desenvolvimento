@@ -9,6 +9,7 @@ import { getFormVideoAction } from '@/app/actions/video-bg-actions';
 import { AuthInputField } from '@/components/auth/AuthInputField';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { LocalDB, inferNameGenderFromFullName } from '@/lib/local-db';
+import { associateClientWithSellerAction } from '@/app/actions/seller-store-actions';
 
 
 function getLoginVideoMimeType(sourceUrl: string): string {
@@ -22,6 +23,17 @@ type PersonDocumentType = 'CPF' | 'CNPJ';
 
 export default function AuthenticationPage(): React.JSX.Element {
   const router = useRouter();
+
+  // Slug do vendedor que indicou (via ?seller=... ou localStorage)
+  const getSellerRefSlug = (): string | null => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const fromParam = params.get('seller');
+      if (fromParam) return fromParam;
+      return localStorage.getItem('md_seller_ref');
+    }
+    return null;
+  };
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showSignupFields, setShowSignupFields] = useState<boolean>(false);
@@ -107,6 +119,12 @@ export default function AuthenticationPage(): React.JSX.Element {
       });
 
       if (authResponse.success && authResponse.data) {
+        // Associar ao vendedor se vier de um link
+        const sellerSlug = getSellerRefSlug();
+        if (sellerSlug && authResponse.data.role !== 'seller' && authResponse.data.role !== 'admin') {
+          associateClientWithSellerAction(authResponse.data.userId, sellerSlug).catch(() => {});
+          if (typeof window !== 'undefined') localStorage.removeItem('md_seller_ref');
+        }
         persistSessionAndRedirect({
           userId: authResponse.data.userId,
           documentType: authResponse.data.documentType,
@@ -167,6 +185,12 @@ export default function AuthenticationPage(): React.JSX.Element {
       }
 
       if (registerResponse.data) {
+        // Associar ao vendedor se veio de um link
+        const sellerSlug = getSellerRefSlug();
+        if (sellerSlug && registerResponse.data.role !== 'seller' && registerResponse.data.role !== 'admin') {
+          associateClientWithSellerAction(registerResponse.data.userId, sellerSlug).catch(() => {});
+          if (typeof window !== 'undefined') localStorage.removeItem('md_seller_ref');
+        }
         persistSessionAndRedirect({
           userId: registerResponse.data.userId,
           documentType: registerResponse.data.documentType,

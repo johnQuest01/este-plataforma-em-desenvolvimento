@@ -15,6 +15,7 @@ import { SellerDashboardBlock } from './blocks/SellerDashboardBlock';
 import { UserProfileSettingsBlock } from './blocks/UserProfileSettingsBlock';
 import { PaymentMethodsBlock } from './blocks/PaymentMethodsBlock';
 import { CatalogShowcaseBlock } from './blocks/CatalogShowcaseBlock';
+import { MarylandCatalogBlock } from './blocks/MarylandCatalogBlock';
 import { MasterGuardianDashboard } from "./blocks/MasterGuardianDashboard";
 import { StandardButtonBlock } from './blocks/StandardButtonBlock';
 import { JeansRegistrationBlock } from './blocks/JeansRegistrationBlock';
@@ -140,7 +141,7 @@ export const COMPONENT_MAP: Record<string, LegoComponent> = {
   'seller-sales-dashboard': SellerSalesDashboardBlock,
   'authorized-seller-menu': AuthorizedSellerMenuBlock,
   'login-security': LoginSecurityBlock,
-
+  'maryland-catalog': MarylandCatalogBlock,
 
   /** Login: upload Vercel Blob (multipart) + URL no Neon via saveVideoReferenceAction */
   'video-background-manager': VideoBackgroundManagerBlock,

@@ -142,7 +142,8 @@ export type BlockType =
   | 'authorized-seller-profile'
   | 'authorized-seller-menu'
   | 'seller-dashboard'
-  | 'login-security';
+  | 'login-security'
+  | 'maryland-catalog';
 
 export interface MenuItem {
   id: string;
