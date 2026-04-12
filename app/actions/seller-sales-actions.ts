@@ -3,8 +3,9 @@
 /**
  * Server actions para histórico de VENDAS do Vendedor Autorizado.
  *
- * getSellerSalesAction        — pedidos onde clientes indicados compraram
- * getSellerSalesSummaryAction — resumo: total vendido, nº pedidos, ticket médio, nº clientes
+ * getSellerSalesDashboardAction — dados completos do dashboard (perfil + métricas + vendas recentes)
+ * getSellerSalesAction          — pedidos onde clientes indicados compraram
+ * getSellerSalesSummaryAction   — resumo: total vendido, nº pedidos, ticket médio, nº clientes
  *
  * Usa raw SQL ($queryRawUnsafe) porque o Prisma Client pode estar em cache
  * com versão anterior ao último `prisma db push`.
@@ -12,6 +13,10 @@
 
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import type {
+  SellerSalesDashboardData,
+  SellerSalesActionResult,
+} from '@/schemas/seller-sales-schema';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -179,5 +184,129 @@ export async function getSellerSalesSummaryAction(
   } catch (err) {
     console.error('[getSellerSalesSummaryAction]', err);
     return { success: false, error: 'Erro ao calcular resumo de vendas.' };
+  }
+}
+
+// ─── Dashboard completo da vendedora ─────────────────────────────────────────
+// Usado por SellerSalesDashboardBlock — retorna perfil + métricas + vendas recentes.
+
+import { SellerSalesFilterSchema } from '@/schemas/seller-sales-schema';
+
+export async function getSellerSalesDashboardAction(
+  input: z.infer<typeof SellerSalesFilterSchema>
+): Promise<SellerSalesActionResult> {
+  const parsed = SellerSalesFilterSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: 'Dados inválidos.' };
+
+  const { sellerIdentifier, startDateInformation, endDateInformation } = parsed.data;
+
+  try {
+    // 1. Perfil da vendedora
+    interface ProfileRow {
+      name: string | null;
+      profile_picture_url: string | null;
+      created_at: Date;
+    }
+    const profileRows = await (prisma as unknown as {
+      $queryRawUnsafe: (q: string, ...a: unknown[]) => Promise<ProfileRow[]>
+    }).$queryRawUnsafe(`
+      SELECT name, "profilePictureUrl" AS profile_picture_url, "createdAt" AS created_at
+      FROM "User" WHERE id = $1 LIMIT 1
+    `, sellerIdentifier);
+
+    if (!profileRows.length) {
+      return { success: false, error: 'Vendedora não encontrada.' };
+    }
+    const profile = profileRows[0];
+
+    // 2. Métricas de vendas (pedidos indicados pela vendedora)
+    const conditions: string[] = [`"referredBySellerId" = $1`];
+    const params: unknown[]    = [sellerIdentifier];
+    let idx = 2;
+
+    if (startDateInformation) {
+      conditions.push(`"createdAt" >= $${idx}::timestamptz`);
+      params.push(new Date(startDateInformation + 'T00:00:00Z'));
+      idx++;
+    }
+    if (endDateInformation) {
+      conditions.push(`"createdAt" <= $${idx}::timestamptz`);
+      params.push(new Date(endDateInformation + 'T23:59:59Z'));
+      idx++;
+    }
+    const whereSql = conditions.join(' AND ');
+
+    interface MetricsRow {
+      total_sales: string | null;
+      total_orders: bigint;
+    }
+    const metricsRows = await (prisma as unknown as {
+      $queryRawUnsafe: (q: string, ...a: unknown[]) => Promise<MetricsRow[]>
+    }).$queryRawUnsafe(`
+      SELECT
+        COALESCE(SUM(total), 0)::text AS total_sales,
+        COUNT(*)::bigint              AS total_orders
+      FROM "Order"
+      WHERE ${whereSql}
+    `, ...params);
+
+    const metrics = metricsRows[0];
+
+    // 3. Vendas recentes (últimas 20)
+    interface SaleRow {
+      order_id: string;
+      status: string;
+      customer_name: string | null;
+      total: string;
+      created_at: Date;
+    }
+    const salesRows = await (prisma as unknown as {
+      $queryRawUnsafe: (q: string, ...a: unknown[]) => Promise<SaleRow[]>
+    }).$queryRawUnsafe(`
+      SELECT
+        id              AS order_id,
+        status,
+        "customerName"  AS customer_name,
+        total::text     AS total,
+        "createdAt"     AS created_at
+      FROM "Order"
+      WHERE ${whereSql}
+      ORDER BY "createdAt" DESC
+      LIMIT 20
+    `, ...params);
+
+    // Dias ativos (desde o cadastro da vendedora)
+    const createdAt = profile.created_at instanceof Date
+      ? profile.created_at
+      : new Date(profile.created_at);
+    const daysActive = Math.max(
+      0,
+      Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24))
+    );
+
+    const dashboardData: SellerSalesDashboardData = {
+      sellerName:        profile.name ?? 'Vendedora',
+      profilePictureUrl: profile.profile_picture_url,
+      isActive:          true,
+      metrics: {
+        totalSalesValue:   parseFloat(metrics?.total_sales ?? '0'),
+        totalOrdersCount:  Number(metrics?.total_orders ?? 0),
+        daysActive,
+      },
+      recentSales: salesRows.map((r) => ({
+        id:           r.order_id,
+        status:       r.status,
+        customerName: r.customer_name ?? 'Cliente',
+        totalValue:   parseFloat(r.total),
+        createdAt:    r.created_at instanceof Date
+          ? r.created_at.toISOString()
+          : String(r.created_at),
+      })),
+    };
+
+    return { success: true, data: dashboardData };
+  } catch (err) {
+    console.error('[getSellerSalesDashboardAction]', err);
+    return { success: false, error: 'Erro ao carregar dashboard de vendas.' };
   }
 }
