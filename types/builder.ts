@@ -138,7 +138,11 @@ export type BlockType =
   | 'catalog-showcase'
   | 'registration-form'
   | 'video-background-manager'
-  | 'form-video-background';
+  | 'form-video-background'
+  | 'authorized-seller-profile'
+  | 'authorized-seller-menu'
+  | 'seller-dashboard'
+  | 'login-security';
 
 export interface MenuItem {
   id: string;
@@ -146,6 +150,14 @@ export interface MenuItem {
   icon: string;
   action?: string;
   link?: string;
+}
+
+export interface AuthorizedSellerMenuItem {
+  id: string;
+  iconName: 'user' | 'lock' | 'banknote' | 'circle-dollar-sign' | 'history';
+  title: string;
+  subtitle: string;
+  actionRoute: string;
 }
 
 export interface FooterItem {
@@ -241,6 +253,7 @@ export interface ActivityButton {
 export interface BlockData {
   address?: string;
   menuItems?: MenuItem[];
+  authorizedSellerMenuItems?: AuthorizedSellerMenuItem[];
   products?: ProductItem[];
   title?: string;
   subtitle?: string;
@@ -332,6 +345,10 @@ export interface BlockData {
   /** URL do vídeo de fundo do login (somente leitura em layouts estáticos, se usado) */
   loginBackgroundVideoUrl?: string;
   loginBackgroundVideoActive?: boolean;
+
+  /** Bloco authorized-seller-profile: imagens de capa e avatar padrão */
+  coverImageUrl?: string;
+  defaultAvatarUrl?: string;
 
   [key: string]: string | number | boolean | null | undefined | object | unknown;
 }

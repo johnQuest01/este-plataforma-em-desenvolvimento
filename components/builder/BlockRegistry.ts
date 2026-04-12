@@ -4,6 +4,14 @@ import React from 'react';
 import { BlockComponentProps } from '@/types/builder';
 
 // --- Imports de Blocos do Sistema ---
+import { SellerSalesDashboardBlock } from './blocks/seller/SellerSalesDashboardBlock';
+import { AuthorizedSellerMenuBlock } from './blocks/AuthorizedSellerMenuBlock';
+import { LoginSecurityBlock } from './blocks/LoginSecurityBlock';
+
+
+import { AuthorizedSellerProfileBlock } from './blocks/AuthorizedSellerProfileBlock';
+
+import { SellerDashboardBlock } from './blocks/SellerDashboardBlock';
 import { UserProfileSettingsBlock } from './blocks/UserProfileSettingsBlock';
 import { PaymentMethodsBlock } from './blocks/PaymentMethodsBlock';
 import { CatalogShowcaseBlock } from './blocks/CatalogShowcaseBlock';
@@ -69,12 +77,15 @@ import { RegistrationFormBlock } from './blocks/RegistrationFormBlock';
 import { VideoBackgroundManagerBlock } from './blocks/admin/VideoBackgroundManagerBlock';
 import { FormVideoBackgroundBlock } from './blocks/FormVideoBackgroundBlock';
 
+
 /**
  * Definição Estrita do Componente Lego
  */
 type LegoComponent = React.FC<BlockComponentProps>;
 
 export const COMPONENT_MAP: Record<string, LegoComponent> = {
+  'authorized-seller-profile': AuthorizedSellerProfileBlock,
+  'seller-dashboard': SellerDashboardBlock, // O novo bloco que acabamos de criar
   'user-profile-settings': UserProfileSettingsBlock,
   'payment-methods': PaymentMethodsBlock,
   'catalog-showcase': CatalogShowcaseBlock,
@@ -126,6 +137,11 @@ export const COMPONENT_MAP: Record<string, LegoComponent> = {
   'activity-history': ActivityHistoryBlock,
   'total-sales': TotalSalesBlock,
   'jeans-registration': JeansRegistrationBlock,
+  'seller-sales-dashboard': SellerSalesDashboardBlock,
+  'authorized-seller-menu': AuthorizedSellerMenuBlock,
+  'login-security': LoginSecurityBlock,
+
+
   /** Login: upload Vercel Blob (multipart) + URL no Neon via saveVideoReferenceAction */
   'video-background-manager': VideoBackgroundManagerBlock,
   'form-video-background': FormVideoBackgroundBlock,
