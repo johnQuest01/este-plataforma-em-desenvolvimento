@@ -131,12 +131,19 @@ export default function AuthenticationPage(): React.JSX.Element {
       });
 
       if (authResponse.success && authResponse.data) {
-        const sellerSlug = getSellerRefSlug();
-        // Associa o cliente ao vendedor (em background, não bloqueia o redirect)
-        if (sellerSlug && authResponse.data.role === 'customer') {
-          associateClientWithSellerAction(authResponse.data.userId, sellerSlug).catch(() => {});
-          // NÃO remove md_seller_ref aqui — o redirect já usa o slug na URL
+        const urlOrStorageSlug = getSellerRefSlug();
+
+        // Prioridade: link da URL / localStorage → se não houver, usa o vínculo permanente do banco
+        let effectiveSellerSlug = urlOrStorageSlug;
+        if (!effectiveSellerSlug && authResponse.data.role === 'customer') {
+          effectiveSellerSlug = authResponse.data.referredBySellerSlug ?? null;
         }
+
+        // Associa o cliente ao vendedor caso chegou via novo link (em background)
+        if (urlOrStorageSlug && authResponse.data.role === 'customer') {
+          associateClientWithSellerAction(authResponse.data.userId, urlOrStorageSlug).catch(() => {});
+        }
+
         persistSessionAndRedirect({
           userId:         authResponse.data.userId,
           documentType:   authResponse.data.documentType,
@@ -147,7 +154,7 @@ export default function AuthenticationPage(): React.JSX.Element {
           address:        authResponse.data.address,
           role:           authResponse.data.role,
           profilePictureUrl: authResponse.data.profilePictureUrl,
-          sellerSlug:     sellerSlug,
+          sellerSlug:     effectiveSellerSlug,
         });
         return;
       }

@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link'; 
 import { FooterItem, BlockStyle } from '@/types/builder';
-import { LocalDB, isSellerUser, isAdminUser } from '@/lib/local-db';
+import { LocalDB } from '@/lib/local-db';
 
 interface ButtonsFooterProps {
     items: FooterItem[];
@@ -165,41 +165,29 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
     // ── Controle de navegação segura ────────────────────────────────────────
     // O footer fica no RootLayoutShell (fora do SellerContext do dashboard),
     // então lê o contexto da vendedora diretamente do localStorage.
+    //
+    // Regra:
+    //  - VISITANTE sem conta + link de vendedora → só pode ver o dashboard; demais rotas → cadastro
+    //  - CLIENTE logado → acesso livre (usa sua própria conta, comissão rastreada pelo md_seller_ref)
+    //  - VENDEDORA / ADMIN logados → acesso livre
     const handleFooterNavigate = (route: string): boolean => {
         if (typeof window === 'undefined') return false;
 
         const sellerRef = localStorage.getItem('md_seller_ref') ?? '';
         const user = LocalDB.getUser();
-        const isSeller = isSellerUser(user);
-        const isAdmin = isAdminUser(user);
 
-        // Vendedores e admins têm acesso livre a todas as rotas
-        if (isSeller || isAdmin) return false;
+        // Usuário logado (qualquer tipo) → navegação livre, sem interceptação
+        if (user) return false;
 
         // Visitante sem login no ecossistema da vendedora
         if (!user && sellerRef) {
             if (route === '/dashboard') {
                 router.push(`/dashboard?seller=${sellerRef}`);
             } else {
-                // Qualquer outra rota → cadastro mantendo contexto da vendedora
+                // Qualquer outra rota → formulário de cadastro mantendo contexto da vendedora
                 router.push(`/?seller=${sellerRef}`);
             }
             return true;
-        }
-
-        // Cliente logado no ecossistema da vendedora
-        if (user && sellerRef) {
-            if (route === '/dashboard') {
-                // Volta para o dashboard da vendedora
-                router.push(`/dashboard?seller=${sellerRef}`);
-                return true;
-            }
-            // Rotas exclusivas de gestão (inventário, conta da vendedora) → volta ao dashboard da vendedora
-            const sellerOnlyRoutes = ['/inventory', '/account', '/pos'];
-            if (sellerOnlyRoutes.some(r => route.startsWith(r))) {
-                router.push(`/dashboard?seller=${sellerRef}`);
-                return true;
-            }
         }
 
         return false; // Navegação normal

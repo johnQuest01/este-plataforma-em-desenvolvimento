@@ -167,6 +167,28 @@ export async function getPublicStoreAction(
   }
 }
 
+// ─── Retorna o sellerSlug da vendedora permanentemente vinculada ao cliente ───
+
+export async function getCustomerReferredSellerSlugAction(
+  customerId: string
+): Promise<string | null> {
+  try {
+    interface Row { seller_slug: string | null }
+    const rows = await prismaBase.$queryRaw<Row[]>(Prisma.sql`
+      SELECT s."sellerSlug" AS seller_slug
+      FROM "User" c
+      JOIN "User" s ON s.id = c."referredBySellerId"
+      WHERE c.id = ${customerId}
+        AND c.role = 'customer'
+        AND s.role = 'seller'
+      LIMIT 1
+    `);
+    return rows[0]?.seller_slug ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // ─── Associar cliente ao vendedor (chamado no cadastro/login via seller link) ─
 
 export async function associateClientWithSellerAction(

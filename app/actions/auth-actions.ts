@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { UserLoginSchema, UserLoginType } from '@/schemas/auth-schema';
 import { verifyPlainPasswordAgainstHash } from '@/lib/password-hash';
 import { onlyDigits, formatCpf, formatCnpj } from '@/schemas/registration-schema';
@@ -37,6 +38,8 @@ export async function authenticateUserAction(
     phoneNumber: string;
     address: string;
     profilePictureUrl: string | null;
+    /** Slug do vendedor autorizado permanentemente vinculado a este cliente (se houver) */
+    referredBySellerSlug: string | null;
   };
   error?: string;
 }> {
@@ -54,8 +57,9 @@ export async function authenticateUserAction(
     const normalizedCredential = validatedData.documentOrEmail.trim();
     const normalizedEmailCredential = normalizeEmail(normalizedCredential);
 
-    // Busca pelo e-mail OU por qualquer variante do documento (dígitos puros, CPF/CNPJ formatado)
     const documentVariants = buildDocumentSearchVariants(normalizedCredential);
+
+    // Busca o usuário (sem include para compatibilidade com o cache do Prisma client)
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [
@@ -78,6 +82,26 @@ export async function authenticateUserAction(
       return { success: false, error: 'Senha incorreta.' };
     }
 
+    // Busca o slug da vendedora permanentemente vinculada ao cliente (via raw SQL)
+    let referredBySellerSlug: string | null = null;
+    if (existingUser.role === 'customer') {
+      try {
+        interface SellerSlugRow { seller_slug: string | null }
+        const rows = await prisma.$queryRaw<SellerSlugRow[]>(Prisma.sql`
+          SELECT s."sellerSlug" AS seller_slug
+          FROM "User" s
+          WHERE s.id = (
+            SELECT "referredBySellerId" FROM "User" WHERE id = ${existingUser.id} LIMIT 1
+          )
+            AND s.role = 'seller'
+          LIMIT 1
+        `);
+        referredBySellerSlug = rows[0]?.seller_slug ?? null;
+      } catch {
+        // Falha silenciosa: cliente loga sem contexto de vendedora
+      }
+    }
+
     console.log(`✅ [Auth Action] Login bem-sucedido para o usuário: ${existingUser.id}`);
 
     return { 
@@ -92,6 +116,8 @@ export async function authenticateUserAction(
         phoneNumber: existingUser.whatsapp ?? '',
         address: existingUser.address ?? '',
         profilePictureUrl: existingUser.profilePictureUrl ?? null,
+        // Slug da vendedora vinculada permanentemente (null se não houver)
+        referredBySellerSlug,
       }
     };
 

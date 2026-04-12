@@ -19,7 +19,7 @@ import { StoreHeader } from '@/components/builder/blocks/Header';
 import { getHomeLayoutAction } from '@/app/actions/ui-config';
 import { verifyAdminPasswordAction, getAdminAccessStatusAction, updateAdminButtonPositionAction } from '@/app/actions/admin-access';
 import { updateLayoutOrderAction } from '@/app/actions/layout-order';
-import { getSellerEcosystemProductsAction, getOrCreateSellerSlugAction, SellerEcosystemProductDTO } from '@/app/actions/seller-store-actions';
+import { getSellerEcosystemProductsAction, getOrCreateSellerSlugAction, getCustomerReferredSellerSlugAction, SellerEcosystemProductDTO } from '@/app/actions/seller-store-actions';
 import { SellerContext } from '@/lib/seller-context';
 import { isSellerUser, isAdminUser } from '@/lib/local-db';
 
@@ -154,19 +154,38 @@ export default function DashboardPage() {
             } catch {
               // Falha ao buscar slug/estoque: vendedor vê tela normal sem travar
             }
-          } else if (!isAdminUser(user) && activeSellerSlug) {
-            // ── CLIENTE logado que entrou via link da vendedora ──
-            if (cancelled) return;
-            setPreviewSellerSlug(activeSellerSlug);
-            setSellerMode(true);
-            try {
-              const sp = await getSellerEcosystemProductsAction(activeSellerSlug);
-              if (!cancelled) setSellerProducts(sp);
-            } catch {
-              if (!cancelled) {
-                setSellerMode(false);
-                setPreviewSellerSlug('');
-                if (typeof window !== 'undefined') localStorage.removeItem('md_seller_ref');
+          } else if (!isAdminUser(user)) {
+            // ── CLIENTE logado ──
+            // Descobre o slug ativo: URL/localStorage → vínculo permanente no banco
+            let resolvedSlug = activeSellerSlug;
+
+            if (!resolvedSlug) {
+              // Fallback: consulta o banco para obter o vendedor vinculado permanentemente
+              try {
+                const dbSlug = await getCustomerReferredSellerSlugAction(user.id);
+                if (!cancelled && dbSlug) {
+                  resolvedSlug = dbSlug;
+                  // Restaura no localStorage para futuras navegações desta sessão
+                  localStorage.setItem('md_seller_ref', dbSlug);
+                }
+              } catch {
+                // Falha silenciosa: cliente vê catálogo completo
+              }
+            }
+
+            if (resolvedSlug) {
+              if (cancelled) return;
+              setPreviewSellerSlug(resolvedSlug);
+              setSellerMode(true);
+              try {
+                const sp = await getSellerEcosystemProductsAction(resolvedSlug);
+                if (!cancelled) setSellerProducts(sp);
+              } catch {
+                if (!cancelled) {
+                  setSellerMode(false);
+                  setPreviewSellerSlug('');
+                  localStorage.removeItem('md_seller_ref');
+                }
               }
             }
           }
