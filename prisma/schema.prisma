@@ -10,16 +10,14 @@ datasource db {
 /// Utilizador da plataforma: comprador (`role = customer`) ou vendedor (`role = seller`).
 /// PF/PJ distinguem-se por `documentType` (CPF/CNPJ) e `document` (único).
 model User {
-  id                 String   @id @default(cuid())
-  email              String?  @unique
-  document           String   @unique
-  documentType       String   @default("CPF")
-  passwordHash       String   @default("")
+  id                 String          @id @default(cuid())
+  email              String?         @unique
+  document           String          @unique
+  documentType       String          @default("CPF")
+  passwordHash       String          @default("")
   name               String?
   whatsapp           String?
-  /// Endereço completo (texto único, compatível com telas antigas)
   address            String?
-  /// Rua / avenida / logradouro
   street             String?
   addressNumber      String?
   addressComplement  String?
@@ -27,13 +25,39 @@ model User {
   city               String?
   state              String?
   postalCode         String?
-  profilePictureUrl  String?  
-  backgroundImageUrl String?  
-  /// `customer` = comprador (inventário “compras”); `seller` = vendedor autorizado (inventário vendedor).
-  role               String   @default("customer")
+  profilePictureUrl  String?
+  backgroundImageUrl String?
+  /// `customer` = comprador; `seller` = vendedor autorizado.
+  role               String          @default("customer")
+  
+  // NOVOS CAMPOS ADICIONADOS
+  isTwoFactorEnabled Boolean         @default(false)
+  paymentMethods     PaymentMethod[]
+  favoriteProducts   Product[]       @relation("UserFavorites")
+
   stores             Store[]
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+}
+
+// NOVO MODELO: Métodos de Pagamento
+model PaymentMethod {
+  id              String   @id @default(cuid())
+  institutionName String
+  accountType     String   /// Ex: 'Débito', 'Crédito', 'Pix'
+  cardholderName  String
+  cardNumber      String   /// ATENÇÃO: Em produção, armazenar apenas token ou encriptado
+  expirationDate  String
+  securityCode    String   /// ATENÇÃO: Violação PCI-DSS se armazenado em plain text em produção
+  balance         Decimal? @db.Decimal(10, 2)
+  
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Store {
@@ -59,13 +83,19 @@ model Product {
   name            String
   description     String?
   price           Decimal          @db.Decimal(10, 2)
-  reference       String?          
+  reference       String?
   category        String?
   imageColor      String?
   imageUrl        String?
   tags            String[]
   isVisible       Boolean          @default(true)
   stock           Int              @default(0)
+  
+  // NOVOS CAMPOS ADICIONADOS
+  isPreOrder      Boolean          @default(false)
+  isLive          Boolean          @default(false)
+  favoritedBy     User[]           @relation("UserFavorites")
+
   variants        ProductVariant[]
   storeId         String
   store           Store            @relation(fields: [storeId], references: [id])
@@ -73,9 +103,9 @@ model Product {
   updatedAt       DateTime         @updatedAt
   orderItems      OrderItem[]
   productionItems ProductionItem[]
-
+  
   @@index([reference])
-  @@index([category]) 
+  @@index([category])
 }
 
 model ProductVariant {
@@ -107,7 +137,7 @@ model Variation {
   category          String?
   color             String
   size              String
-  quantity          Int             @map("qty") // Corrigido de 'qty' para 'quantity' (Zero Abreviações)
+  quantity          Int             @map("qty")
   stockLocations    String[]
   images            String[]
   productionOrderId String
@@ -156,65 +186,63 @@ model OrderItem {
 model GuardianConfig {
   id        String   @id @default(cuid())
   key       String   @unique
-  value     String  
+  value     String
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 }
 
 model UIConfig {
   id              String   @id @default(cuid())
-  pageSlug        String   @unique 
-  layout          Json     @default("[]") 
-  dashboardLayout Json?    
+  pageSlug        String   @unique
+  layout          Json     @default("[]")
+  dashboardLayout Json?
   updatedAt       DateTime @updatedAt
   createdAt       DateTime @default(now())
 }
 
 model Banner {
-  id           String   @id @default(cuid())
-  title        String   
-  mediaType    String   
-  mediaUrl     String   @db.Text 
-  aspectRatio  String   
-  orderIndex   Int      @default(0) 
-  isVisible    Boolean  @default(true) 
-  linkUrl      String?  
-  description  String?  
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
+  id          String   @id @default(cuid())
+  title       String
+  mediaType   String
+  mediaUrl    String   @db.Text
+  aspectRatio String
+  orderIndex  Int      @default(0)
+  isVisible   Boolean  @default(true)
+  linkUrl     String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   @@index([orderIndex])
   @@index([isVisible])
 }
 
 model DevelopmentCardPercentage {
-  id             String   @id @default("development-card-single-record")
-  percentage     Int      @default(69) 
-  isManual       Boolean  @default(false) 
-  lastManualUpdate DateTime? 
-  lastAutoUpdate  DateTime  @default(now()) 
+  id               String    @id @default("development-card-single-record")
+  percentage       Int       @default(69)
+  isManual         Boolean   @default(false)
+  lastManualUpdate DateTime?
+  lastAutoUpdate   DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  createdAt        DateTime  @default(now())
+}
+
+model AdminAccess {
+  id             String    @id @default("admin-access-single-record")
+  passwordHash   String
+  isUnlocked     Boolean   @default(false)
+  lastAccess     DateTime?
+  accessCount    Int       @default(0)
+  buttonPosition Json?     @default("{\"x\": 0, \"y\": 0}")
   updatedAt      DateTime  @updatedAt
   createdAt      DateTime  @default(now())
 }
 
-model AdminAccess {
-  id            String   @id @default("admin-access-single-record")
-  passwordHash  String   
-  isUnlocked    Boolean  @default(false) 
-  lastAccess    DateTime? 
-  accessCount   Int      @default(0) 
-  buttonPosition Json?   @default("{\"x\": 0, \"y\": 0}") 
-  updatedAt     DateTime @updatedAt
-  createdAt     DateTime @default(now())
-}
-
-// Vídeo de fundo: URL (ex.: Cloudinary com f_auto,q_auto) ou vazio; sincronizado via video-bg-actions.
 model FormVideoConfig {
-  id                   String   @id @default("global-video-config")
-  videoUrl             String   @default("") @db.Text
-  cloudinaryPublicId   String   @default("")
-  metadata             Json?
-  isActive             Boolean  @default(true)
-  updatedAt            DateTime @updatedAt
-  createdAt            DateTime @default(now())
+  id                 String   @id @default("global-video-config")
+  videoUrl           String   @default("") @db.Text
+  cloudinaryPublicId String   @default("")
+  metadata           Json?
+  isActive           Boolean  @default(true)
+  updatedAt          DateTime @updatedAt
+  createdAt          DateTime @default(now())
 }

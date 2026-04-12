@@ -4,6 +4,9 @@ import React from 'react';
 import { BlockComponentProps } from '@/types/builder';
 
 // --- Imports de Blocos do Sistema ---
+import { UserProfileSettingsBlock } from './blocks/UserProfileSettingsBlock';
+import { PaymentMethodsBlock } from './blocks/PaymentMethodsBlock';
+import { CatalogShowcaseBlock } from './blocks/CatalogShowcaseBlock';
 import { MasterGuardianDashboard } from "./blocks/MasterGuardianDashboard";
 import { StandardButtonBlock } from './blocks/StandardButtonBlock';
 import { JeansRegistrationBlock } from './blocks/JeansRegistrationBlock';
@@ -72,6 +75,9 @@ import { FormVideoBackgroundBlock } from './blocks/FormVideoBackgroundBlock';
 type LegoComponent = React.FC<BlockComponentProps>;
 
 export const COMPONENT_MAP: Record<string, LegoComponent> = {
+  'user-profile-settings': UserProfileSettingsBlock,
+  'payment-methods': PaymentMethodsBlock,
+  'catalog-showcase': CatalogShowcaseBlock,
   'master-guardian-dashboard': MasterGuardianDashboard,
   'health-monitor': HealthMonitorBlock, 
   'standard-button': StandardButtonBlock,

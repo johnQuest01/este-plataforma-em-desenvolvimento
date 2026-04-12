@@ -133,6 +133,9 @@ export type BlockType =
   | 'walking-model'
   | 'activity-history'
   | 'personal-info'
+  | 'user-profile-settings'
+  | 'payment-methods'
+  | 'catalog-showcase'
   | 'registration-form'
   | 'video-background-manager'
   | 'form-video-background';

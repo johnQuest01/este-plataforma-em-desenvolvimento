@@ -4,47 +4,86 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BlockRenderer } from '@/components/builder/BlockRender';
 import { BlockConfig } from '@/types/builder';
+import { LocalDB } from '@/lib/local-db';
 
 export interface AccountPageClientProps {
   /** Definido no servidor a partir de ?view=history (ex.: redirect de /activity-history). */
   initialOpenHistory?: boolean;
 }
 
+type AccountView = 'account' | 'history' | 'personal-info' | 'payments' | 'catalog';
+
+const VIEW_TITLES: Record<AccountView, string> = {
+  'account': 'Minha Conta',
+  'history': 'Histórico',
+  'personal-info': 'Informações Pessoais',
+  'payments': 'Formas de Pagamento',
+  'catalog': 'Meus Favoritos',
+};
+
 export function AccountPageClient({
   initialOpenHistory = false,
 }: AccountPageClientProps): React.JSX.Element {
   const router = useRouter();
 
-  const [currentActiveView, setCurrentActiveView] = useState<'account' | 'history'>(() =>
+  const [currentActiveView, setCurrentActiveView] = useState<AccountView>(() =>
     initialOpenHistory ? 'history' : 'account'
   );
-  /** Após o 1º acesso ao histórico, o bloco permanece montado (só alterna visibilidade — sem remount). */
-  const [historyLayerMounted, setHistoryLayerMounted] = useState(() => initialOpenHistory);
+
+  // Cada camada só é montada na 1ª visita (sem remount ao navegar de volta)
+  const [mountedViews, setMountedViews] = useState<Set<AccountView>>(() => {
+    const initial: Set<AccountView> = new Set(['account']);
+    if (initialOpenHistory) initial.add('history');
+    return initial;
+  });
+
+  // Dados do usuário para preencher o bloco de perfil
+  const localUser = useMemo(() => LocalDB.getUser(), []);
 
   useEffect(() => {
     if (!initialOpenHistory) return;
     router.replace('/account', { scroll: false });
   }, [initialOpenHistory, router]);
 
-  const showAccountPanel = currentActiveView === 'account';
-  const showHistoryPanel = currentActiveView === 'history';
+  const navigateTo = useCallback((view: AccountView) => {
+    setMountedViews((prev) => {
+      if (prev.has(view)) return prev;
+      const next = new Set(prev);
+      next.add(view);
+      return next;
+    });
+    setCurrentActiveView(view);
+  }, []);
 
   const handleFlowAction = useCallback(
     (action: string, payload?: unknown) => {
+      // --- Navegação para subpáginas ---
+      if (action === 'navigate_personal_info' || action === 'navigate_security') {
+        navigateTo('personal-info');
+        return;
+      }
+      if (action === 'navigate_payments') {
+        navigateTo('payments');
+        return;
+      }
       if (action === 'navigate_history') {
-        setHistoryLayerMounted(true);
-        setCurrentActiveView('history');
+        navigateTo('history');
+        return;
+      }
+      if (action === 'navigate_catalog') {
+        navigateTo('catalog');
         return;
       }
 
+      // Rota de texto vindo do ActivityHistoryBlock
       if (action === 'NAVIGATE' && payload === '/activity-history') {
-        setHistoryLayerMounted(true);
-        setCurrentActiveView('history');
+        navigateTo('history');
         return;
       }
 
+      // Voltar
       if (action === 'BACK' || action === 'GO_BACK') {
-        if (currentActiveView === 'history') {
+        if (currentActiveView !== 'account') {
           setCurrentActiveView('account');
           return;
         }
@@ -56,8 +95,10 @@ export function AccountPageClient({
         router.push(payload);
       }
     },
-    [router, currentActiveView]
+    [router, currentActiveView, navigateTo]
   );
+
+  // --- BlockConfigs ---
 
   const headerBlockConfiguration: BlockConfig = useMemo(
     () => ({
@@ -65,14 +106,11 @@ export function AccountPageClient({
       type: 'header',
       isVisible: true,
       data: {
-        title: currentActiveView === 'account' ? 'Minha Conta' : 'Histórico',
+        title: VIEW_TITLES[currentActiveView],
         address: 'Maryland Gestão',
-        showBack: false,
+        showBack: currentActiveView !== 'account',
       },
-      style: {
-        bgColor: '#5874f6',
-        textColor: '#ffffff',
-      },
+      style: { bgColor: '#5874f6', textColor: '#ffffff' },
     }),
     [currentActiveView]
   );
@@ -83,10 +121,7 @@ export function AccountPageClient({
       type: 'account-screen',
       isVisible: true,
       data: {},
-      style: {
-        bgColor: '#ffffff',
-        padding: '0px',
-      },
+      style: { bgColor: '#ffffff', padding: '0px' },
     }),
     []
   );
@@ -97,36 +132,92 @@ export function AccountPageClient({
       type: 'activity-history',
       isVisible: true,
       data: {},
-      style: {
-        bgColor: '#ffffff',
-        textColor: '#000000',
-      },
+      style: { bgColor: '#ffffff', textColor: '#000000' },
     }),
     []
   );
+
+  const personalInfoBlockConfiguration: BlockConfig = useMemo(
+    () => ({
+      id: 'user-profile-settings-block',
+      type: 'user-profile-settings',
+      isVisible: true,
+      data: {
+        userName: localUser?.name ?? 'Usuário',
+        fullName: localUser?.name ?? '',
+        emailAddress: localUser?.emailAddress ?? '',
+        phoneNumber: localUser?.whatsapp ?? '',
+        storeAddress: '',
+        documentNumber: localUser?.document ?? '',
+        profilePictureUrl: localUser?.profilePictureUrl ?? null,
+        backgroundImageUrl: null,
+        passwordHint: '',
+      },
+      style: { bgColor: '#ffffff' },
+    }),
+    [localUser]
+  );
+
+  const paymentsBlockConfiguration: BlockConfig = useMemo(
+    () => ({
+      id: 'payment-methods-block',
+      type: 'payment-methods',
+      isVisible: true,
+      data: {},
+      style: { bgColor: '#ffffff' },
+    }),
+    []
+  );
+
+  const catalogBlockConfiguration: BlockConfig = useMemo(
+    () => ({
+      id: 'catalog-showcase-block',
+      type: 'catalog-showcase',
+      isVisible: true,
+      data: {},
+      style: { bgColor: '#ffffff' },
+    }),
+    []
+  );
+
+  const isVisible = (view: AccountView) => currentActiveView === view;
 
   return (
     <main className="w-full min-h-screen bg-white flex flex-col">
       <BlockRenderer config={headerBlockConfiguration} onAction={handleFlowAction} />
 
-      <div
-        className={showAccountPanel ? 'block w-full' : 'hidden'}
-        aria-hidden={!showAccountPanel}
-      >
+      {/* Menu principal */}
+      <div className={isVisible('account') ? 'block w-full' : 'hidden'} aria-hidden={!isVisible('account')}>
         <BlockRenderer config={accountBlockConfiguration} onAction={handleFlowAction} />
       </div>
 
-      {historyLayerMounted ? (
-        <div
-          className={showHistoryPanel ? 'block w-full' : 'hidden'}
-          aria-hidden={!showHistoryPanel}
-        >
-          <BlockRenderer
-            config={activityHistoryBlockConfiguration}
-            onAction={handleFlowAction}
-          />
+      {/* Informações Pessoais */}
+      {mountedViews.has('personal-info') && (
+        <div className={isVisible('personal-info') ? 'block w-full' : 'hidden'} aria-hidden={!isVisible('personal-info')}>
+          <BlockRenderer config={personalInfoBlockConfiguration} onAction={handleFlowAction} />
         </div>
-      ) : null}
+      )}
+
+      {/* Formas de Pagamento */}
+      {mountedViews.has('payments') && (
+        <div className={isVisible('payments') ? 'block w-full' : 'hidden'} aria-hidden={!isVisible('payments')}>
+          <BlockRenderer config={paymentsBlockConfiguration} onAction={handleFlowAction} />
+        </div>
+      )}
+
+      {/* Favoritos / Catálogo */}
+      {mountedViews.has('catalog') && (
+        <div className={isVisible('catalog') ? 'block w-full' : 'hidden'} aria-hidden={!isVisible('catalog')}>
+          <BlockRenderer config={catalogBlockConfiguration} onAction={handleFlowAction} />
+        </div>
+      )}
+
+      {/* Histórico de Atividades */}
+      {mountedViews.has('history') && (
+        <div className={isVisible('history') ? 'block w-full' : 'hidden'} aria-hidden={!isVisible('history')}>
+          <BlockRenderer config={activityHistoryBlockConfiguration} onAction={handleFlowAction} />
+        </div>
+      )}
     </main>
   );
 }
