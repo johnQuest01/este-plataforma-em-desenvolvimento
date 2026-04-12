@@ -19,6 +19,7 @@ type RegistrationSuccessPayload = {
   role: string;
   emailAddress: string;
   phoneNumber: string;
+  address: string;
 };
 
 export type RegisterNewUserActionResult = {
@@ -186,6 +187,7 @@ export async function registerNewUserAction(
         role: createdUserRecord.role,
         emailAddress: resolvedEmailAddress,
         phoneNumber: resolvedPhoneNumber,
+        address: createdUserRecord.address ?? '',
       },
     };
   } catch (error) {

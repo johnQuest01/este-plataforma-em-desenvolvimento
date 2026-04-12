@@ -10,6 +10,8 @@ export interface UserData {
   emailAddress?: string;
   storeName?: string;
   whatsapp: string;
+  /** Endereço completo formatado — ex.: "Rua X, 42 · Bairro · Cidade - SP · CEP 01000-000" */
+  address?: string;
   role?: string;
   isVendedor?: boolean;
   nameGender?: 'feminino' | 'masculino';

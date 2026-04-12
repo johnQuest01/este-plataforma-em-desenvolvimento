@@ -35,6 +35,7 @@ export async function authenticateUserAction(
     documentNumber: string;
     emailAddress: string;
     phoneNumber: string;
+    address: string;
     profilePictureUrl: string | null;
   };
   error?: string;
@@ -89,6 +90,7 @@ export async function authenticateUserAction(
         documentNumber: existingUser.document,
         emailAddress: existingUser.email ?? '',
         phoneNumber: existingUser.whatsapp ?? '',
+        address: existingUser.address ?? '',
         profilePictureUrl: existingUser.profilePictureUrl ?? null,
       }
     };

@@ -71,6 +71,7 @@ export default function AuthenticationPage(): React.JSX.Element {
     displayName: string;
     emailAddress: string;
     phoneNumber: string;
+    address?: string;
     role: string;
     profilePictureUrl?: string | null;
   }) => {
@@ -82,6 +83,7 @@ export default function AuthenticationPage(): React.JSX.Element {
       name: params.displayName,
       emailAddress: params.emailAddress,
       whatsapp: params.phoneNumber,
+      address: params.address ?? '',
       role: params.role,
       isVendedor: params.role === 'seller',
       nameGender,
@@ -112,6 +114,7 @@ export default function AuthenticationPage(): React.JSX.Element {
           displayName: authResponse.data.userName,
           emailAddress: authResponse.data.emailAddress,
           phoneNumber: authResponse.data.phoneNumber,
+          address: authResponse.data.address,
           role: authResponse.data.role,
           profilePictureUrl: authResponse.data.profilePictureUrl,
         });
@@ -171,6 +174,7 @@ export default function AuthenticationPage(): React.JSX.Element {
           displayName: registerResponse.data.fullName,
           emailAddress: registerResponse.data.emailAddress,
           phoneNumber: registerResponse.data.phoneNumber,
+          address: registerResponse.data.address,
           role: registerResponse.data.role,
         });
         return;

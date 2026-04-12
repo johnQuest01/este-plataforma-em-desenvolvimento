@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { BlockComponentProps } from '@/types/builder';
 import { getActivityLogsAction } from '@/app/actions/activity';
 import { ProductSaleCard, ProductSaleRecord } from './ProductSaleCard';
+import { LocalDB, isSellerUser } from '@/lib/local-db';
 
 // 🧱 DADOS DE EXEMPLO (Mock) - Exatamente como na imagem solicitada
 const MOCK_EXAMPLE_SALE: ProductSaleRecord = {
@@ -53,15 +54,21 @@ function ActivityHistoryBlockInner({ config, onAction }: BlockComponentProps): R
   const blockSubtitle = data.subtitle || 'Historico de Compras';
   const inputLabel = data.searchFormInputLabel || 'Nome do Produto, código, valor';
   const buttonLabel = data.searchFormButtonLabel || 'Buscar';
-  
-  const activityButtons = data.activityButtons || [
-    { id: 'btn_status',    label: 'Status de Pedido',   actionRoute: '/status' },
-    { id: 'btn_box',       label: 'Meu Box Maryland',   actionRoute: '/box' },
-    { id: 'btn_favorites', label: 'Meus Favoritos',     actionRoute: '/favorites' },
-    { id: 'btn_bag',       label: 'Sacola',             actionRoute: '/cart' },
-    { id: 'btn_sales',     label: 'Histórico de Vendas', actionRoute: '/seller-dashboard' },
-    { id: 'btn_cashier',   label: 'Caixa Virtual',      actionRoute: '/pos' },
+
+  // Detecta se o usuário logado é vendedor para mostrar/ocultar botões exclusivos
+  const isSeller = isSellerUser(LocalDB.getUser());
+
+  const ALL_ACTIVITY_BUTTONS = [
+    { id: 'btn_status',    label: 'Status de Pedido',    actionRoute: '/status',           sellerOnly: false },
+    { id: 'btn_box',       label: 'Meu Box Maryland',    actionRoute: '/box',              sellerOnly: false },
+    { id: 'btn_favorites', label: 'Meus Favoritos',      actionRoute: '/favorites',        sellerOnly: false },
+    { id: 'btn_bag',       label: 'Sacola',              actionRoute: '/cart',             sellerOnly: false },
+    { id: 'btn_sales',     label: 'Histórico de Vendas', actionRoute: '/seller-dashboard', sellerOnly: true  },
+    { id: 'btn_cashier',   label: 'Caixa Virtual',       actionRoute: '/pos',              sellerOnly: false },
   ];
+
+  const activityButtons = (data.activityButtons as typeof ALL_ACTIVITY_BUTTONS | undefined) ||
+    ALL_ACTIVITY_BUTTONS.filter((btn) => !btn.sellerOnly || isSeller);
 
   const [searchQueryInformation, setSearchQueryInformation] = useState<string>('');
   const [startDateInformation, setStartDateInformation] = useState<string>('');

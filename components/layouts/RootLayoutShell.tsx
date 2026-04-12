@@ -24,8 +24,9 @@ function RootLayoutShellBase({ children }: RootLayoutShellProps): React.JSX.Elem
   const isDevelopmentEnvironment = process.env.NODE_ENV === 'development';
   const pathname = usePathname();
 
-  // Lógica de Arquitetura: Ocultar o Footer Global nas telas de Autenticação/Formulário
-  const shouldHideFooter = pathname === '/' || pathname === '/login';
+  // Oculta todos os elementos globais (footer, admin, monitor) nas telas de autenticação.
+  // Usa startsWith para cobrir sub-rotas e evitar flash durante navegação.
+  const isAuthPage = pathname === '/' || pathname.startsWith('/login');
 
   return (
     <>
@@ -33,33 +34,30 @@ function RootLayoutShellBase({ children }: RootLayoutShellProps): React.JSX.Elem
       {!isDevelopmentEnvironment && <PWAHead />}
       
       {/* Camada de Conteúdo Principal (Páginas) */}
-      <main className="relative z-0 pb-20">
+      <main className={`relative z-0 ${isAuthPage ? '' : 'pb-20'}`}>
         {children}
       </main>
       
-      {/* 
-          FOOTER GLOBAL ÚNICO
-          Renderizado condicionalmente. Não aparece nas telas de login/registo.
-      */}
-      {!shouldHideFooter && (
-        <div className="fixed bottom-0 left-0 w-full z-50 pointer-events-none">
-          <div className="w-full pointer-events-auto">
-            <ButtonsFooter items={GLOBAL_FOOTER_ITEMS} style={GLOBAL_FOOTER_STYLE} />
+      {/* Footer, admin e monitor — ocultos na tela de login/cadastro */}
+      {!isAuthPage && (
+        <>
+          {/* Footer global de navegação */}
+          <div className="fixed bottom-0 left-0 w-full z-50 pointer-events-none">
+            <div className="w-full pointer-events-auto">
+              <ButtonsFooter items={GLOBAL_FOOTER_ITEMS} style={GLOBAL_FOOTER_STYLE} />
+            </div>
           </div>
-        </div>
-      )}
-      
-      {/* Camada de Utilidades de Admin (Production Ready) */}
-      <GlobalAdmin />
-      
-      {/* InstallPrompt: Apenas em produção para evitar loops */}
-      {!isDevelopmentEnvironment && <InstallPrompt />}
 
-      {/* 
-          INJEÇÃO DO MONITOR DE SAÚDE 
-          Como ele tem position: fixed no CSS dele, ele flutuará sobre tudo.
-      */}
-      <HealthMonitorBlock />
+          {/* Botão flutuante de admin */}
+          <GlobalAdmin />
+
+          {/* Monitor de saúde (position fixed) */}
+          <HealthMonitorBlock />
+
+          {/* Prompt de instalação PWA — apenas em produção */}
+          {!isDevelopmentEnvironment && <InstallPrompt />}
+        </>
+      )}
 
       {/* GUARDIAN ARCHITECTURE (DEV ONLY) 
           Protege o bundle de produção e performance.

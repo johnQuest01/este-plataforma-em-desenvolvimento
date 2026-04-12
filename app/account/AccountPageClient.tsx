@@ -207,7 +207,7 @@ export function AccountPageClient({
               fullName: localUser?.name ?? '',
               emailAddress: localUser?.emailAddress ?? '',
               phoneNumber: localUser?.whatsapp ?? '',
-              storeAddress: '',
+              storeAddress: localUser?.address ?? '',
               documentNumber: localUser?.document ?? '',
               profilePictureUrl: localUser?.profilePictureUrl ?? null,
               backgroundImageUrl: null,
