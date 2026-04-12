@@ -54,6 +54,18 @@ function InventoryPageBase(): React.JSX.Element {
       await Promise.resolve();
 
       const userInformation = LocalDB.getUser();
+
+      // ── GUARD DE AUTENTICAÇÃO ─────────────────────────────────────────────
+      // Visitantes sem conta NÃO devem ter acesso à tela de inventário.
+      // O link da vendedora leva para o dashboard; o inventário é área interna.
+      if (!userInformation) {
+        // Preserva o contexto da vendedora no redirect, se houver
+        const sellerRef =
+          typeof window !== 'undefined' ? localStorage.getItem('md_seller_ref') ?? '' : '';
+        routerNavigation.replace(sellerRef ? `/?seller=${sellerRef}` : '/');
+        return;
+      }
+
       setCurrentUserInformation(userInformation);
       if (userInformation?.name) {
         const firstName = userInformation.name.trim().split(/\s+/)[0];
@@ -85,7 +97,7 @@ function InventoryPageBase(): React.JSX.Element {
     };
 
     loadUserInformationAsync();
-  }, []);
+  }, [routerNavigation]);
 
   // Sincroniza role/nome/foto com o Neon para sessões antigas (só `role: seller` sem `isVendedor`, etc.)
   useEffect(() => {

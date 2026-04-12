@@ -132,8 +132,11 @@ const ProductDetailInner = () => {
       sellerSlug: sellerSlug || undefined,
     });
 
-    alert(`✅ Pedido Realizado com Sucesso!\n\nVocê pode acompanhar o status em "Meus Pedidos".`);
-    router.push('/inventory');
+    alert(`✅ Pedido Realizado com Sucesso!\n\nContinue explorando a loja.`);
+
+    // Após a compra, o cliente volta ao dashboard mantendo o contexto da vendedora.
+    // NUNCA redirecionar para /inventory — essa área é exclusiva de gestão da vendedora.
+    router.push(sellerSlug ? `/dashboard?seller=${sellerSlug}` : '/dashboard');
   };
 
   if (!product) return null;
