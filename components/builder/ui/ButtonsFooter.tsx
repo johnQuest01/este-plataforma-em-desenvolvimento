@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link'; 
 import { FooterItem, BlockStyle } from '@/types/builder';
-import { useSellerContext } from '@/lib/seller-context';
+import { LocalDB, isSellerUser, isAdminUser } from '@/lib/local-db';
 
 interface ButtonsFooterProps {
     items: FooterItem[];
@@ -23,7 +23,8 @@ interface FooterButtonProps {
     containerRef: React.RefObject<HTMLDivElement | null>;
     pathname: string;
     isHighlight: boolean;
-    onNavigate?: (route: string) => void;
+    /** Retorna true se interceptou a navegação (impede o Link padrão) */
+    onNavigate?: (route: string) => boolean;
 }
 
 type IconName = FooterItem['icon'];
@@ -110,32 +111,18 @@ const FooterButton = ({
         </motion.div>
     );
 
-    // Se tiver um interceptador de navegação (modo visitante), usa div com onClick
-    if (onNavigate && item.route) {
-        return (
-            <div
-                onClick={() => onNavigate(item.route!)}
-                className={cn(
-                    "shrink-0 flex items-center justify-center cursor-pointer",
-                    "min-w-[56px] min-h-[56px]",
-                    "touch-none select-none relative z-30"
-                )}
-                style={{ 
-                    touchAction: 'pan-x pan-y',
-                    WebkitTapHighlightColor: 'transparent',
-                    pointerEvents: 'auto'
-                }}
-            >
-                {buttonContent}
-            </div>
-        );
-    }
-
+    // Todos os botões passam pelo interceptador — se ele retornar true, a navegação foi tratada.
+    // Caso contrário, o Link padrão navega normalmente.
     if (item.route) {
         return (
             <Link
                 href={targetRoute}
-                prefetch={true} 
+                prefetch={true}
+                onClick={(e) => {
+                    if (onNavigate && onNavigate(item.route!)) {
+                        e.preventDefault(); // interceptou — cancela o Link
+                    }
+                }}
                 className={cn(
                     "shrink-0 flex items-center justify-center",
                     "min-w-[56px] min-h-[56px]",
@@ -173,19 +160,49 @@ const FooterButton = ({
 export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.Element => {
     const pathname = usePathname();
     const router = useRouter();
-    const { isPreviewMode, sellerSlug } = useSellerContext();
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Intercepta navegação em modo visitante: redireciona para cadastro
-    const handlePreviewNavigate = (route: string) => {
-        // Dashboard é permitido (tela inicial)
-        if (route === '/dashboard') {
-            router.push(sellerSlug ? `/dashboard?seller=${sellerSlug}` : '/dashboard');
-            return;
+    // ── Controle de navegação segura ────────────────────────────────────────
+    // O footer fica no RootLayoutShell (fora do SellerContext do dashboard),
+    // então lê o contexto da vendedora diretamente do localStorage.
+    const handleFooterNavigate = (route: string): boolean => {
+        if (typeof window === 'undefined') return false;
+
+        const sellerRef = localStorage.getItem('md_seller_ref') ?? '';
+        const user = LocalDB.getUser();
+        const isSeller = isSellerUser(user);
+        const isAdmin = isAdminUser(user);
+
+        // Vendedores e admins têm acesso livre a todas as rotas
+        if (isSeller || isAdmin) return false;
+
+        // Visitante sem login no ecossistema da vendedora
+        if (!user && sellerRef) {
+            if (route === '/dashboard') {
+                router.push(`/dashboard?seller=${sellerRef}`);
+            } else {
+                // Qualquer outra rota → cadastro mantendo contexto da vendedora
+                router.push(`/?seller=${sellerRef}`);
+            }
+            return true;
         }
-        // Qualquer outra rota → cadastro
-        const registrationUrl = sellerSlug ? `/?seller=${sellerSlug}` : '/';
-        router.push(registrationUrl);
+
+        // Cliente logado no ecossistema da vendedora
+        if (user && sellerRef) {
+            if (route === '/dashboard') {
+                // Volta para o dashboard da vendedora
+                router.push(`/dashboard?seller=${sellerRef}`);
+                return true;
+            }
+            // Rotas exclusivas de gestão (inventário, conta da vendedora) → volta ao dashboard da vendedora
+            const sellerOnlyRoutes = ['/inventory', '/account', '/pos'];
+            if (sellerOnlyRoutes.some(r => route.startsWith(r))) {
+                router.push(`/dashboard?seller=${sellerRef}`);
+                return true;
+            }
+        }
+
+        return false; // Navegação normal
     };
     const contentRef = useRef<HTMLDivElement>(null);
     
@@ -322,7 +339,7 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
                             containerRef={containerRef}
                             pathname={pathname}
                             isHighlight={isHighlight}
-                            onNavigate={isPreviewMode ? handlePreviewNavigate : undefined}
+                            onNavigate={handleFooterNavigate}
                         />
                     );
                 })}
