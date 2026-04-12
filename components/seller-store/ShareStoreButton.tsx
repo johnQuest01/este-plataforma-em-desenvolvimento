@@ -11,12 +11,13 @@ import { LocalDB } from '@/lib/local-db';
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Constrói a URL da loja sempre usando a origem atual do browser — funciona em
- *  qualquer ambiente: localhost, Vercel preview, domínio custom, etc. */
+ *  qualquer ambiente: localhost, Vercel preview, domínio custom, etc.
+ *  Aponta para o dashboard real (?seller=slug) em vez de uma página separada. */
 function buildStoreUrl(slug: string): string {
   if (typeof window !== 'undefined') {
-    return `${window.location.origin}/loja/${slug}`;
+    return `${window.location.origin}/dashboard?seller=${slug}`;
   }
-  return `/loja/${slug}`;
+  return `/dashboard?seller=${slug}`;
 }
 
 async function copyToClipboard(text: string): Promise<boolean> {

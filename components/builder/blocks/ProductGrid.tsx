@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowRight, PackageX } from 'lucide-react';
 import { BlockConfig } from '@/types/builder';
 import { ProductData, getProductsAction } from '@/app/actions/product';
+import { SellerEcosystemProductDTO } from '@/app/actions/seller-store-actions';
+import { useSellerContext } from '@/lib/seller-context';
 import { useRouter } from 'next/navigation';
 import { formatCurrencyBRL } from '@/lib/utils/currency';
 import Image from 'next/image';
@@ -17,30 +19,37 @@ interface ProductGridBlockProps {
 
 export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps): React.JSX.Element => {
   const router = useRouter();
-  const[products, setProducts] = useState<ProductData[]>([]);
+  const { isSellerMode, sellerSlug, sellerProducts } = useSellerContext();
+  const [products, setProducts] = useState<(ProductData | SellerEcosystemProductDTO)[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProducts = useCallback(async () => {
     try {
-      const dbProducts = await getProductsAction();
-      setProducts(dbProducts);
+      if (isSellerMode) {
+        // Contexto de vendedora: usa produtos do SellerContext (já carregados pelo DashboardPage)
+        setProducts(sellerProducts);
+      } else {
+        const dbProducts = await getProductsAction();
+        setProducts(dbProducts);
+      }
     } catch (error) {
       console.error("Erro ao buscar produtos:", error);
     } finally {
       setIsLoading(false);
     }
-  },[]);
+  }, [isSellerMode, sellerProducts]);
 
   useEffect(() => {
     fetchProducts();
 
-    const handleUpdate = () => fetchProducts();
+    // Sem polling em modo vendedor — dados vêm do contexto
+    if (isSellerMode) return;
 
+    const handleUpdate = () => fetchProducts();
     if (typeof window !== 'undefined') {
       window.addEventListener(PRODUCT_UPDATE_EVENT, handleUpdate);
     }
-
-    const interval = setInterval(fetchProducts, 10000); 
+    const interval = setInterval(fetchProducts, 10000);
 
     return () => {
       if (typeof window !== 'undefined') {
@@ -48,17 +57,23 @@ export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps): R
       }
       clearInterval(interval);
     };
-  }, [fetchProducts]);
+  }, [fetchProducts, isSellerMode]);
 
-  const hasDbProducts = products.length > 0;
-  const displayProducts = hasDbProducts ? products : (config.data.products as unknown as ProductData[] ||[]);
-  const title = config.data.title as string;
+  // Em modo vendedor: mostra exatamente o que a vendedora tem (sem fallback)
+  // Em modo normal: usa os produtos do DB, com fallback nos dados estáticos do config
+  const displayProducts = isSellerMode
+    ? products
+    : (products.length > 0 ? products : (config.data.products as unknown as ProductData[] || []));
+  const title = (isSellerMode ? '🛍️ Produtos da Loja' : config.data.title) as string;
 
-  const handleProductClick = (product: ProductData) => {
+  const handleProductClick = (product: ProductData | SellerEcosystemProductDTO) => {
+    // Slug do contexto (funciona tanto para visitante quanto para vendedora logada)
+    const sellerParam = isSellerMode && sellerSlug ? `?seller=${sellerSlug}` : '';
     if (onAction) {
-      onAction('open_product_details', product.id);
+      // Passa o sufixo via pipe para o DashboardPage redirecionar corretamente
+      onAction('open_product_details', sellerParam ? `${product.id}|${sellerParam}` : product.id);
     } else {
-      router.push(`/product/${product.id}`);
+      router.push(`/product/${product.id}${sellerParam}`);
     }
   };
 
@@ -88,13 +103,15 @@ export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps): R
           {displayProducts.map((item, index) => {
             const name = item.name;
             const price = item.price;
+            const stockQty = 'stock' in item ? item.stock : 0;
 
-            let imageUrl = item.imageUrl;
-            if (!imageUrl && item.variants && item.variants.length > 0) {
-               imageUrl = item.variants[0].images?.[0];
+            let imageUrl = item.imageUrl ?? null;
+            if (!imageUrl && 'variants' in item && Array.isArray(item.variants) && item.variants.length > 0) {
+              const v = item.variants[0] as { images?: string[] };
+              imageUrl = v.images?.[0] ?? null;
             }
             if (!imageUrl) {
-               imageUrl = `https://placehold.co/800x800/e2e8f0/white?text=${name.substring(0,3)}`;
+              imageUrl = `https://placehold.co/800x800/e2e8f0/white?text=${name.substring(0, 3)}`;
             }
 
             const uniqueKey = item.id ? `prod-${item.id}` : `prod-idx-${index}`;
@@ -141,7 +158,7 @@ export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps): R
                       )}
                       
                       {/* 🏷️ ETIQUETA VENDIDO (Aparece quando estoque é 0) */}
-                      {item.stock <= 0 && (
+                      {stockQty <= 0 && (
                         <div className="bg-orange-500 rounded-[2px] px-1.5 py-[2px] shrink-0 shadow-sm">
                           <span className="text-white text-[7px] font-bold uppercase leading-none block tracking-wider">
                             Vendido

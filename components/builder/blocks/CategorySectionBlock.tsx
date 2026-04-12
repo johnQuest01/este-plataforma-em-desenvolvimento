@@ -26,12 +26,14 @@ import { ChevronRight, ShoppingBag } from 'lucide-react';
 import { BlockComponentProps } from '@/types/builder';
 import { getProductsAction, ProductData } from '@/app/actions/product';
 import { withGuardian } from "@/components/guardian/GuardianBeacon";
+import { useSellerContext } from '@/lib/seller-context';
 
 interface CategorySectionBlockBaseProps extends BlockComponentProps {}
 
 const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBaseProps): React.JSX.Element | null => {
-  const[products, setProducts] = useState<ProductData[]>([]);
+  const [products, setProducts] = useState<ProductData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { isSellerMode, sellerSlug, sellerProducts } = useSellerContext();
 
   const title = config.data.title ?? config.data.categoryName ?? 'Produtos';
   const filterTag = config.data.filterTag as string | undefined;
@@ -40,30 +42,42 @@ const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBase
     const loadProducts = async () => {
       try {
         setIsLoading(true);
-        const allProducts = await getProductsAction();
-        
-        // 🔍 FILTRO POR CATEGORIA:
+
+        let allProducts: ProductData[];
+
+        if (isSellerMode) {
+          // Modo vendedora: usa apenas os produtos do estoque da vendedora
+          allProducts = sellerProducts.map((p) => ({
+            id:       p.id,
+            name:     p.name,
+            price:    p.price,
+            stock:    p.stock,
+            imageUrl: p.imageUrl ?? '',
+            category: p.category ?? '',
+            tag:      p.tag ?? '',
+            variants: [],
+            isVisible: true,
+          } as unknown as ProductData));
+        } else {
+          allProducts = await getProductsAction();
+        }
+
+        // Filtro por categoria (comportamento original preservado)
         let filtered = allProducts;
-        
         if (filterTag) {
           filtered = allProducts.filter(product => {
             if (!product.category) return false;
-            
             const normalizedCategory = product.category
               .toLowerCase()
               .normalize('NFD')
               .replace(/[\u0300-\u036f]/g, '')
               .replace(/[^a-z0-9]+/g, '-')
               .replace(/^-|-$/g, '');
-            
             return normalizedCategory === filterTag;
           });
         }
-        
-        // Limita a 8 produtos
-        const limited = filtered.slice(0, 8);
-        
-        setProducts(limited);
+
+        setProducts(filtered.slice(0, 8));
       } catch (error) {
         console.error('[CategorySectionBlock] Erro ao carregar produtos:', error);
       } finally {
@@ -72,11 +86,13 @@ const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBase
     };
 
     loadProducts();
-  }, [filterTag]);
+  }, [filterTag, isSellerMode, sellerProducts]);
 
   const handleProductClick = (product: ProductData) => {
     if (onAction) {
-      onAction('open_product_details', product.id); 
+      // Passa o slug do contexto (funciona tanto para visitante quanto para vendedora logada)
+      const sellerSuffix = isSellerMode && sellerSlug ? `?seller=${sellerSlug}` : '';
+      onAction('open_product_details', product.id + (sellerSuffix ? `|${sellerSuffix}` : ''));
     }
   };
 

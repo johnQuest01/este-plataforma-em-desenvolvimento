@@ -16,6 +16,7 @@ import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
 import { MenuItem, MenuStyle } from '@/types/builder';
 import { cn } from '@/lib/utils';
+import { useSellerContext } from '@/lib/seller-context';
 
 const emptySubscribe = () => () => {};
 function useIsClient() {
@@ -67,7 +68,8 @@ const MenuPopupBase = ({
   onItemClick 
 }: MenuPopupProps) => {
   const isClient = useIsClient();
-  const router = useRouter(); // ✅ NOVO: Instância do Router
+  const router = useRouter();
+  const { isPreviewMode, sellerSlug } = useSellerContext();
 
   const styles = {
     overlay: { backgroundColor: theme?.overlayColor || 'rgba(0,0,0,0.6)' },
@@ -78,8 +80,15 @@ const MenuPopupBase = ({
 
   if (!isClient) return null;
 
-  // ✅ NOVO: Função interceptadora de cliques para navegação
   const handleItemInteraction = (item: MenuItem) => {
+    // Visitante (sem login, via link do vendedor): bloqueia tudo exceto fechar
+    if (isPreviewMode) {
+      onClose();
+      const registrationUrl = sellerSlug ? `/?seller=${sellerSlug}` : '/';
+      router.push(registrationUrl);
+      return;
+    }
+
     // Se o item tiver um link direto ou a ação for 'account', navega para a tela
     if (item.link === '/account' || item.action === 'account' || item.icon === 'account') {
       router.push('/account');

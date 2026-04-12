@@ -7,9 +7,10 @@ import {
     RefreshCw, Check, HelpCircle, Box 
 } from 'lucide-react';
 import { cn } from '@/lib/utils'; 
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link'; 
 import { FooterItem, BlockStyle } from '@/types/builder';
+import { useSellerContext } from '@/lib/seller-context';
 
 interface ButtonsFooterProps {
     items: FooterItem[];
@@ -22,6 +23,7 @@ interface FooterButtonProps {
     containerRef: React.RefObject<HTMLDivElement | null>;
     pathname: string;
     isHighlight: boolean;
+    onNavigate?: (route: string) => void;
 }
 
 type IconName = FooterItem['icon'];
@@ -65,7 +67,8 @@ const renderIcon = (name: IconName, isActiveState: boolean): React.JSX.Element =
 const FooterButton = ({ 
     item, 
     pathname,
-    isHighlight
+    isHighlight,
+    onNavigate
 }: FooterButtonProps): React.JSX.Element => {
     const buttonRef = useRef<HTMLDivElement>(null);
     
@@ -106,6 +109,27 @@ const FooterButton = ({
             {renderIcon(item.icon, isActive)}
         </motion.div>
     );
+
+    // Se tiver um interceptador de navegação (modo visitante), usa div com onClick
+    if (onNavigate && item.route) {
+        return (
+            <div
+                onClick={() => onNavigate(item.route!)}
+                className={cn(
+                    "shrink-0 flex items-center justify-center cursor-pointer",
+                    "min-w-[56px] min-h-[56px]",
+                    "touch-none select-none relative z-30"
+                )}
+                style={{ 
+                    touchAction: 'pan-x pan-y',
+                    WebkitTapHighlightColor: 'transparent',
+                    pointerEvents: 'auto'
+                }}
+            >
+                {buttonContent}
+            </div>
+        );
+    }
 
     if (item.route) {
         return (
@@ -148,7 +172,21 @@ const FooterButton = ({
 
 export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.Element => {
     const pathname = usePathname();
+    const router = useRouter();
+    const { isPreviewMode, sellerSlug } = useSellerContext();
     const containerRef = useRef<HTMLDivElement>(null);
+
+    // Intercepta navegação em modo visitante: redireciona para cadastro
+    const handlePreviewNavigate = (route: string) => {
+        // Dashboard é permitido (tela inicial)
+        if (route === '/dashboard') {
+            router.push(sellerSlug ? `/dashboard?seller=${sellerSlug}` : '/dashboard');
+            return;
+        }
+        // Qualquer outra rota → cadastro
+        const registrationUrl = sellerSlug ? `/?seller=${sellerSlug}` : '/';
+        router.push(registrationUrl);
+    };
     const contentRef = useRef<HTMLDivElement>(null);
     
     const x = useMotionValue(0);
@@ -284,6 +322,7 @@ export const ButtonsFooter = ({ items, style }: ButtonsFooterProps): React.JSX.E
                             containerRef={containerRef}
                             pathname={pathname}
                             isHighlight={isHighlight}
+                            onNavigate={isPreviewMode ? handlePreviewNavigate : undefined}
                         />
                     );
                 })}

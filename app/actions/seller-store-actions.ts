@@ -76,7 +76,7 @@ export async function getOrCreateSellerSlugAction(
       revalidatePath('/inventory');
     }
 
-    const storeUrl = `${getServerAppUrl()}/loja/${slug}`;
+    const storeUrl = `${getServerAppUrl()}/dashboard?seller=${slug}`;
     return {
       success: true,
       data: {
@@ -156,7 +156,7 @@ export async function getPublicStoreAction(
           name:              seller.name ?? 'Vendedora',
           sellerSlug:        slug,
           profilePictureUrl: seller.profile_picture_url,
-          storeUrl:          `${getServerAppUrl()}/loja/${slug}`,
+          storeUrl:          `${getServerAppUrl()}/dashboard?seller=${slug}`,
         },
         products,
       },
@@ -191,6 +191,57 @@ export async function associateClientWithSellerAction(
   } catch (err) {
     console.error('[associateClientWithSellerAction]', err);
     return { success: false, error: 'Erro ao associar cliente.' };
+  }
+}
+
+// ─── Produtos da vendedora formatados para o ProductGridBlock ─────────────────
+
+export interface SellerEcosystemProductDTO {
+  id:       string;
+  name:     string;
+  price:    number;
+  stock:    number;
+  imageUrl: string | null;
+  category: string | null;
+  tag:      string | null;
+  variants: [];
+}
+
+/** Usado pelo ProductGridBlock quando o usuário está no ecossistema de uma vendedora.
+ *  Retorna os produtos do estoque pessoal da vendedora no formato que o ProductGridBlock espera. */
+export async function getSellerEcosystemProductsAction(
+  sellerSlug: string
+): Promise<SellerEcosystemProductDTO[]> {
+  try {
+    interface Row { product_id: string; p_name: string; p_image_url: string | null; p_price: string; p_category: string | null; total_qty: bigint }
+    const rows = await prismaBase.$queryRaw<Row[]>(Prisma.sql`
+      SELECT
+        si."productId"           AS product_id,
+        p.name                   AS p_name,
+        p."imageUrl"             AS p_image_url,
+        p.price::text            AS p_price,
+        p.category               AS p_category,
+        SUM(si.quantity)::bigint AS total_qty
+      FROM "SellerInventoryItem" si
+      JOIN "Product" p ON p.id = si."productId"
+      JOIN "User" u ON u.id = si."sellerId" AND u."sellerSlug" = ${sellerSlug}
+      GROUP BY si."productId", p.name, p."imageUrl", p.price, p.category
+      HAVING SUM(si.quantity) > 0
+      ORDER BY p.name
+    `);
+    return rows.map((r) => ({
+      id:       r.product_id,
+      name:     r.p_name,
+      price:    parseFloat(r.p_price),
+      stock:    Number(r.total_qty),
+      imageUrl: r.p_image_url,
+      category: r.p_category,
+      tag:      null,
+      variants: [],
+    }));
+  } catch (err) {
+    console.error('[getSellerEcosystemProductsAction]', err);
+    return [];
   }
 }
 

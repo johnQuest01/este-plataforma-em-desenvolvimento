@@ -19,6 +19,9 @@ import { StoreHeader } from '@/components/builder/blocks/Header';
 import { getHomeLayoutAction } from '@/app/actions/ui-config';
 import { verifyAdminPasswordAction, getAdminAccessStatusAction, updateAdminButtonPositionAction } from '@/app/actions/admin-access';
 import { updateLayoutOrderAction } from '@/app/actions/layout-order';
+import { getSellerEcosystemProductsAction, getOrCreateSellerSlugAction, SellerEcosystemProductDTO } from '@/app/actions/seller-store-actions';
+import { SellerContext } from '@/lib/seller-context';
+import { isSellerUser, isAdminUser } from '@/lib/local-db';
 
 // 🛡️ TYPE GUARD 1: Validação de CategoryItem
 const isCategoryItem = (payload: unknown): payload is CategoryItem => {
@@ -50,7 +53,14 @@ export default function DashboardPage() {
   const [buttonPosition, setButtonPosition] = useState({ x: 16, y: 16 });
   const [isDragging, setIsDragging] = useState(false);
 
-  const[viewportHeight, setViewportHeight] = useState<number | undefined>(undefined);
+  const [viewportHeight, setViewportHeight] = useState<number | undefined>(undefined);
+
+  // Modo visitante: dashboard acessado via link do vendedor sem estar logado
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [previewSellerSlug, setPreviewSellerSlug] = useState('');
+  // Produtos da vendedora carregados pelo dashboard (injetados top-down nos blocos)
+  const [sellerProducts, setSellerProducts] = useState<SellerEcosystemProductDTO[]>([]);
+  const [sellerMode, setSellerMode] = useState(false);
 
   useEffect(() => {
     const loadDynamicLayout = async () => {
@@ -85,15 +95,52 @@ export default function DashboardPage() {
   },[]);
 
   useEffect(() => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
+      // ── Detecta slug do vendedor na URL (visitante via link) ──────────────────
+      let urlSellerSlug = '';
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        urlSellerSlug = params.get('seller') || '';
+        if (urlSellerSlug) localStorage.setItem('md_seller_ref', urlSellerSlug);
+      }
+
+      // ── Verifica autenticação ─────────────────────────────────────────────────
       const user = LocalDB.getUser();
+
       if (!user) {
-        router.replace('/login');
+        if (urlSellerSlug) {
+          // Modo visitante: sem login, veio pelo link do vendedor
+          setPreviewSellerSlug(urlSellerSlug);
+          setIsPreviewMode(true);
+          setSellerMode(true);
+          setCurrentUserFirstName('Visitante');
+          const sp = await getSellerEcosystemProductsAction(urlSellerSlug);
+          setSellerProducts(sp);
+        } else {
+          router.replace('/');
+          return;
+        }
       } else {
         const firstName = user.name?.trim().split(/\s+/)[0] ?? 'Maryland';
         setCurrentUserFirstName(firstName.length > 0 ? firstName : 'Maryland');
-        setIsReady(true);
+
+        if (isSellerUser(user) && !isAdminUser(user)) {
+          // Vendedor logado: carrega somente o próprio estoque
+          const slugResult = await getOrCreateSellerSlugAction(user.id);
+          if (slugResult.success) {
+            const sellerSlug = slugResult.data.sellerSlug;
+            setPreviewSellerSlug(sellerSlug);
+            setSellerMode(true);
+            // Grava no localStorage para consistência (lido por alguns sub-componentes)
+            localStorage.setItem('md_seller_ref', sellerSlug);
+            const sp = await getSellerEcosystemProductsAction(sellerSlug);
+            setSellerProducts(sp);
+          }
+        }
+        // Admin e comprador comum: vêem todos os produtos (sellerMode permanece false)
       }
+
+      setIsReady(true);
     };
     checkAuth();
     
@@ -234,7 +281,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setReorderableContent(layout.content);
-  },[layout.content]);
+  }, [layout.content]);
 
   const handleBlockDragEnd = async () => {
     const currentOrder = reorderableContent.map(block => block.id);
@@ -267,8 +314,12 @@ export default function DashboardPage() {
     }
   };
 
-  const handleOpenProductDetails = (productId: string) => {
-    router.push(`/product/${productId}`);
+  const handleOpenProductDetails = (raw: string) => {
+    // CategorySectionBlock pode passar "id|?seller=xxx"
+    const [productId, sellerSuffix] = raw.split('|');
+    const suffix = sellerSuffix
+      ?? (sellerMode && previewSellerSlug ? `?seller=${previewSellerSlug}` : '');
+    router.push(`/product/${productId}${suffix}`);
   };
 
   const handleOpenGlobalAdmin = () => {
@@ -325,7 +376,34 @@ export default function DashboardPage() {
 
   return (
     <main className="w-full h-dvh-real bg-gray-900 lg:flex lg:justify-center lg:items-center lg:py-8 overflow-hidden relative">
-     
+
+      {/* ── Banner de modo visitante (acesso via link do vendedor) ── */}
+      {isPreviewMode && (
+        <motion.div
+          initial={{ y: -60, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="fixed top-0 left-0 right-0 z-9999 bg-[#5874f6] text-white px-4 py-2 flex items-center justify-between gap-3 shadow-lg"
+        >
+          <p className="text-[11px] font-semibold leading-tight flex-1">
+            Você está visitando a loja de um vendedor autorizado Maryland.
+          </p>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={() => router.push(`/?seller=${previewSellerSlug}`)}
+              className="bg-white text-[#5874f6] text-[10px] font-black px-2.5 py-1 rounded-full whitespace-nowrap active:scale-95 transition-transform"
+            >
+              Criar conta
+            </button>
+            <button
+              onClick={() => router.push(`/login?seller=${previewSellerSlug}`)}
+              className="bg-white/20 text-white text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap active:scale-95 transition-transform"
+            >
+              Entrar
+            </button>
+          </div>
+        </motion.div>
+      )}
+
       {isPasswordModalOpen && (
         <div 
           className="fixed top-0 left-0 w-full z-[10000] flex items-center justify-center p-4 overscroll-none transition-all duration-100 ease-out"
@@ -525,13 +603,16 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* SellerContext distribui os produtos da vendedora para TODOS os blocos filhos */}
+      <SellerContext.Provider value={{ isSellerMode: sellerMode, isPreviewMode, sellerSlug: previewSellerSlug, sellerProducts }}>
       <div className={cn(
-        "w-full h-full flex flex-col relative overflow-hidden transition-colors duration-500",
-        "lg:h-[850px] lg:max-h-[90vh] lg:w-full lg:max-w-[420px]",
-        "lg:rounded-[2.5rem] lg:border-[8px] lg:border-gray-800 lg:shadow-2xl",
-        "max-w-[100vw] lg:mx-auto",
-        getAppBg()
-      )}>
+          "w-full h-full flex flex-col relative overflow-hidden transition-colors duration-500",
+          "lg:h-[850px] lg:max-h-[90vh] lg:w-full lg:max-w-[420px]",
+          "lg:rounded-[2.5rem] lg:border-[8px] lg:border-gray-800 lg:shadow-2xl",
+          "max-w-[100vw] lg:mx-auto",
+          isPreviewMode && "pt-10",
+          getAppBg()
+        )}>
        
         {currentTheme === 'tech' && (
           <div className="absolute inset-0 pointer-events-none opacity-20 z-0" style={{ backgroundImage: 'linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
@@ -654,6 +735,7 @@ export default function DashboardPage() {
         <ReelsModal isOpen={!!activeReelsItem} item={activeReelsItem} onClose={() => setActiveReelsItem(null)} />
         
       </div>
+      </SellerContext.Provider>
     </main>
   );
 }
