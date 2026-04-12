@@ -49,6 +49,10 @@ const CreateOrderSchema = z.object({
   customerName: z.string().optional(),
   customerDoc: z.string().optional(),
   emitInvoice: z.boolean().optional(),
+  /// ID do usuário comprador (preenchido quando o cliente está logado)
+  customerId: z.string().optional(),
+  /// ID do vendedor que indicou este cliente (via link de loja)
+  referredBySellerId: z.string().optional(),
 });
 
 // --- STRICT TYPES (Contrato de Dados) ---
@@ -162,13 +166,16 @@ export async function createOrderAction(input: CreateOrderInput) {
           total: new Prisma.Decimal(data.total),
           status: 'COMPLETED',
           customerName: data.customerName,
-          // Nota: Mapeando Doc para Phone temporariamente pois o Schema não tem customerDoc
-          customerPhone: data.customerDoc, 
+          customerPhone: data.customerDoc,
+          // Vínculo com o cliente logado (rastreia histórico de compras do cliente)
+          ...(data.customerId ? { customerId: data.customerId } : {}),
+          // Vínculo com o vendedor que indicou (rastreia vendas por indicação)
+          ...(data.referredBySellerId ? { referredBySellerId: data.referredBySellerId } : {}),
           items: {
             create: data.items?.map(item => ({
               productId: item.productId,
               quantity: item.quantity,
-              price: new Prisma.Decimal(0) // Preço deve ser buscado do produto em prod
+              price: new Prisma.Decimal(0)
             }))
           }
         }
@@ -219,6 +226,18 @@ export async function createOrderAction(input: CreateOrderInput) {
      */
     revalidatePath('/pos');
     revalidatePath('/dashboard');
+
+    // 4.5 Registra ActivityLog para o cliente (se logado)
+    if (data.customerId) {
+      const itemCount = data.items?.reduce((s, i) => s + i.quantity, 0) ?? 1;
+      const description = `Comprou ${itemCount} item(s) — Total: R$ ${data.total.toFixed(2)}`;
+      const metadata    = JSON.stringify({ total: data.total, itemsCount: itemCount });
+      prisma.$executeRawUnsafe(
+        `INSERT INTO "ActivityLog" (id, "userId", action, description, "orderId", metadata, "createdAt")
+         VALUES (gen_random_uuid(), $1, 'PURCHASE', $2, $3, $4::jsonb, NOW())`,
+        data.customerId, description, newOrder.id, metadata
+      ).catch(() => { /* Não bloqueia a resposta se o log falhar */ });
+    }
 
     // 5. Retorno Serializado (Sem Date objects)
     /**

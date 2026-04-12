@@ -9,6 +9,17 @@ datasource db {
 
 /// Utilizador da plataforma: comprador (`role = customer`) ou vendedor (`role = seller`).
 /// PF/PJ distinguem-se por `documentType` (CPF/CNPJ) e `document` (único).
+///
+/// ── CLIENTES ───────────────────────────────────────────────────────────────────
+///   role = "customer" → compas via `orders`, favoritos via `favoriteProducts`,
+///   atividades via `activityLogs`, vendedora indicadora via `referredBySeller`.
+///
+/// ── VENDEDORES AUTORIZADOS ─────────────────────────────────────────────────────
+///   role = "seller" → estoque pessoal via `sellerInventory`, loja via `stores`,
+///   clientes indicados via `referredClients`, slug de loja via `sellerSlug`.
+///
+/// ── ADMIN ──────────────────────────────────────────────────────────────────────
+///   role = "admin" → gerencia catálogo global Maryland via `stores`.
 model User {
   id                 String          @id @default(cuid())
   email              String?         @unique
@@ -30,21 +41,39 @@ model User {
   /// `customer` = comprador; `seller` = vendedor autorizado; `admin` = admin Maryland 0000.
   role               String          @default("customer")
 
+  // ── Dados exclusivos de Vendedor Autorizado ──────────────────────────────────
   /// Slug único da loja da vendedora (ex: "bruna-maryland-x7k") — gerado automaticamente
   sellerSlug         String?         @unique
-  /// Vendedor que indicou este cliente (via link /loja/[slug])
+  /// Vendedor que indicou este cliente (via link /dashboard?seller=[slug])
   referredBySellerId String?
   referredBySeller   User?           @relation("SellerReferrals", fields: [referredBySellerId], references: [id], onDelete: SetNull)
+  /// Clientes que o vendedor indicou
   referredClients    User[]          @relation("SellerReferrals")
+  /// Estoque pessoal do vendedor
+  sellerInventory    SellerInventoryItem[]
+  /// Loja(s) do vendedor / admin
+  stores             Store[]
 
-  isTwoFactorEnabled Boolean         @default(false)
-  paymentMethods     PaymentMethod[]
+  // ── Dados exclusivos de Cliente ───────────────────────────────────────────────
+  /// Histórico de compras do cliente (pedidos vinculados)
+  orders             Order[]         @relation("CustomerOrders")
+  /// Produtos favoritados pelo cliente
   favoriteProducts   Product[]       @relation("UserFavorites")
 
-  stores             Store[]
-  sellerInventory    SellerInventoryItem[]
+  // ── Dados compartilhados ──────────────────────────────────────────────────────
+  isTwoFactorEnabled Boolean         @default(false)
+  paymentMethods     PaymentMethod[]
+  /// Log de atividades do usuário (login, compra, favorito, etc.)
+  activityLogs       ActivityLog[]
+
+  /// Pedidos gerados por clientes que o vendedor indicou (via link de loja)
+  referredOrders     Order[]         @relation("OrderReferrals")
+
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
+
+  @@index([role])
+  @@index([referredBySellerId])
 }
 
 // NOVO MODELO: Métodos de Pagamento
@@ -175,10 +204,24 @@ model Order {
   total         Decimal     @db.Decimal(10, 2)
   customerName  String?
   customerPhone String?
+
+  /// Cliente que realizou a compra (null = venda no balcão/POS sem cadastro)
+  customerId    String?
+  customer      User?       @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: SetNull)
+
+  /// Vendedor autorizado que indicou este cliente (via link de loja)
+  referredBySellerId String?
+  referredBySeller   User?  @relation("OrderReferrals", fields: [referredBySellerId], references: [id], onDelete: SetNull)
+
   storeId       String
   store         Store       @relation(fields: [storeId], references: [id])
   items         OrderItem[]
   createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @default(now()) @updatedAt
+
+  @@index([customerId])
+  @@index([referredBySellerId])
+  @@index([storeId])
 }
 
 model OrderItem {
@@ -190,6 +233,36 @@ model OrderItem {
   productId  String
   product    Product         @relation(fields: [productId], references: [id])
   production ProductionItem?
+}
+
+/// Registro de atividades de cada usuário (cliente ou vendedor).
+/// Usado para: histórico de compras, logins, favoritos, vendas, etc.
+model ActivityLog {
+  id          String   @id @default(cuid())
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Tipo da ação: "LOGIN" | "PURCHASE" | "SALE" | "FAVORITE" | "UNFAVORITE" |
+  ///               "VIEW_PRODUCT" | "REGISTER" | "SELLER_LINK_SHARED"
+  action      String
+
+  /// Descrição legível para o usuário (ex: "Comprou Calça Jeans Azul - 2x")
+  description String?
+
+  /// Dados extras em JSON (ex: { "productId": "...", "quantity": 2, "total": 99.90 })
+  metadata    Json?
+
+  /// ID do produto relacionado (se aplicável)
+  productId   String?
+
+  /// ID do pedido relacionado (se aplicável)
+  orderId     String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action])
 }
 
 model GuardianConfig {
