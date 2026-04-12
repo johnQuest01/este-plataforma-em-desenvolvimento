@@ -96,51 +96,83 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      // ── Detecta slug do vendedor na URL (visitante via link) ──────────────────
-      let urlSellerSlug = '';
-      if (typeof window !== 'undefined') {
-        const params = new URLSearchParams(window.location.search);
-        urlSellerSlug = params.get('seller') || '';
-        if (urlSellerSlug) localStorage.setItem('md_seller_ref', urlSellerSlug);
-      }
-
-      // ── Verifica autenticação ─────────────────────────────────────────────────
-      const user = LocalDB.getUser();
-
-      if (!user) {
-        if (urlSellerSlug) {
-          // Modo visitante: sem login, veio pelo link do vendedor
-          setPreviewSellerSlug(urlSellerSlug);
-          setIsPreviewMode(true);
-          setSellerMode(true);
-          setCurrentUserFirstName('Visitante');
-          const sp = await getSellerEcosystemProductsAction(urlSellerSlug);
-          setSellerProducts(sp);
-        } else {
-          router.replace('/');
-          return;
+      try {
+        // ── Detecta slug do vendedor (URL tem prioridade; fallback no localStorage) ─
+        let activeSellerSlug = '';
+        if (typeof window !== 'undefined') {
+          const params = new URLSearchParams(window.location.search);
+          activeSellerSlug =
+            params.get('seller') ||
+            localStorage.getItem('md_seller_ref') ||
+            '';
+          // Persiste no localStorage para futuras navegações dentro do ecossistema
+          if (activeSellerSlug) localStorage.setItem('md_seller_ref', activeSellerSlug);
         }
-      } else {
-        const firstName = user.name?.trim().split(/\s+/)[0] ?? 'Maryland';
-        setCurrentUserFirstName(firstName.length > 0 ? firstName : 'Maryland');
 
-        if (isSellerUser(user) && !isAdminUser(user)) {
-          // Vendedor logado: carrega somente o próprio estoque
-          const slugResult = await getOrCreateSellerSlugAction(user.id);
-          if (slugResult.success) {
-            const sellerSlug = slugResult.data.sellerSlug;
-            setPreviewSellerSlug(sellerSlug);
+        // ── Verifica autenticação ─────────────────────────────────────────────
+        const user = LocalDB.getUser();
+
+        if (!user) {
+          if (activeSellerSlug) {
+            // ── VISITANTE (sem login) via link da vendedora ──
+            setPreviewSellerSlug(activeSellerSlug);
+            setIsPreviewMode(true);
             setSellerMode(true);
-            // Grava no localStorage para consistência (lido por alguns sub-componentes)
-            localStorage.setItem('md_seller_ref', sellerSlug);
-            const sp = await getSellerEcosystemProductsAction(sellerSlug);
-            setSellerProducts(sp);
+            setCurrentUserFirstName('Visitante');
+            try {
+              const sp = await getSellerEcosystemProductsAction(activeSellerSlug);
+              setSellerProducts(sp);
+            } catch {
+              // Slug inválido ou vendedora removida: mostra dashboard vazio (sem travar)
+              setSellerProducts([]);
+            }
+          } else {
+            router.replace('/');
+            return;
           }
-        }
-        // Admin e comprador comum: vêem todos os produtos (sellerMode permanece false)
-      }
+        } else {
+          const firstName = user.name?.trim().split(/\s+/)[0] ?? 'Maryland';
+          setCurrentUserFirstName(firstName.length > 0 ? firstName : 'Maryland');
 
-      setIsReady(true);
+          if (isSellerUser(user) && !isAdminUser(user)) {
+            // ── VENDEDOR logado: exibe apenas o próprio estoque ──
+            try {
+              const slugResult = await getOrCreateSellerSlugAction(user.id);
+              if (slugResult.success) {
+                const sellerSlug = slugResult.data.sellerSlug;
+                setPreviewSellerSlug(sellerSlug);
+                setSellerMode(true);
+                localStorage.setItem('md_seller_ref', sellerSlug);
+                const sp = await getSellerEcosystemProductsAction(sellerSlug);
+                setSellerProducts(sp);
+              }
+            } catch {
+              // Falha ao buscar slug/estoque: vendedor vê tela normal sem travar
+            }
+          } else if (!isAdminUser(user) && activeSellerSlug) {
+            // ── CLIENTE logado que entrou via link da vendedora ──
+            // isPreviewMode = false (logado, pode navegar); sellerMode = true (vê estoque da vendedora)
+            setPreviewSellerSlug(activeSellerSlug);
+            setSellerMode(true);
+            try {
+              const sp = await getSellerEcosystemProductsAction(activeSellerSlug);
+              setSellerProducts(sp);
+            } catch {
+              // Falha ao buscar estoque: limpa contexto e exibe catálogo completo
+              setSellerMode(false);
+              setPreviewSellerSlug('');
+              if (typeof window !== 'undefined') localStorage.removeItem('md_seller_ref');
+            }
+          }
+          // Admin: vê todos os produtos (sellerMode permanece false)
+        }
+      } catch (err) {
+        // Erro inesperado: não trava o dashboard, loga no console
+        console.error('[Dashboard] checkAuth error:', err);
+      } finally {
+        // SEMPRE libera o dashboard — nunca fica preso em loading
+        setIsReady(true);
+      }
     };
     checkAuth();
     

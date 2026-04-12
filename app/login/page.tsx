@@ -86,6 +86,8 @@ export default function AuthenticationPage(): React.JSX.Element {
     address?: string;
     role: string;
     profilePictureUrl?: string | null;
+    /** Slug da vendedora que indicou este usuário (via link de loja) */
+    sellerSlug?: string | null;
   }) => {
     const nameGender = inferNameGenderFromFullName(params.displayName);
     LocalDB.saveUser({
@@ -102,7 +104,17 @@ export default function AuthenticationPage(): React.JSX.Element {
       storeName: `${params.displayName.split(' ')[0] || 'Minha'} Store`,
       profilePictureUrl: params.profilePictureUrl ?? undefined,
     });
-    router.push('/dashboard');
+
+    // Se o cliente veio via link de vendedora: mantém o contexto no redirect E no localStorage.
+    // O localStorage só é apagado pelo DashboardPage após o contexto ser carregado.
+    if (params.sellerSlug && params.role === 'customer') {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('md_seller_ref', params.sellerSlug);
+      }
+      router.push(`/dashboard?seller=${params.sellerSlug}`);
+    } else {
+      router.push('/dashboard');
+    }
   };
 
   const handleAuthenticationSubmit = async (event: React.FormEvent) => {
@@ -119,22 +131,23 @@ export default function AuthenticationPage(): React.JSX.Element {
       });
 
       if (authResponse.success && authResponse.data) {
-        // Associar ao vendedor se vier de um link
         const sellerSlug = getSellerRefSlug();
-        if (sellerSlug && authResponse.data.role !== 'seller' && authResponse.data.role !== 'admin') {
+        // Associa o cliente ao vendedor (em background, não bloqueia o redirect)
+        if (sellerSlug && authResponse.data.role === 'customer') {
           associateClientWithSellerAction(authResponse.data.userId, sellerSlug).catch(() => {});
-          if (typeof window !== 'undefined') localStorage.removeItem('md_seller_ref');
+          // NÃO remove md_seller_ref aqui — o redirect já usa o slug na URL
         }
         persistSessionAndRedirect({
-          userId: authResponse.data.userId,
-          documentType: authResponse.data.documentType,
+          userId:         authResponse.data.userId,
+          documentType:   authResponse.data.documentType,
           documentNumber: authResponse.data.documentNumber,
-          displayName: authResponse.data.userName,
-          emailAddress: authResponse.data.emailAddress,
-          phoneNumber: authResponse.data.phoneNumber,
-          address: authResponse.data.address,
-          role: authResponse.data.role,
+          displayName:    authResponse.data.userName,
+          emailAddress:   authResponse.data.emailAddress,
+          phoneNumber:    authResponse.data.phoneNumber,
+          address:        authResponse.data.address,
+          role:           authResponse.data.role,
           profilePictureUrl: authResponse.data.profilePictureUrl,
+          sellerSlug:     sellerSlug,
         });
         return;
       }
@@ -185,21 +198,22 @@ export default function AuthenticationPage(): React.JSX.Element {
       }
 
       if (registerResponse.data) {
-        // Associar ao vendedor se veio de um link
         const sellerSlug = getSellerRefSlug();
-        if (sellerSlug && registerResponse.data.role !== 'seller' && registerResponse.data.role !== 'admin') {
+        // Associa o novo cliente ao vendedor (em background)
+        if (sellerSlug && registerResponse.data.role === 'customer') {
           associateClientWithSellerAction(registerResponse.data.userId, sellerSlug).catch(() => {});
-          if (typeof window !== 'undefined') localStorage.removeItem('md_seller_ref');
+          // NÃO remove md_seller_ref aqui — o redirect já carrega com ?seller= na URL
         }
         persistSessionAndRedirect({
-          userId: registerResponse.data.userId,
-          documentType: registerResponse.data.documentType,
+          userId:         registerResponse.data.userId,
+          documentType:   registerResponse.data.documentType,
           documentNumber: registerResponse.data.documentNumber,
-          displayName: registerResponse.data.fullName,
-          emailAddress: registerResponse.data.emailAddress,
-          phoneNumber: registerResponse.data.phoneNumber,
-          address: registerResponse.data.address,
-          role: registerResponse.data.role,
+          displayName:    registerResponse.data.fullName,
+          emailAddress:   registerResponse.data.emailAddress,
+          phoneNumber:    registerResponse.data.phoneNumber,
+          address:        registerResponse.data.address,
+          role:           registerResponse.data.role,
+          sellerSlug:     sellerSlug,
         });
         return;
       }

@@ -86,6 +86,8 @@ export const LocalDB = {
   clearUser: () => {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(DB_KEY);
+    // Remove o contexto de vendedora para não vazar para a próxima sessão
+    localStorage.removeItem('md_seller_ref');
   },
 
   /** Mescla campos na sessão local (ex.: após sync com Prisma). */
