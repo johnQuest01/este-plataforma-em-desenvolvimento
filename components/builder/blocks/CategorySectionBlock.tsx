@@ -170,7 +170,7 @@ const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBase
               <div 
                 key={idx}
                 className="bg-white border border-gray-100 shadow-sm rounded-xl p-1.5 shrink-0"
-                style={{ width: '144px' }}
+                style={{ width: '168px' }}
               >
                 <div className="bg-gray-200 animate-pulse rounded-lg w-full" style={{ aspectRatio: '3/4' }} />
                 <div className="bg-gray-200 animate-pulse h-3 w-3/4 mt-2 rounded-sm" />
@@ -189,7 +189,7 @@ const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBase
             <div className="w-5 shrink-0" />
 
             {displayProducts.map((product, idx) => {
-              const cardWidth = '144px';
+              const cardWidth = '168px';
 
               return (
                 <motion.div
@@ -235,31 +235,34 @@ const CategorySectionBlockBase = ({ config, onAction }: CategorySectionBlockBase
                     </div>
 
                     {/* Info do Produto */}
-                    <div className="text-left px-1 flex flex-col w-full">
+                    <div className="text-left px-1 flex flex-col w-full gap-2" style={{ minHeight: '80px' }}>
                       <h3 
-                        className="text-[11px] font-medium line-clamp-2 mb-1 leading-tight h-8 group-hover:opacity-70 transition-opacity"
+                        className="text-[11px] font-medium line-clamp-3 leading-tight group-hover:opacity-70 transition-opacity"
                         style={{ color: textColor }}
                       >
                         {product.name}
                       </h3>
-                      <p 
-                        className="text-xs font-black leading-none pt-0.5"
-                        style={{ color: config.style.accentColor ?? '#5874f6' }}
-                      >
-                        {new Intl.NumberFormat('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL'
-                        }).format(product.price)}
-                      </p>
 
-                      {/* 🏷️ ETIQUETA VENDIDO (Abaixo do preço) */}
-                      {product.stock <= 0 && (
-                        <div className="mt-2 bg-orange-500 rounded-[4px] px-2 py-1 w-fit shadow-sm">
-                          <span className="text-white text-[9px] font-bold uppercase leading-none block tracking-wider">
-                            Vendido
-                          </span>
-                        </div>
-                      )}
+                      <div className="flex items-center justify-between mt-auto">
+                        <p 
+                          className="text-xs font-black leading-none"
+                          style={{ color: config.style.accentColor ?? '#5874f6' }}
+                        >
+                          {new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL'
+                          }).format(product.price)}
+                        </p>
+
+                        {/* 🏷️ ETIQUETA VENDIDO */}
+                        {product.stock <= 0 && (
+                          <div className="bg-orange-500 rounded-[4px] px-2 py-1 shrink-0 shadow-sm">
+                            <span className="text-white text-[9px] font-bold uppercase leading-none block tracking-wider">
+                              Vendido
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </button>
                 </motion.div>

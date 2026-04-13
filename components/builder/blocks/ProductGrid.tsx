@@ -117,8 +117,7 @@ export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps): R
 
             const uniqueKey = item.id ? `prod-${item.id}` : `prod-idx-${index}`;
 
-            // ✅ AJUSTE: Largura do card sincronizada para 96px
-            const cardWidth = '96px';
+            const cardWidth = '120px';
 
             return (
               <div
@@ -140,34 +139,29 @@ export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps): R
                     alt={name}
                     fill
                     className="object-cover transition-transform duration-700 group-hover:scale-110"
-                    sizes="(max-width: 768px) 96px, 120px"
+                    sizes="(max-width: 768px) 120px, 140px"
                   />
                 </div>
 
-                <div className="p-1.5 text-left border-t border-gray-100 flex-1 flex flex-col justify-between">
-                  <div>
-                    <p className="font-medium text-gray-800 text-[10px] line-clamp-2 leading-tight h-7 mb-0.5">
-                      {name}
-                    </p>
-                    
-                    {/* 🏷️ CONTAINER PREÇO + ETIQUETA VENDIDO */}
-                    <div className="flex items-center justify-between pt-0.5">
-                      {price && (
-                        <p className="font-black text-gray-900 text-[11px] leading-none truncate pr-1">
-                          {formatCurrencyBRL(price)}
-                        </p>
-                      )}
-                      
-                      {/* 🏷️ ETIQUETA VENDIDO (Aparece quando estoque é 0) */}
-                      {stockQty <= 0 && (
-                        <div className="bg-orange-500 rounded-[2px] px-1.5 py-[2px] shrink-0 shadow-sm">
-                          <span className="text-white text-[7px] font-bold uppercase leading-none block tracking-wider">
-                            Vendido
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                <div className="p-2 text-left border-t border-gray-100 flex flex-col gap-2" style={{ minHeight: '80px' }}>
+                  <p className="font-medium text-gray-800 text-[10px] line-clamp-3 leading-tight">
+                    {name}
+                  </p>
 
+                  <div className="flex items-center justify-between mt-auto">
+                    {price && (
+                      <p className="font-black text-gray-900 text-[11px] leading-none truncate pr-1">
+                        {formatCurrencyBRL(price)}
+                      </p>
+                    )}
+
+                    {stockQty <= 0 && (
+                      <div className="bg-orange-500 rounded-[2px] px-1.5 py-[2px] shrink-0 shadow-sm">
+                        <span className="text-white text-[7px] font-bold uppercase leading-none block tracking-wider">
+                          Vendido
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
