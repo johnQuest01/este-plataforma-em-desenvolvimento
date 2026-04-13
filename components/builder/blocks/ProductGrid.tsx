@@ -9,6 +9,8 @@ import { useSellerContext } from '@/lib/seller-context';
 import { useRouter } from 'next/navigation';
 import { formatCurrencyBRL } from '@/lib/utils/currency';
 import Image from 'next/image';
+import { getAppConfigAction } from '@/app/actions/app-config-actions';
+import { defaultAppConfig, AppConfigType } from '@/schemas/app-config-schema';
 
 export const PRODUCT_UPDATE_EVENT = 'product_db_updated';
 
@@ -20,9 +22,15 @@ interface ProductGridBlockProps {
 export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps): React.JSX.Element => {
   const router = useRouter();
   const { isSellerMode, sellerSlug, sellerProducts } = useSellerContext();
+  const [appCfg, setAppCfg] = useState<AppConfigType>(defaultAppConfig);
 
-  // Em modo vendedor, usa os produtos do contexto DIRETAMENTE (sem estado intermediário).
-  // Isso elimina o "flash" de produtos Maryland que acontecia durante o useEffect de sync.
+  useEffect(() => {
+    getAppConfigAction().then(setAppCfg);
+    const handler = () => getAppConfigAction().then(setAppCfg);
+    window.addEventListener('appconfig-updated', handler);
+    return () => window.removeEventListener('appconfig-updated', handler);
+  }, []);
+
   const [mdProducts, setMdProducts] = useState<ProductData[]>([]);
   const [isLoading, setIsLoading] = useState(!isSellerMode);
 
@@ -117,7 +125,7 @@ export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps): R
 
             const uniqueKey = item.id ? `prod-${item.id}` : `prod-idx-${index}`;
 
-            const cardWidth = '120px';
+            const cardWidth = `${appCfg.productCardWidth}px`;
 
             return (
               <div
@@ -133,7 +141,7 @@ export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps): R
                   {item.id ? 'Novo' : (item.tag || 'Oferta')}
                 </div>
 
-                <div className="relative aspect-3/4 bg-gray-100 group overflow-hidden">
+                <div className="relative bg-gray-100 group overflow-hidden" style={{ height: `${appCfg.productCardImageHeight}px` }}>
                   <Image
                     src={imageUrl}
                     alt={name}
@@ -143,7 +151,7 @@ export const ProductGridBlock = ({ config, onAction }: ProductGridBlockProps): R
                   />
                 </div>
 
-                <div className="p-2 text-left border-t border-gray-100 flex flex-col gap-2" style={{ minHeight: '80px' }}>
+                <div className="p-2 text-left border-t border-gray-100 flex flex-col gap-2" style={{ minHeight: `${appCfg.productCardInfoHeight}px` }}>
                   <p className="font-medium text-gray-800 text-[10px] line-clamp-3 leading-tight">
                     {name}
                   </p>

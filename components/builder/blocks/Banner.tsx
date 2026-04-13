@@ -1,38 +1,46 @@
+'use client';
+
 import React from 'react';
 import { BlockConfig } from '@/types/builder';
+import Image from 'next/image';
 
 export const BannerBlock = ({ config }: { config: BlockConfig }) => {
-  // Se futuramente você tiver uma URL de imagem no JSON, pode usar aqui.
-  // Por enquanto, simulamos o box vazio da imagem.
-  
-  return (
-    <div 
-      // ALTERADO: Removido px-4, pt-4, pb-2. Adicionado w-full e p-0.
-      className="w-full p-0 mb-4" 
-      style={{ backgroundColor: 'transparent' }} 
+  const imageUrl = (config.data?.imageUrl as string) || '';
+  const linkUrl  = (config.data?.linkUrl  as string) || '';
+  const altText  = (config.data?.title    as string) || 'Banner Maryland';
+
+  const inner = (
+    <div
+      className="w-full overflow-hidden relative"
+      style={{
+        aspectRatio: '16 / 7',
+        backgroundColor: config.style.bgColor || '#f3f4f6',
+        border: 'none',
+        borderRadius: 0,
+      }}
     >
-      <div 
-        // ALTERADO: Mantido w-full e aspect ratio.
-        className="w-full aspect-[16/10] shadow-sm relative overflow-hidden flex flex-col items-center justify-center object-cover"
-        style={{ 
-          backgroundColor: config.style.bgColor || '#ffffff',
-          // Borda sólida e escura conforme a imagem (border-gray-900)
-          borderWidth: '2px',
-          borderStyle: 'solid',
-          borderColor: '#111827', // gray-900
-          // ALTERADO: Forçado borderRadius para 0 para encostar nas laterais
-          borderRadius: '0px',
-          // OPCIONAL: Se quiser remover as bordas laterais para um look 100% fluido:
-          borderLeft: 'none',
-          borderRight: 'none'
-        }}
-      >
-        {/* Placeholder visual para indicar área de imagem */}
-        <div className="opacity-10 pointer-events-none select-none">
-             {/* Opcional: Se quiser deixar vazio como na imagem, remova este span */}
-            {/* <span className="font-bold text-lg uppercase tracking-widest">Banner</span> */}
+      {imageUrl ? (
+        <Image
+          src={imageUrl}
+          alt={altText}
+          fill
+          className="object-cover"
+          sizes="100vw"
+          priority
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center opacity-10">
+          <span className="text-xs font-bold uppercase tracking-widest text-gray-500">
+            Banner Maryland
+          </span>
         </div>
-      </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="w-full p-0 m-0" style={{ backgroundColor: 'transparent' }}>
+      {linkUrl ? <a href={linkUrl} className="block w-full">{inner}</a> : inner}
     </div>
   );
 };

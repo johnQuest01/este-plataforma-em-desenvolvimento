@@ -11,6 +11,7 @@ import { withGuardian } from "@/components/guardian/GuardianBeacon";
 
 // NOVA IMPORTAÇÃO: O Widget Flutuante Global
 import { HealthMonitorBlock } from "@/components/builder/blocks/HealthMonitorBlock";
+import { GodHandPanel } from "@/components/builder/blocks/GodHandPanel";
 
 // FOOTER GLOBAL: Importa componente e configuração
 import { ButtonsFooter } from '@/components/builder/ui/ButtonsFooter';
@@ -50,6 +51,9 @@ function RootLayoutShellBase({ children }: RootLayoutShellProps): React.JSX.Elem
 
           {/* Botão flutuante de admin */}
           <GlobalAdmin />
+
+          {/* 🪄 Mão de Deus — visível apenas para admin */}
+          <GodHandPanel />
 
           {/* Monitor de saúde (position fixed) */}
           <HealthMonitorBlock />
