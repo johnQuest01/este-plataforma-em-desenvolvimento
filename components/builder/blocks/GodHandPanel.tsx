@@ -71,12 +71,13 @@ const ToolBtn = ({
   <button
     onMouseDown={e => { e.preventDefault(); onClick(); }}
     title={title}
-    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all text-xs font-bold border
+    style={{ cursor: 'pointer' }}
+    className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all text-sm font-bold border-2
       ${active
-        ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm scale-95'
+        ? 'bg-indigo-600 text-white border-indigo-700 shadow-md scale-95'
         : danger
-        ? 'text-red-400 border-transparent hover:bg-red-50 hover:border-red-200'
-        : 'text-gray-600 border-transparent hover:bg-white hover:border-gray-200 hover:shadow-sm'}`}
+        ? 'text-red-400 border-transparent hover:bg-red-50 hover:border-red-300'
+        : 'text-gray-600 border-transparent hover:bg-white hover:border-gray-300 hover:shadow-sm'}`}
   >
     {children}
   </button>
@@ -93,6 +94,7 @@ export const GodHandPanel = () => {
   const [activeNote, setActiveNote] = useState<Note | null>(null);
   const [isSaving, setIsSaving]     = useState(false);
   const [saved, setSaved]           = useState(false);
+  const [saveError, setSaveError]   = useState(false);
   const [showColors, setShowColors] = useState(false);
   const [showNoteColors, setShowNoteColors] = useState(false);
   const [activeColor, setActiveColor]   = useState('#111827');
@@ -186,10 +188,17 @@ export const GodHandPanel = () => {
 
   const saveNotes = async (updatedNotes: Note[]) => {
     setIsSaving(true);
-    await saveAppConfigAction({ adminNote: JSON.stringify(updatedNotes) });
+    setSaveError(false);
+    const result = await saveAppConfigAction({ adminNote: JSON.stringify(updatedNotes) });
     setIsSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    if (result.success) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } else {
+      setSaveError(true);
+      setTimeout(() => setSaveError(false), 4000);
+      console.error('[Bloco de Notas] Falha ao salvar:', result.error);
+    }
   };
 
   const handleSaveNote = async () => {
@@ -253,19 +262,25 @@ export const GodHandPanel = () => {
 
   if (!isAdmin) return null;
 
-  const noteBg     = activeNote ? (NOTE_COLORS.find(c => c.bg === activeNote.color) ?? NOTE_COLORS[0]) : NOTE_COLORS[0];
-
   return (
     <div style={{ position: 'fixed', right: 16, bottom: 100, zIndex: 99999 }}>
-      <motion.div drag dragMomentum={false} dragElastic={0} style={{ touchAction: 'none' }}>
+      <motion.div
+        drag
+        dragMomentum={false}
+        dragElastic={0}
+        dragConstraints={{ left: -1600, right: 400, top: -900, bottom: 200 }}
+        style={{ touchAction: 'none', cursor: 'grab' }}
+        whileDrag={{ cursor: 'grabbing' }}
+      >
 
         {/* ── Botão fechado ── */}
         {!isOpen && (
           <button
             onClick={() => setIsOpen(true)}
+            onPointerDown={e => e.stopPropagation()}
             title="Bloco de Notas"
             className="w-14 h-14 rounded-full flex items-center justify-center shadow-2xl relative"
-            style={{ background: 'linear-gradient(135deg, #1e1b4b, #4c1d95, #6d28d9)', border: '3px solid white' }}
+            style={{ background: 'linear-gradient(135deg, #1e1b4b, #4c1d95, #6d28d9)', border: '3px solid white', cursor: 'pointer' }}
           >
             <NotebookPen size={22} className="text-white" />
             {notes.length > 0 && (
@@ -284,12 +299,12 @@ export const GodHandPanel = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 12 }}
               className="flex flex-col shadow-2xl"
-              style={{ width: 360, maxHeight: '78vh', background: '#fff', borderRadius: 16, border: '1px solid rgba(0,0,0,0.08)' }}
+              style={{ width: 340, maxHeight: '68vh', background: '#fff', borderRadius: 16, border: '1px solid rgba(0,0,0,0.08)', cursor: 'grab' }}
             >
-              {/* ── HEADER ── */}
+              {/* ── HEADER — arrastar aqui ── */}
               <div
-                className="flex items-center justify-between px-4 py-3 shrink-0 cursor-grab active:cursor-grabbing select-none"
-                style={{ background: 'linear-gradient(135deg, #1e1b4b, #4c1d95)', borderRadius: '15px 15px 0 0' }}
+                className="flex items-center justify-between px-4 py-3 shrink-0 select-none"
+                style={{ background: 'linear-gradient(135deg, #1e1b4b, #4c1d95)', borderRadius: '15px 15px 0 0', cursor: 'grab' }}
               >
                 <div className="flex items-center gap-2">
                   {view === 'edit' && (
@@ -302,12 +317,13 @@ export const GodHandPanel = () => {
                     {view === 'list' ? `Notas (${notes.length})` : 'Editar Nota'}
                   </span>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1" onPointerDown={e => e.stopPropagation()}>
                   {view === 'list' && (
                     <button
                       onClick={handleCreateNote}
                       className="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center hover:bg-yellow-300 shadow"
                       title="Nova nota"
+                      style={{ cursor: 'pointer' }}
                     >
                       <Plus size={13} className="text-gray-900" />
                     </button>
@@ -315,6 +331,7 @@ export const GodHandPanel = () => {
                   <button
                     onClick={() => setIsOpen(false)}
                     className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/40"
+                    style={{ cursor: 'pointer' }}
                   >
                     <X size={12} className="text-white" />
                   </button>
@@ -323,7 +340,11 @@ export const GodHandPanel = () => {
 
               {/* ── LISTA DE NOTAS ── */}
               {view === 'list' && (
-                <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 bg-gray-50" style={{ borderRadius: '0 0 15px 15px' }}>
+                <div
+                  className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 bg-gray-50"
+                  onPointerDown={e => e.stopPropagation()}
+                  style={{ borderRadius: '0 0 15px 15px', cursor: 'default' }}
+                >
                   {notes.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-center text-gray-400">
                       <FileText size={32} className="mb-3 opacity-40" />
@@ -374,13 +395,15 @@ export const GodHandPanel = () => {
               {view === 'edit' && activeNote && (
                 <>
                   {/* Título editável */}
-                  <div className="shrink-0 px-4 pt-3 pb-2 border-b border-gray-100">
+                  <div className="shrink-0 px-4 pt-3 pb-2 border-b border-gray-100" onPointerDown={e => e.stopPropagation()} style={{ cursor: 'default' }}>
                     <input
                       type="text"
                       value={activeNote.title}
                       onChange={handleTitleChange}
+                      onPointerDown={e => e.stopPropagation()}
                       placeholder="Título da nota..."
                       className="w-full text-base font-black text-gray-800 outline-none bg-transparent placeholder-gray-300"
+                      style={{ cursor: 'text' }}
                     />
                     <p className="text-[10px] text-gray-400 mt-0.5">{formatDate(activeNote.updatedAt)}</p>
                   </div>
@@ -388,104 +411,107 @@ export const GodHandPanel = () => {
                   {/* Barra de ferramentas */}
                   <div
                     className="shrink-0 border-b"
-                    style={{ borderColor: NOTE_COLORS.find(c => c.bg === activeNote.color)?.border ?? '#e5e7eb', backgroundColor: activeNote.color }}
+                    onPointerDown={e => e.stopPropagation()}
+                    style={{ borderColor: NOTE_COLORS.find(c => c.bg === activeNote.color)?.border ?? '#e5e7eb', backgroundColor: activeNote.color, cursor: 'default' }}
                   >
                     {/* Linha 1 — estilo de texto + estrutura + cores */}
                     <div className="flex items-center gap-1 px-3 pt-2 pb-1.5 flex-wrap">
                       {/* Estilo */}
                       <ToolBtn onClick={() => execCmd('bold')} active={formatState.bold} title="Negrito (Ctrl+B)">
-                        <Bold size={12} />
+                        <Bold size={15} />
                       </ToolBtn>
                       <ToolBtn onClick={() => execCmd('italic')} active={formatState.italic} title="Itálico (Ctrl+I)">
-                        <Italic size={12} />
+                        <Italic size={15} />
                       </ToolBtn>
                       <ToolBtn onClick={() => execCmd('underline')} active={formatState.underline} title="Sublinhado (Ctrl+U)">
-                        <Underline size={12} />
+                        <Underline size={15} />
                       </ToolBtn>
 
-                      <div className="w-px h-5 bg-black/10 mx-0.5" />
+                      <div className="w-px h-6 bg-black/10 mx-1" />
 
                       {/* Estrutura */}
                       <ToolBtn onClick={() => execCmd('formatBlock', '<h2>')} title="Título grande">
-                        <span className="text-[10px] font-black leading-none">H2</span>
+                        <span className="text-xs font-black leading-none">H2</span>
                       </ToolBtn>
                       <ToolBtn onClick={() => execCmd('formatBlock', '<h3>')} title="Título médio">
-                        <span className="text-[10px] font-black leading-none">H3</span>
+                        <span className="text-xs font-black leading-none">H3</span>
                       </ToolBtn>
                       <ToolBtn onClick={() => execCmd('formatBlock', '<p>')} title="Parágrafo normal">
-                        <Type size={12} />
+                        <Type size={15} />
                       </ToolBtn>
 
-                      <div className="w-px h-5 bg-black/10 mx-0.5" />
+                      <div className="w-px h-6 bg-black/10 mx-1" />
 
                       {/* Listas */}
                       <ToolBtn onClick={() => execCmd('insertUnorderedList')} title="Lista com marcadores">
-                        <List size={12} />
+                        <List size={15} />
                       </ToolBtn>
-                      <ToolBtn onClick={insertChecklist} title="Lista de tarefas">
-                        <CheckSquare size={12} />
+                      <ToolBtn onClick={insertChecklist} title="Lista de tarefas ✓">
+                        <CheckSquare size={15} />
                       </ToolBtn>
 
-                      <div className="w-px h-5 bg-black/10 mx-0.5" />
+                      <div className="w-px h-6 bg-black/10 mx-1" />
 
                       {/* Cor do texto */}
                       <button
                         onMouseDown={e => { e.preventDefault(); setShowColors(p => !p); setShowNoteColors(false); }}
                         title="Cor do texto"
-                        className={`w-7 h-7 rounded-lg flex items-center gap-0.5 justify-center transition-all border
+                        style={{ cursor: 'pointer' }}
+                        className={`w-9 h-9 rounded-xl flex items-center gap-1 justify-center transition-all border-2
                           ${showColors ? 'bg-indigo-600 border-indigo-700' : 'border-transparent hover:bg-white/60 hover:border-black/10'}`}
                       >
-                        <Palette size={12} className={showColors ? 'text-white' : 'text-gray-700'} />
-                        <div className="w-2 h-2 rounded-sm border border-black/20" style={{ backgroundColor: activeColor }} />
+                        <Palette size={15} className={showColors ? 'text-white' : 'text-gray-700'} />
+                        <div className="w-2.5 h-2 rounded-sm border border-black/20" style={{ backgroundColor: activeColor }} />
                       </button>
 
                       {/* Cor da nota */}
                       <button
                         onMouseDown={e => { e.preventDefault(); setShowNoteColors(p => !p); setShowColors(false); }}
                         title="Cor da nota"
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all border
+                        style={{ cursor: 'pointer' }}
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border-2
                           ${showNoteColors ? 'bg-indigo-600 border-indigo-700' : 'border-transparent hover:bg-white/60 hover:border-black/10'}`}
                       >
-                        <div className="w-4 h-4 rounded-full border-2 border-white shadow" style={{ backgroundColor: activeNote.color }} />
+                        <div className="w-5 h-5 rounded-full border-2 border-white shadow" style={{ backgroundColor: activeNote.color }} />
                       </button>
 
                       <div className="flex-1" />
 
                       <ToolBtn onClick={() => handleDeleteNote(activeNote.id)} danger title="Apagar nota">
-                        <Trash2 size={12} />
+                        <Trash2 size={15} />
                       </ToolBtn>
                     </div>
 
                     {/* Linha 2 — alinhamento de texto */}
-                    <div className="flex items-center gap-1 px-3 pb-2">
-                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mr-1">Alinhar:</span>
+                    <div className="flex items-center gap-1 px-3 pb-2.5">
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">Alinhar:</span>
                       <ToolBtn
                         onClick={() => execCmd('justifyLeft')}
                         active={formatState.justifyLeft && !formatState.justifyCenter && !formatState.justifyRight && !formatState.justifyFull}
                         title="Alinhar à esquerda"
                       >
-                        <AlignLeft size={12} />
+                        <AlignLeft size={15} />
                       </ToolBtn>
                       <ToolBtn
                         onClick={() => execCmd('justifyCenter')}
                         active={formatState.justifyCenter}
                         title="Centralizar"
                       >
-                        <AlignCenter size={12} />
+                        <AlignCenter size={15} />
                       </ToolBtn>
                       <ToolBtn
                         onClick={() => execCmd('justifyRight')}
                         active={formatState.justifyRight}
                         title="Alinhar à direita"
                       >
-                        <AlignRight size={12} />
+                        <AlignRight size={15} />
                       </ToolBtn>
                       <ToolBtn
                         onClick={() => execCmd('justifyFull')}
                         active={formatState.justifyFull}
                         title="Justificar"
                       >
-                        <AlignJustify size={12} />
+                        <AlignJustify size={15} />
                       </ToolBtn>
                     </div>
 
@@ -536,53 +562,66 @@ export const GodHandPanel = () => {
                     )}
                   </div>
 
-                  {/* Área de escrita */}
+                  {/* Área de escrita — stopPropagation impede que o drag inicie ao clicar para editar */}
                   <div
                     ref={editorRef}
                     contentEditable
                     suppressContentEditableWarning
                     spellCheck={false}
-                    className="flex-1 overflow-y-auto p-4 outline-none text-sm leading-relaxed"
-                    data-placeholder="Escreva sua nota aqui..."
+                    onPointerDown={e => e.stopPropagation()}
+                    className="flex-1 overflow-y-auto p-4 outline-none leading-relaxed"
+                    data-placeholder="Escreva sua nota aqui... (sem limite de texto)"
                     style={{
-                      minHeight: 220,
+                      minHeight: 160,
+                      fontSize: '0.9rem',
                       fontFamily: '"Georgia", serif',
                       color: '#111827',
                       backgroundColor: activeNote.color,
                       userSelect: 'text',
                       WebkitUserSelect: 'text',
+                      cursor: 'text',
                     }}
                   />
 
                   {/* Rodapé */}
-                  <div className="shrink-0 flex items-center justify-between px-3 py-2.5 border-t border-gray-100 bg-white" style={{ borderRadius: '0 0 15px 15px' }}>
+                  <div
+                    className="shrink-0 flex items-center justify-between px-3 py-2.5 border-t border-gray-100 bg-white"
+                    onPointerDown={e => e.stopPropagation()}
+                    style={{ borderRadius: '0 0 15px 15px', cursor: 'default' }}
+                  >
                     <button
                       onClick={() => setView('list')}
-                      className="flex items-center gap-1 text-[11px] font-semibold text-gray-500 hover:text-gray-700"
+                      className="flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-700"
+                      style={{ cursor: 'pointer' }}
                     >
-                      <ChevronLeft size={12} /> Todas as notas
+                      <ChevronLeft size={13} /> Todas as notas
                     </button>
-                    <button
-                      onClick={handleSaveNote}
-                      disabled={isSaving}
-                      className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[11px] font-black text-white transition-all"
-                      style={{
-                        background: saved ? '#16a34a' : 'linear-gradient(135deg, #1e1b4b, #4c1d95)',
-                        opacity: isSaving ? 0.7 : 1,
-                      }}
-                    >
-                      <Save size={11} />
-                      {saved ? 'Salvo!' : isSaving ? 'Salvando...' : 'Salvar'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {saveError && (
+                        <span className="text-[10px] font-bold text-red-500">Erro ao salvar!</span>
+                      )}
+                      <button
+                        onClick={handleSaveNote}
+                        disabled={isSaving}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black text-white transition-all"
+                        style={{
+                          background: saveError ? '#dc2626' : saved ? '#16a34a' : 'linear-gradient(135deg, #1e1b4b, #4c1d95)',
+                          opacity: isSaving ? 0.7 : 1,
+                          cursor: isSaving ? 'wait' : 'pointer',
+                        }}
+                      >
+                        <Save size={13} />
+                        {saveError ? 'Erro!' : saved ? '✓ Salvo!' : isSaving ? 'Salvando...' : 'Salvar'}
+                      </button>
+                    </div>
                   </div>
                 </>
               )}
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
 
-      <style>{`
+        <style>{`
         [data-placeholder]:empty::before {
           content: attr(data-placeholder);
           color: #9ca3af;
@@ -619,6 +658,7 @@ export const GodHandPanel = () => {
         }
         [contenteditable] li { margin: 2px 0 !important; }
       `}</style>
+      </motion.div>
     </div>
   );
 };
