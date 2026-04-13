@@ -163,13 +163,22 @@ export const GodHandPanel = () => {
   }, []);
 
 
-  // Injeta conteúdo no editor ao abrir nota
+  // Injeta conteúdo no editor apenas ao ABRIR a nota (não a cada mudança de título)
+  const lastLoadedNoteId = useRef<string | null>(null);
   useEffect(() => {
     if (view === 'edit' && activeNote && editorRef.current) {
-      editorRef.current.innerHTML = activeNote.content;
-      editorRef.current.focus();
+      // Só reinjecta HTML se for uma nota diferente da que está carregada
+      if (lastLoadedNoteId.current !== activeNote.id) {
+        editorRef.current.innerHTML = activeNote.content;
+        lastLoadedNoteId.current = activeNote.id;
+        // Foca o editor só na abertura inicial da nota
+        editorRef.current.focus();
+      }
     }
-  }, [view, activeNote]);
+    if (view === 'list') {
+      lastLoadedNoteId.current = null;
+    }
+  }, [view, activeNote?.id]); // depende só do ID, não do objeto inteiro
 
   const execCmd = useCallback((command: string, value?: string) => {
     editorRef.current?.focus();
