@@ -308,7 +308,7 @@ export const GodHandPanel = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 12 }}
               className="flex flex-col shadow-2xl"
-              style={{ width: 340, maxHeight: '68vh', background: '#fff', borderRadius: 16, border: '1px solid rgba(0,0,0,0.08)', cursor: 'grab' }}
+              style={{ width: 340, height: '75vh', maxHeight: '75vh', background: '#fff', borderRadius: 16, border: '1px solid rgba(0,0,0,0.08)', cursor: 'grab' }}
             >
               {/* ── HEADER — arrastar aqui ── */}
               <div
@@ -317,7 +317,13 @@ export const GodHandPanel = () => {
               >
                 <div className="flex items-center gap-2">
                   {view === 'edit' && (
-                    <button onClick={() => setView('list')} className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/40">
+                    <button
+                      type="button"
+                      onClick={() => setView('list')}
+                      onPointerDown={e => e.stopPropagation()}
+                      className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/40"
+                      style={{ cursor: 'pointer' }}
+                    >
                       <ChevronLeft size={13} className="text-white" />
                     </button>
                   )}
@@ -347,12 +353,11 @@ export const GodHandPanel = () => {
                 </div>
               </div>
 
-              {/* ── LISTA DE NOTAS ── */}
+              {/* ── LISTA DE NOTAS — sem stopPropagation: arrastar funciona em todo o corpo */}
               {view === 'list' && (
                 <div
-                  className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 bg-gray-50"
-                  onPointerDown={e => e.stopPropagation()}
-                  style={{ borderRadius: '0 0 15px 15px', cursor: 'default' }}
+                  className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 bg-gray-50 min-h-0"
+                  style={{ borderRadius: '0 0 15px 15px', cursor: 'grab' }}
                 >
                   {notes.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-center text-gray-400">
@@ -360,9 +365,11 @@ export const GodHandPanel = () => {
                       <p className="text-sm font-semibold">Nenhuma nota ainda</p>
                       <p className="text-xs mt-1">Clique em + para criar</p>
                       <button
+                        type="button"
                         onClick={handleCreateNote}
+                        onPointerDown={e => e.stopPropagation()}
                         className="mt-4 px-4 py-2 rounded-xl text-xs font-black text-white"
-                        style={{ background: 'linear-gradient(135deg, #1e1b4b, #4c1d95)' }}
+                        style={{ background: 'linear-gradient(135deg, #1e1b4b, #4c1d95)', cursor: 'pointer' }}
                       >
                         + Nova Nota
                       </button>
@@ -371,7 +378,10 @@ export const GodHandPanel = () => {
                     notes.map(note => (
                       <div
                         key={note.id}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => handleOpenNote(note)}
+                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleOpenNote(note); } }}
                         className="rounded-xl p-3 cursor-pointer hover:shadow-md transition-all border group"
                         style={{ backgroundColor: note.color, borderColor: NOTE_COLORS.find(c => c.bg === note.color)?.border ?? '#e5e7eb' }}
                       >
@@ -384,8 +394,11 @@ export const GodHandPanel = () => {
                             />
                           </div>
                           <button
+                            type="button"
                             onClick={e => { e.stopPropagation(); handleDeleteNote(note.id); }}
+                            onPointerDown={e => e.stopPropagation()}
                             className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-full bg-white/60 flex items-center justify-center hover:bg-red-100 transition-all shrink-0"
+                            style={{ cursor: 'pointer' }}
                           >
                             <Trash2 size={11} className="text-red-400" />
                           </button>
@@ -582,6 +595,7 @@ export const GodHandPanel = () => {
                     data-placeholder="Escreva sua nota aqui... (sem limite de texto)"
                     style={{
                       minHeight: 160,
+                      maxHeight: '100%',
                       fontSize: '0.9rem',
                       fontFamily: '"Georgia", serif',
                       color: '#111827',
@@ -589,6 +603,9 @@ export const GodHandPanel = () => {
                       userSelect: 'text',
                       WebkitUserSelect: 'text',
                       cursor: 'text',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
+                      whiteSpace: 'pre-wrap',
                     }}
                   />
 
