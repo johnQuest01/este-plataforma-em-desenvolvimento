@@ -387,7 +387,7 @@ export const GodHandPanel = () => {
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <p className="font-black text-sm text-gray-800 truncate">{note.title || 'Sem título'}</p>
+                            <p className="font-black text-sm text-gray-800 break-words">{note.title || 'Sem título'}</p>
                             <p
                               className="text-xs text-gray-600 mt-0.5 line-clamp-2 leading-relaxed"
                               dangerouslySetInnerHTML={{ __html: note.content.replace(/<[^>]+>/g, ' ').slice(0, 100) || 'Nota vazia...' }}
